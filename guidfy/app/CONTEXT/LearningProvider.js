@@ -4,17 +4,20 @@ import { createContext, useContext, useEffect, useState } from "react";
 const TabsContext = createContext(null);
 
 export function TabsProvider({ children }) {
-  const [currentTab, setCurrentTab] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("currentTab") || "Blog";
-    }
-    return "Blog";
-  });
+  const [currentTab, setCurrentTab] = useState("Blog");
+  const [mounted, setMounted] = useState(false);
 
-  /* ✅ save to localStorage */
   useEffect(() => {
-    localStorage.setItem("currentTab", currentTab);
-  }, [currentTab]);
+    setMounted(true);
+    const saved = localStorage.getItem("currentTab");
+    if (saved) setCurrentTab(saved);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem("currentTab", currentTab);
+    }
+  }, [currentTab, mounted]);
 
   return (
     <TabsContext.Provider value={{ currentTab, setCurrentTab }}>
