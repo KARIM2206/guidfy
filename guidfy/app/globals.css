@@ -104,6 +104,15 @@
     --gradient-secondary: linear-gradient(135deg, #3b82f6, #2563eb);
   }
 }
+/* Add to your global CSS or component CSS module */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
 
 /* Example default body styling */
 body {
