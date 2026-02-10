@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 
-const AdminPage = () => {
+export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -12,7 +12,6 @@ const AdminPage = () => {
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
-
     return () => clearTimeout(timer);
   }, []);
 
@@ -24,11 +23,7 @@ const AdminPage = () => {
 
   return (
     <div className="flex items-center justify-center h-screen">
-      {loading && (
-        <Loader2 className="animate-spin text-blue-500" size={48} />
-      )}
+      {loading && <Loader2 className="animate-spin text-blue-500" size={48} />}
     </div>
   );
-};
-
-export default AdminPage;
+}
