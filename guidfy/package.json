@@ -9,6 +9,7 @@
     "start:5000": "PORT=5000 next start"
   },
   "dependencies": {
+    "@types/react-syntax-highlighter": "^15.5.13",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.555.0",
     "next": "^16.0.10",
@@ -17,6 +18,9 @@
     "react-server-dom-parcel": "^19.2.3",
     "react-server-dom-turbopack": "^19.2.3",
     "react-server-dom-webpack": "^19.2.3",
+    "react-syntax-highlighter": "^16.1.0",
+    "react-toastify": "^11.0.5",
+    "recharts": "^3.7.0",
     "swiper": "^12.0.3"
   },
   "devDependencies": {
