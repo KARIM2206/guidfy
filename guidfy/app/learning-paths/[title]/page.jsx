@@ -2,7 +2,9 @@
 import BlogSection from '@/app/components/learning-path/BlogSection'
 import JobsSection from '@/app/components/learning-path/Jobs'
 import ProjectsSection from '@/app/components/learning-path/ProjectsSection'
-import References from '@/app/components/learning-path/References'
+
+import CoursePage from '@/app/components/learning-path/RoadmapSection'
+
 import { useTabs } from '@/app/CONTEXT/LearningProvider'
 import React from 'react'
 
@@ -14,10 +16,10 @@ const page = () => {
   return (
     <div>
    {
-   ( currentTab == 'blog' || currentTab == 'Blog'&&
+   (( currentTab == 'blog' || currentTab == 'Blog')&&
    <BlogSection/>)||
-   (currentTab == 'referances' || currentTab == 'References'&&
-   <References  />)
+   (currentTab == 'roadmap' || currentTab == 'Roadmap'&&
+   <CoursePage  />)
    ||
    (currentTab == 'jobs' || currentTab == 'Jobs'&&
    <JobsSection />)

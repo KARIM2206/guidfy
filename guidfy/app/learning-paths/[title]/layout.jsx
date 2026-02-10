@@ -2,7 +2,7 @@
 
 import NavigationGrid from "@/app/components/learning-path/NavigationGrid";
 import React, { use } from "react";
-import { ArrowLeft, BookOpen, FileText, Briefcase, Folder } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, Briefcase, Folder, Route } from "lucide-react";
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -17,9 +17,9 @@ const Layout = ({ params, children }) => {
   const navLinks = [
     { name: "Blog", href: "/blog", icon: BookOpen, color: "#3B82F6" },
     {
-      name: "References",
-      href: "/referances",
-      icon: FileText,
+      name: "Roadmap",
+      href: "/roadmap",
+      icon: Route,
       color: "#10B981",
     },
     { name: "Jobs", href: "/jobs", icon: Briefcase, color: "#F59E0B" },

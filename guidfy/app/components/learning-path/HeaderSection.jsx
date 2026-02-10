@@ -2,7 +2,7 @@
 
 import { useTabs } from "@/app/CONTEXT/LearningProvider";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Menu, X, ChevronDown } from "lucide-react";
+import { ArrowLeft, Menu, X, ChevronDown, MenuIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 
@@ -62,7 +62,7 @@ export default function HeaderSection({ title, navLinks }) {
             <motion.div whileTap={{ scale: 0.9 }} onClick={() => router.back()}>
               <ArrowLeft className="w-6 h-6 text-gray-600" />
             </motion.div>
-            <h2 className="text-lg font-bold text-gray-800 truncate max-w-[200px]">
+            <h2 className="text-lg font-bold text-gray-800 truncate ">
               {decodeURIComponent(title)}
             </h2>
           </div>
@@ -117,6 +117,7 @@ export default function HeaderSection({ title, navLinks }) {
               </div>
 
               {/* Desktop Nav */}
+              <MenuIcon  className="md:hidden block w-6 h-6"  onClick={() => setIsOpen(!isOpen)} onMouseLeave={() => setIsOpen(false)}/>
               <nav className="hidden lg:flex items-center gap-1">
                 {navLinks.map((link) => {
                   const isActive = currentTab === link.name;
@@ -138,8 +139,44 @@ export default function HeaderSection({ title, navLinks }) {
                   );
                 })}
               </nav>
-            </div>
+              <AnimatePresence>
+                {isOpen && (
+  <div
+    ref={menuRef}
+    className="absolute top-20 right-4 bg-white border border-gray-200 rounded-lg shadow-lg w-48 z-50"
+  >
+    <div className="flex flex-col">
+      {navLinks.map((link) => {
+        const isActive = currentTab === link.name;
 
+        return (
+          <motion.button
+            key={link.name}
+            onClick={() => {
+              setCurrentTab(link.name);
+              setIsOpen(false);
+            }}
+            whileHover={{ y: -2 }}
+            className={`px-4 py-2 rounded-lg font-medium text-left
+              ${
+                isActive
+                  ? "text-blue-600 bg-blue-50"
+                  : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
+              }`}
+          >
+            <div className="flex items-center gap-2">
+              <link.icon size={18} />
+              {link.name}
+            </div>
+          </motion.button>
+        );
+      })}
+    </div>
+  </div>
+)}
+
+              </AnimatePresence>
+            </div>
             {/* ===== Collapsible Content ===== */}
             <motion.div
               initial={false}

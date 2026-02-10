@@ -1,3 +1,4 @@
+'use client'
 import React from 'react'
 import BlogCard from './BlogCard'
 
@@ -56,9 +57,9 @@ publishedAt: Date.now(),
     <div className='my-12 flex flex-col gap-6 w-full'>
         <div className='flex flex-col gap-6 md:grid md:grid-cols-2 lg:grid-cols-3'>
             {
-                blogs.map((blog)=>{
+                blogs.map((blog,index)=>{
                     return(
-                             <BlogCard key={blog.title} blog={blog}/>
+                             <BlogCard key={index} blog={blog}/>
      
                     )
                 })
