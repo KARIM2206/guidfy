@@ -5,11 +5,21 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { MessageSquare, FileText, Code2, Hash, Settings, BookOpen, Users, Award } from 'lucide-react';
 
-const CommunityTabs = ({
-  activeTab = 'questions',
-  onTabChange
-}) => {
-  const tabs = [
+
+
+const CommunityTabs = ({  activeTab, onTabChange }) => {
+  const scrollRef = useRef(null);
+  const tabRefs = useRef([]);
+
+  const [indicatorStyle, setIndicatorStyle] = useState({
+    width: 0,
+    left: 0,
+  });
+
+  const [hasScroll, setHasScroll] = useState(false);
+  const [isAtStart, setIsAtStart] = useState(true);
+  const [isAtEnd, setIsAtEnd] = useState(false);
+const tabs = [
     {
       id: 'questions',
       label: 'Questions',
@@ -53,144 +63,122 @@ const CommunityTabs = ({
       color: 'from-yellow-500 to-orange-500'
     }
   ];
+  // 🔥 تحديث مكان الخط تحت التاب
+  const updateIndicator = () => {
+    const activeIndex = tabs.findIndex((t) => t.id === activeTab);
+    const activeEl = tabRefs.current[activeIndex];
+    const scrollEl = scrollRef.current;
 
-  const tabRefs = useRef([]);
-  const [indicatorStyle, setIndicatorStyle] = useState({
-    width: 0,
-    left: 0
-  });
+    if (!activeEl || !scrollEl) return;
+
+    const left = activeEl.offsetLeft - scrollEl.scrollLeft;
+
+    setIndicatorStyle({
+      width: activeEl.offsetWidth,
+      left,
+    });
+  };
+
+  // 🔥 auto scroll للتاب النشط
+  const scrollToActiveTab = () => {
+    const activeIndex = tabs.findIndex((t) => t.id === activeTab);
+    const activeEl = tabRefs.current[activeIndex];
+
+    activeEl?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  };
+
+  // 🔥 check scroll state
+  const checkScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    setHasScroll(el.scrollWidth > el.clientWidth);
+    setIsAtStart(el.scrollLeft === 0);
+    setIsAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 5);
+  };
+
+  const handleScroll = () => {
+    updateIndicator();
+    checkScroll();
+  };
 
   useEffect(() => {
-    const activeIndex = tabs.findIndex(tab => tab.id === activeTab);
-    if (tabRefs.current[activeIndex]) {
-      const activeTabElement = tabRefs.current[activeIndex];
-      const { offsetWidth, offsetLeft } = activeTabElement;
-      
-      setIndicatorStyle({
-        width: offsetWidth,
-        left: offsetLeft
-      });
-    }
-  }, [activeTab, tabs]);
+    updateIndicator();
+    scrollToActiveTab();
+  }, [activeTab]);
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener("resize", updateIndicator);
+    window.addEventListener("resize", checkScroll);
+
+    return () => {
+      window.removeEventListener("resize", updateIndicator);
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, []);
 
   return (
-    <div className="relative">
-      <div className="flex space-x-1 overflow-x-auto pb-2 scrollbar-hide">
-        {tabs.map((tab, index) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          const activeTabObj = tabs.find(t => t.id === activeTab);
+   <div className="relative w-full">
+  {/* Left Fade */}
+  {hasScroll && !isAtStart && (
+    <div className="absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" />
+  )}
 
-          return (
-            <motion.button
-              key={tab.id}
-              ref={(el) => (tabRefs.current[index] = el)}
-              onClick={() => onTabChange(tab.id)}
-              className={`relative px-6 py-3 rounded-lg flex items-center space-x-3 transition-all whitespace-nowrap ${isActive
-                  ? `bg-gradient-to-r ${activeTabObj.color} text-white shadow-lg shadow-blue-500/20`
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50'
-                }`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Icon 
-                size={18} 
-                className={isActive ? 'text-white' : ''}
+  {/* Right Fade */}
+  {hasScroll && !isAtEnd && (
+    <div className="absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" />
+  )}
+
+  <div
+    ref={scrollRef}
+    onScroll={handleScroll}
+    className="flex md:space-x-4 lg:space-x-2 overflow-x-auto pb-3 scrollbar-hide scroll-smooth"
+  >
+    {tabs.map((tab, index) => {
+      const Icon = tab.icon;
+      const isActive = activeTab === tab.id;
+
+      return (
+        <div key={tab.id} className="relative">
+          <motion.button
+            ref={(el) => (tabRefs.current[index] = el)}
+            onClick={() => onTabChange(tab.id)}
+            className={`relative px-5 md:px-6 py-2 md:py-3 rounded-lg flex items-center space-x-2 whitespace-nowrap transition-all text-sm md:text-base ${
+              isActive
+                ? `bg-gradient-to-r ${tab.color} text-white shadow-md`
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50"
+            }`}
+            whileTap={{ scale: 0.97 }}
+          >
+            <Icon size={16} />
+            <span>{tab.label}</span>
+
+            {/* 🔥 Indicator */}
+            {isActive && (
+              <motion.div
+                layoutId="underline"
+                className={`absolute -bottom-2 left-0 right-0 h-1 rounded-full bg-gradient-to-r ${tab.color}`}
+                transition={{
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 35,
+                }}
               />
-              <span className={`font-medium ${isActive ? 'text-white' : ''}`}>
-                {tab.label}
-              </span>
-              {tab.count && (
-                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${isActive
-                    ? 'bg-white/20 text-white backdrop-blur-sm'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                  }`}>
-                  {tab.count}
-                </span>
-              )}
-              
-              {/* Active Tab Dot Indicator */}
-              {isActive && (
-                <motion.div
-                  layoutId="activeTabDot"
-                  className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-white shadow-md"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                />
-              )}
-            </motion.button>
-          );
-        })}
-      </div>
+            )}
+          </motion.button>
+        </div>
+      );
+    })}
+  </div>
+</div>
 
-      {/* Active Indicator Line */}
-      <motion.div
-        className="absolute bottom-0 h-1 rounded-full"
-        style={{
-          width: indicatorStyle.width,
-          left: indicatorStyle.left
-        }}
-        animate={{
-          background: `linear-gradient(to right, ${(() => {
-            const activeTabObj = tabs.find(t => t.id === activeTab);
-            switch (activeTabObj?.color) {
-              case 'from-blue-500 to-cyan-500':
-                return '#3b82f6, #06b6d4';
-              case 'from-purple-500 to-pink-500':
-                return '#8b5cf6, #ec4899';
-              case 'from-green-500 to-emerald-500':
-                return '#10b981, #10b981';
-              case 'from-orange-500 to-amber-500':
-                return '#f97316, #f59e0b';
-              case 'from-indigo-500 to-blue-500':
-                return '#6366f1, #3b82f6';
-                case 'from-yellow-500 to-orange-500':
-                return '#eab308, #f97316';
-              default:
-                return '#3b82f6, #06b6d4';
-            }
-          })()})`
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 400,
-          damping: 30,
-          duration: 0.3
-        }}
-      />
-
-      {/* Tab Content Background Glow */}
-      <motion.div
-        className="absolute -bottom-2 h-2 w-full opacity-0 blur-xl"
-        animate={{
-          opacity: 0.3,
-          background: (() => {
-            const activeTabObj = tabs.find(t => t.id === activeTab);
-            switch (activeTabObj?.color) {
-              case 'from-blue-500 to-cyan-500':
-                return 'linear-gradient(to right, #3b82f6, #06b6d4)';
-              case 'from-purple-500 to-pink-500':
-                return 'linear-gradient(to right, #8b5cf6, #ec4899)';
-              case 'from-green-500 to-emerald-500':
-                return 'linear-gradient(to right, #10b981, #10b981)';
-              case 'from-orange-500 to-amber-500':
-                return 'linear-gradient(to right, #f97316, #f59e0b)';
-              case 'from-indigo-500 to-blue-500':
-                return 'linear-gradient(to right, #6366f1, #3b82f6)';
-              case 'from-yellow-500 to-orange-500':
-                return 'linear-gradient(to right, #eab308, #f97316)';
-              default:
-                return 'linear-gradient(to right, #3b82f6, #06b6d4)';
-            }
-          })()
-        }}
-        transition={{
-          duration: 0.3
-        }}
-      />
-    </div>
   );
-};
+}
+
 
 export default CommunityTabs;
