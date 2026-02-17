@@ -118,51 +118,55 @@ function EditableLessonRow({
   const statusConfig = getStatusConfig(isEditing ? editStatus : lesson.status);
 
   return (
-    <Reorder.Item
-      value={lesson}
-      id={lesson.id}
-      dragListener={false}
-    >
+   <Reorder.Item value={lesson} id={lesson.id} dragListener={false}>
       <motion.div
         initial={false}
-        animate={isDragging ? { 
-          scale: 1.02, 
-          boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-          borderColor: '#60a5fa'
-        } : { 
-          scale: 1,
-          boxShadow: 'none',
-          borderColor: '#e5e7eb'
-        }}
-        className={`relative group bg-white border rounded-xl transition-all duration-200 ${
-          isDragging ? 'border-blue-400 shadow-lg z-10' : 'border-gray-200 hover:border-gray-300'
+        animate={
+          isDragging
+            ? {
+                scale: 1.02,
+                boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+                borderColor: "#60a5fa"
+              }
+            : {
+                scale: 1,
+                boxShadow: "none",
+                borderColor: "#e5e7eb"
+              }
+        }
+        className={`relative group border rounded-xl transition-all duration-200 ${
+          isDragging
+            ? "border-blue-400 shadow-lg z-10"
+            : "border-gray-200 hover:border-gray-300"
         }`}
       >
         <div className="p-5">
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col gap-4 md:flex-row items-start  justify-between">
             {/* Left Section */}
-            <div className="flex-1 flex items-start gap-4">
-              {/* Drag Handle */}
-              <motion.div
-                className="cursor-move mt-1"
-                whileHover={{ scale: 1.2 }}
-                whileTap={{ scale: 0.9 }}
-                onMouseDown={onDragStart}
-                onMouseUp={onDragEnd}
-                onTouchStart={onDragStart}
-                onTouchEnd={onDragEnd}
-              >
-                <GripVertical size={18} className="text-gray-400" />
-              </motion.div>
+            <div className="flex-1  flex flex-col md:flex-row items-start gap-4 flex-wrap">
+              {/* Drag Handle + Icons */}
+              <div className="flex items-center gap-4 flex-shrink-0">
+                <motion.div
+                  className="cursor-move mt-1"
+                  whileHover={{ scale: 1.2 }}
+                  whileTap={{ scale: 0.9 }}
+                  onMouseDown={onDragStart}
+                  onMouseUp={onDragEnd}
+                  onTouchStart={onDragStart}
+                  onTouchEnd={onDragEnd}
+                >
+                  <GripVertical size={18} className="text-gray-400" />
+                </motion.div>
 
-              {/* Order Number */}
-              <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 text-gray-700 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">
-                {lesson.order}
-              </div>
+                {/* Order Number */}
+                <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 text-gray-700 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">
+                  {lesson.order}
+                </div>
 
-              {/* Type Icon */}
-              <div className={`p-3 rounded-lg ${getTypeColor(lesson.type)}`}>
-                {getTypeIcon(lesson.type)}
+                {/* Type Icon */}
+                <div className={`p-3 rounded-lg flex-shrink-0 ${getTypeColor(lesson.type)}`}>
+                  {getTypeIcon(lesson.type)}
+                </div>
               </div>
 
               {/* Lesson Content */}
@@ -178,7 +182,7 @@ function EditableLessonRow({
                         placeholder="Lesson title"
                       />
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 flex-wrap">
                       <div className="flex items-center gap-2">
                         <Clock size={16} className="text-gray-400" />
                         <input
@@ -201,30 +205,33 @@ function EditableLessonRow({
                     </div>
                   </div>
                 ) : (
-                  <>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-bold text-lg text-gray-800 mb-1">
-                          {lesson.title}
-                        </h3>
-                        <div className="flex items-center gap-4 mt-2">
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <Clock size={14} />
-                            <span>{lesson.duration}</span>
-                          </div>
-                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${statusConfig.color}`}>
-                            {statusConfig.icon}
-                            {statusConfig.label}
-                          </span>
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${getTypeColor(lesson.type)}`}>
-                            {lesson.type.charAt(0).toUpperCase() + lesson.type.slice(1)}
-                          </span>
-                        </div>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-lg text-gray-800 mb-1 ">
+                      {lesson.title}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Clock size={14} />
+                        <span>{lesson.duration}</span>
                       </div>
+                      <span
+                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium truncate max-w-[120px] ${statusConfig.color}`}
+                      >
+                        {statusConfig.icon}
+                        {statusConfig.label}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium truncate max-w-[100px] ${getTypeColor(
+                          lesson.type
+                        )}`}
+                      >
+                        {lesson.type.charAt(0).toUpperCase() +
+                          lesson.type.slice(1)}
+                      </span>
                     </div>
-                    
+
                     {/* Lesson Meta */}
-                    <div className="flex items-center gap-4 mt-4 text-sm text-gray-500">
+                    <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-gray-500">
                       <div className="flex items-center gap-1">
                         <Calendar size={14} />
                         <span>Created: {lesson.createdAt}</span>
@@ -236,13 +243,13 @@ function EditableLessonRow({
                         </div>
                       )}
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             </div>
 
             {/* Right Section - Actions */}
-            <div className="flex items-center gap-2 ml-4">
+            <div className="flex items-center gap-2 ml-4 flex-shrink-0">
               {isEditing ? (
                 <>
                   <motion.button
@@ -340,7 +347,7 @@ export default function LessonsList({
     {
       id: 2,
       order: 2,
-      title: "State Management with useState",
+      title: "React State Management with useState",
       description: "Master the useState hook",
       duration: "60 mins",
       type: "article",
@@ -423,9 +430,9 @@ export default function LessonsList({
   };
 
   return (
-    <div className={`${className}`}>
+    <div className={`${className} `}>
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-6 ">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">Lessons</h2>
@@ -444,7 +451,7 @@ export default function LessonsList({
         </div>
 
         {/* Stats Bar */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white p-4 rounded-xl border border-gray-200">
             <div className="text-2xl font-bold text-gray-800">{stats.total}</div>
             <div className="text-sm text-gray-600">Total Lessons</div>

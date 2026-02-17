@@ -110,7 +110,7 @@ export default function ModuleFooterActions({
   return (
     <div className={`${className}`}>
       {/* Main Action Bar */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      <div className=" rounded-xl bg-white border border-gray-200 shadow-sm p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           {/* Left Section - Status */}
           <div className="flex items-center gap-4">

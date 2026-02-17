@@ -93,10 +93,10 @@ export default function EditableModuleHeader({
       className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-200 shadow-lg overflow-hidden mb-6"
     >
       {/* Module Header */}
-      <div className="p-6">
-        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+      <div className="p-6 ">
+<div className="flex flex-col lg:flex-row gap-6 min-w-0">
           {/* Left Section - Module Info */}
-          <div className="flex-1">
+          <div className="flex-1 ">
             {/* Title Section */}
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-4">
@@ -157,7 +157,7 @@ export default function EditableModuleHeader({
                     </div>
                   </div>
                 ) : (
-                  <div className="flex-1">
+                  <div className="flex-1 ">
                     <div className="flex items-center gap-3 mb-3">
                       <h2 className="text-2xl font-bold text-gray-900">
                         {module.title}
@@ -194,30 +194,29 @@ export default function EditableModuleHeader({
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="grid grid-cols-2 md:grid-cols-4 gap-4"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4"
               >
-                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <FileText size={18} className="text-blue-600" />
+                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-2 md:p-4">
+                  <div className="flex flex-col  lg:items-center gap-3">
+                    <div className="p-2 w-fit bg-blue-100 rounded-lg">
+                      <FileText size={18} className="text-sm  text-blue-600" />
                     </div>
-                    <div>
+                    <div className='flex flex-col items-start lg:items-center'>
                       <p className="text-sm text-gray-600">Lessons</p>
-                      <p className="text-xl font-bold text-gray-900">
+                      <p className="text-[16px] font-bold text-gray-900">
                         {module.lessonCount}
                       </p>
                     </div>
                   </div>
                 </div>
-                
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <Clock size={18} className="text-purple-600" />
+                <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl p-4">
+                  <div className="flex flex-col  lg:items-center gap-3">
+                    <div className="p-2 w-fit bg-yellow-100 rounded-lg">
+                      <Clock size={18} className="text-yellow-600" />
                     </div>
-                    <div>
+                    <div className='flex flex-col items-start lg:items-center'>
                       <p className="text-sm text-gray-600">Duration</p>
-                      <p className="text-xl font-bold text-gray-900">
+                      <p className="text-[16px] font-bold text-gray-900">
                         {module.duration}
                       </p>
                     </div>
@@ -225,29 +224,30 @@ export default function EditableModuleHeader({
                 </div>
                 
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-100 rounded-lg">
+                  <div className="flex flex-col  lg:items-center gap-3">
+                    <div className="p-2 w-fit bg-green-100 rounded-lg">
                       <Users size={18} className="text-green-600" />
                     </div>
-                    <div>
+                    <div className='flex flex-col items-start lg:items-center'>
                       <p className="text-sm text-gray-600">Enrolled</p>
-                      <p className="text-xl font-bold text-gray-900">
+                      <p className="text-[16px] font-bold text-gray-900">
                         {module.enrolled.toLocaleString()}
                       </p>
                     </div>
                   </div>
                 </div>
                 
-                <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-4">
-                  <div className="flex items-center gap-3">
+                <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-4 ">
+                  <div className="flex flex-col  lg:items-center items-start gap-3">
                     <div className="p-2 bg-orange-100 rounded-lg">
                       <Target size={18} className="text-orange-600" />
                     </div>
-                    <div>
+                    <div className='flex flex-col items-start lg:items-center'>
                       <p className="text-sm text-gray-600">Category</p>
-                      <p className="text-xl font-bold text-gray-900">
-                        {module.category}
-                      </p>
+                   <p className="text-[16px] font-bold text-gray-900  md:break-words md:max-w-full">
+  {module.category}
+</p>
+
                     </div>
                   </div>
                 </div>
@@ -260,7 +260,7 @@ export default function EditableModuleHeader({
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="lg:w-64 flex-shrink-0"
+               className="lg:w-64 shrink-0 w-full md:w-auto"
             >
               <div className="bg-white border border-gray-200 rounded-xl p-5">
                 {/* Progress Section */}
