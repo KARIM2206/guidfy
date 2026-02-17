@@ -1,10 +1,7 @@
-// app/components/OverviewCard.tsx
 "use client";
 
-import { LucideIcon } from 'lucide-react';
-import { motion } from 'framer-motion';
-
-
+import { motion } from "framer-motion";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
 export default function OverviewCard({
   title,
@@ -16,156 +13,121 @@ export default function OverviewCard({
   bgColor,
   description,
   additionalInfo,
-  trendIcon: TrendIcon,
-  metric
+  trendIcon: TrendIcon = isPositive ? TrendingUp : TrendingDown,
+  metric,
 }) {
   const numberVariants = {
-    hidden: { opacity: 0, scale: 0.8 },
-    visible: { 
-      opacity: 1, 
+    hidden: { opacity: 0, scale: 0.9 },
+    visible: {
+      opacity: 1,
       scale: 1,
       transition: {
         type: "spring",
         stiffness: 200,
         damping: 15,
-        delay: 0.3
-      }
-    }
-  };
-
-  const changeVariants = {
-    hidden: { opacity: 0, x: -10 },
-    visible: { 
-      opacity: 1, 
-      x: 0,
-      transition: {
-        delay: 0.4
-      }
-    }
+        delay: 0.3,
+      },
+    },
   };
 
   return (
     <motion.div
       initial="hidden"
       animate="visible"
-      whileHover={{ scale: 1.02 }}
-      className={`relative ${bgColor} rounded-2xl p-6 shadow-lg border border-gray-100 overflow-hidden group`}
+      whileHover={{ scale: 1.01 }}
+      transition={{ type: "spring", stiffness: 300 }}
+   className={`
+  relative
+  w-full
+  min-w-0
+  h-full
+  ${bgColor}
+  rounded-2xl
+  p-4 sm:p-5
+  shadow-lg
+  border border-gray-100/50
+  overflow-hidden
+  group
+  flex flex-col
+`}
+
     >
-      {/* Background Gradient Effect */}
+      {/* Corner Accent */}
       <motion.div
-        className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 ${color.replace('from-', 'bg-gradient-to-r ')}`}
-        initial={false}
-      />
-      
-      {/* Animated Corner Accent */}
-      <motion.div
-        className={`absolute top-0 right-0 w-16 h-16 ${color} rounded-bl-full opacity-20`}
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
+        className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${color} rounded-bl-[40px] opacity-10`}
+        initial={{ scale: 0, rotate: -45 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ delay: 0.2, duration: 0.6, type: "spring" }}
       />
 
-      <div className="relative z-10">
+      <div className="relative z-10 flex flex-col h-full gap-3 w-full">
         {/* Header */}
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <p className="text-sm font-semibold text-gray-600 mb-1">{title}</p>
-            <motion.h3 
-              className="text-3xl font-bold text-gray-800"
+        <div className="flex justify-between items-start gap-2 w-full">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 truncate">
+              {title}
+            </p>
+
+            <motion.h3
+              className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 leading-tight break-words"
               variants={numberVariants}
             >
               {value}
             </motion.h3>
           </div>
-          
-          {/* Icon Container */}
+
           <motion.div
-            className={`p-3 rounded-xl ${color} text-white shadow-lg`}
-            whileHover={{ rotate: 5, scale: 1.1 }}
-            transition={{ type: "spring", stiffness: 300 }}
+            className={`flex-shrink-0 p-2.5 sm:p-3 rounded-xl bg-gradient-to-br ${color} text-white shadow-md`}
+            whileHover={{ scale: 1.05, rotate: 2 }}
+            transition={{ type: "spring", stiffness: 400 }}
           >
-            <Icon size={24} />
+            <Icon size={18} className="sm:w-5 sm:h-5" />
           </motion.div>
         </div>
 
         {/* Description */}
-        <p className="text-gray-600 text-sm mb-4">
+        <p className="text-gray-600 text-xs sm:text-sm line-clamp-2 break-words">
           {description}
         </p>
 
-        {/* Trend and Change */}
-        <div className="flex items-center justify-between mb-4">
+        {/* Stats Row */}
+        <div className="flex flex-wrap items-center gap-2 mt-1 w-full">
           <motion.div
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded-full ${isPositive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}
-            variants={changeVariants}
-            whileHover={{ scale: 1.05 }}
+            className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap
+              ${
+                isPositive
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            whileHover={{ scale: 1.02 }}
           >
-            <TrendIcon size={14} />
-            <span className="text-sm font-semibold">{change}</span>
+            <TrendIcon size={12} />
+            <span>{change}</span>
           </motion.div>
-          
-          <motion.div
-            className="text-xs text-gray-500"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            {metric}
-          </motion.div>
+
+          {metric && (
+            <span className="text-[10px] sm:text-xs text-gray-500 bg-gray-100/80 px-2 py-1 rounded-full truncate max-w-[120px]">
+              {metric}
+            </span>
+          )}
         </div>
 
         {/* Additional Info */}
-        <motion.div
-          className="pt-4 border-t border-gray-200"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          <p className="text-xs text-gray-500">
+        <div className="mt-auto pt-2 border-t border-gray-200/70 w-full">
+          <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-1 break-words">
             {additionalInfo}
           </p>
-        </motion.div>
+        </div>
 
-        {/* Animated Progress Bar */}
-        <motion.div 
-          className="mt-4 h-1 bg-gray-100 rounded-full overflow-hidden"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
-        >
+        {/* Progress Bar */}
+        <div className="h-1 mb-2 bg-gray-200/50 rounded-full overflow-hidden w-full">
           <motion.div
-            className={`h-full ${color}`}
+            className={`h-full bg-gradient-to-r ${color}`}
             initial={{ width: "0%" }}
             animate={{ width: isPositive ? "75%" : "40%" }}
-            transition={{ 
-              delay: 0.8, 
-              duration: 1.5, 
-              ease: "easeOut" 
-            }}
+            transition={{ duration: 1.5, ease: "easeOut", delay: 0.3 }}
           />
-        </motion.div>
-      </div>
-
-      {/* Hover Effect Lines */}
-      <div className="absolute inset-0 overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        {[...Array(3)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-px h-20 bg-white/30"
-            style={{
-              left: `${20 + i * 30}%`,
-              top: '-20px',
-            }}
-            animate={{
-              y: [0, '100%'],
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              delay: i * 0.2,
-            }}
-          />
-        ))}
+        </div>
       </div>
     </motion.div>
   );

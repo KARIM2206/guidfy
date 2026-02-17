@@ -1,18 +1,27 @@
-// app/components/OverviewStats.tsx
 "use client";
 
-import { motion } from 'framer-motion';
-import { 
-  FileText, 
-  BookOpen, 
-  Map, 
+import { Autoplay, Pagination, A11y } from "swiper/modules";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
+import "swiper/css/pagination";
+
+import { motion } from "framer-motion";
+import {
+  FileText,
+  BookOpen,
+  Map,
   Users,
   TrendingUp,
   Clock,
   Target,
-  Award
-} from 'lucide-react';
-import OverviewCard from './OverviewCard';
+  Award,
+  Sparkles,
+  GraduationCap,
+  Globe,
+  Heart,
+} from "lucide-react";
+
+import OverviewCard from "./OverviewCard";
 
 export default function OverviewStats() {
   const stats = [
@@ -23,13 +32,11 @@ export default function OverviewStats() {
       change: "+12%",
       isPositive: true,
       icon: FileText,
-      color: "from-blue-500 to-cyan-500",
-      bgColor: "bg-gradient-to-br from-blue-50 to-cyan-50",
-      description: "Educational articles",
-      additionalInfo: "Last updated: Today",
-      trendIcon: TrendingUp,
+      color: "from-blue-600 to-blue-400",
+      bgColor: "bg-gradient-to-br from-blue-50/80 to-blue-100/50",
+      description: "Educational articles and resources",
+      additionalInfo: "Last updated: Today at 9:00 AM",
       metric: "This month",
-      delay: 0.1
     },
     {
       id: 2,
@@ -38,13 +45,11 @@ export default function OverviewStats() {
       change: "+8%",
       isPositive: true,
       icon: BookOpen,
-      color: "from-purple-500 to-pink-500",
-      bgColor: "bg-gradient-to-br from-purple-50 to-pink-50",
-      description: "Learning courses",
-      additionalInfo: "24 new this quarter",
-      trendIcon: Target,
-      metric: "Completion rate: 78%",
-      delay: 0.2
+      color: "from-blue-500 to-cyan-400",
+      bgColor: "bg-gradient-to-br from-blue-50/80 to-cyan-50/50",
+      description: "Interactive learning courses",
+      additionalInfo: "24 new courses added this quarter",
+      metric: "78% completion rate",
     },
     {
       id: 3,
@@ -53,139 +58,148 @@ export default function OverviewStats() {
       change: "+5%",
       isPositive: true,
       icon: Map,
-      color: "from-green-500 to-emerald-500",
-      bgColor: "bg-gradient-to-br from-green-50 to-emerald-50",
-      description: "Learning paths",
+      color: "from-blue-500 to-indigo-400",
+      bgColor: "bg-gradient-to-br from-blue-50/80 to-indigo-50/50",
+      description: "Personalized learning paths",
       additionalInfo: "Average duration: 6 months",
-      trendIcon: Clock,
-      metric: "Active learners: 2.4k",
-      delay: 0.3
+      metric: "2.4k active learners",
     },
     {
       id: 4,
       title: "Total Students",
-      value: "15,827",
+      value: "15.8k",
       change: "+15%",
       isPositive: true,
       icon: Users,
-      color: "from-orange-500 to-red-500",
-      bgColor: "bg-gradient-to-br from-orange-50 to-red-50",
-      description: "Active learners",
+      color: "from-blue-600 to-purple-400",
+      bgColor: "bg-gradient-to-br from-blue-50/80 to-purple-50/50",
+      description: "Active learners worldwide",
       additionalInfo: "From 120+ countries",
-      trendIcon: Award,
-      metric: "Satisfaction: 94%",
-      delay: 0.4
-    }
+      metric: "94% satisfaction",
+    },
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.15,
-        delayChildren: 0.2
-      }
-    }
-  };
-
-  const cardVariants = {
-    hidden: { 
-      opacity: 0, 
-      y: 20,
-      scale: 0.95
-    },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      scale: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 15
-      }
-    },
-    hover: {
-      y: -5,
-      scale: 1.02,
-      transition: {
-        type: "spring",
-        stiffness: 400,
-        damping: 25
-      }
-    }
-  };
-
   return (
-    <section className="py-6 px-4 md:px-6">
+    <section className="w-full max-w-full overflow-hidden">
+      {/* Header */}
       <motion.div
-        initial={{ opacity: 0, y: -10 }}
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mb-6"
+        transition={{ duration: 0.6 }}
+        className="mb-8  text-center md:text-left"
       >
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
-          Educational Overview
-        </h2>
-        <p className="text-gray-600 mt-2">
-          Statistics for our non-profit learning platform
+        <div className="flex items-center justify-center md:justify-start gap-2  mb-3">
+          <h2 className="text-xl md:text-3xl lg:text-4xl font-bold text-gray-800">
+            Educational Overview
+          </h2>
+          <motion.div
+            animate={{ rotate: [0, 10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <Sparkles className="w-4 h-4 sm:w-6 sm:h-6 text-blue-500" />
+          </motion.div>
+        </div>
+        <p className="text-gray-600 text-[12px] sm:text-sm md:text-base max-w-2xl mx-auto md:mx-0">
+          Real-time statistics and insights from our non-profit learning platform
         </p>
       </motion.div>
 
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-      >
-        {stats.map((stat) => (
-          <motion.div
-            key={stat.id}
-            variants={cardVariants}
-            whileHover="hover"
-            custom={stat.delay}
-          >
-            <OverviewCard
-              title={stat.title}
-              value={stat.value}
-              change={stat.change}
-              isPositive={stat.isPositive}
-              icon={stat.icon}
-              color={stat.color}
-              bgColor={stat.bgColor}
-              description={stat.description}
-              additionalInfo={stat.additionalInfo}
-              trendIcon={stat.trendIcon}
-              metric={stat.metric}
-            />
-          </motion.div>
-        ))}
-      </motion.div>
+      {/* Swiper Container - مع ضبط overflow */}
+      <div className="relative w-full">
+        <Swiper
+          modules={[Pagination, Autoplay, A11y]}
+          spaceBetween={16}
+          slidesPerView={1}
+          autoHeight={false}
+          pagination={{
+            clickable: true,
+            dynamicBullets: true,
+          
+          }}
+          autoplay={{
+            delay: 5000,
+            disableOnInteraction: false,
+            pauseOnMouseEnter: true,
+          }}
+          breakpoints={{
+            0: {
+              slidesPerView: 1,
+              spaceBetween: 12,
+            },
+            640: {
+              slidesPerView: 1,
+              spaceBetween: 16,
 
-      {/* Animated Dots Background Effect */}
-      <div className="relative mt-10">
+            },
+            768: {
+              slidesPerView: 2,
+              spaceBetween: 16,
+            },
+            1024: {
+              slidesPerView: 3,
+              spaceBetween: 20,
+            },
+            1280: {
+              slidesPerView: 4,
+              spaceBetween: 24,
+            },
+          }}
+          // الحيلة: force ألا يتجاوز swiper حدود الحاوية
+          style={{ overflow: "hidden" }}
+          className=" "
+        >
+          {stats.map((stat) => (
+            <SwiperSlide key={stat.id} className=" ">
+
+             <div className="w-full h-60  min-w-0">
+
+                <OverviewCard {...stat} />
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </div>
+
+      {/* Animated Background */}
+      <div className="relative mt-8 ">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[...Array(20)].map((_, i) => (
+          {/* Floating Dots */}
+          {[...Array(15)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute w-1 h-1 bg-blue-200 rounded-full"
+              className="absolute w-1.5 h-1.5 bg-red-300/30 rounded-full"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
               }}
               animate={{
-                y: [0, -10, 0],
-                opacity: [0.3, 0.7, 0.3],
+                y: [0, -15, 0],
+                x: [0, 5, 0],
+                opacity: [0.2, 0.5, 0.2],
+                scale: [1, 1.2, 1],
               }}
               transition={{
-                duration: 2 + Math.random() * 2,
+                duration: 3 + Math.random() * 3,
                 repeat: Infinity,
                 delay: Math.random() * 2,
+                ease: "easeInOut",
               }}
             />
           ))}
         </div>
       </div>
+
+      <style jsx>{`
+        :global(.swiper-pagination-bullet) {
+          background: #3b82f6 !important;
+          opacity: 0.5;
+        }
+        :global(.swiper-pagination-bullet-active) {
+          opacity: 1;
+          background: #3b82f6 !important;
+          transform: scale(1.2);
+        }
+      `}</style>
     </section>
   );
 }
