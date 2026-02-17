@@ -115,7 +115,7 @@ export default function StepHeader({
             </p>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2  gap-4">
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <Globe size={18} className="text-blue-600" />
