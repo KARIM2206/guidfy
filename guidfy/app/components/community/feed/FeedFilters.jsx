@@ -23,11 +23,11 @@ const FeedFilters = ({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center  gap-4">
         {/* Left: Search and Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 flex-1">
+        <div className="flex flex-col w-full sm:flex-row  gap-4 flex-1">
           {/* Search Bar */}
-          <div className="relative flex-1 max-w-md">
+          <div className="relative bg-amber-300 flex-1 max-w-full rounded-lg">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input
               type="search"
@@ -86,7 +86,7 @@ const FeedFilters = ({
                     }`}
                 >
                   <Icon size={14} />
-                  <span>{sort.label}</span>
+                  <span className="whitespace-nowrap hidden sm:inline">{sort.label}</span>
                 </motion.button>
               );
             })}
