@@ -1,4 +1,5 @@
-import ArticlesManager from '@/app/components/admin/dashboard/article/ArticlesManager'
+'use client'
+import ArticlesManager from '../../../components/admin/dashboard/article/ArticlesManager'
 import React from 'react'
 
 const page = () => {
