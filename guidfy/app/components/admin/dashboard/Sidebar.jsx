@@ -56,7 +56,13 @@ export default function Sidebar() {
   const [hoveredItem, setHoveredItem] = useState(null);
   const router = useRouter();
   const { openSidebar, setOpenSidebar } = useAdminContext();
+ const [mounted, setMounted] = useState(false);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
   const handleItemClick = (id) => {
     setActiveItem(id);
     router.push(`/admin/dashboard/${id}`);

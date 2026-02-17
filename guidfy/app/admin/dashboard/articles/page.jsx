@@ -1,13 +1,8 @@
 'use client'
+export const dynamic = "force-dynamic";
+
 import ArticlesManager from '../../../components/admin/dashboard/article/ArticlesManager'
-import React from 'react'
 
-const page = () => {
-  return (
-    <div>
-      <ArticlesManager />
-    </div>
-  )
+export default function Page() {
+  return <ArticlesManager />
 }
-
-export default page
