@@ -23,15 +23,22 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ToastContainer />
-        <div className="min-h-screen flex flex-col  bg-zinc-50 font-sans dark:bg-black">
+
+        <div className="min-h-screen flex flex-col bg-zinc-50 font-sans dark:bg-black">
+          
           <Header />
-          {children}
+
+          {/* 👇 ده أهم تعديل */}
+          <main className="flex-1 flex flex-col">
+            {children}
+          </main>
+
           <Footer />
+
         </div>
       </body>
     </html>
