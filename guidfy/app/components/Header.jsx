@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
 import { 
   Droplet, 
   Home, 
@@ -39,8 +40,8 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50 shadow-gray-300">
-      <div className="mx-auto max-w-full px-6 h-16 flex items-center justify-between">
+    <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-30 shadow-gray-300">
+      <div className="mx-auto max-w-full px-4 md:px-6  h-16 flex items-center justify-between">
         {/* Logo */}
        <Link href="/" className="flex items-center gap-2">
   <Navigation size={24} className="text-blue-600 hover:text-blue-500 transition-colors duration-200" />
@@ -49,25 +50,27 @@ const Navbar = () => {
 
 
         {/* Desktop Links */}
-        <div className="hidden md:flex items-center gap-7">
+        <div className="hidden md:flex items-center gap-3 lg:gap-5">
           {navLinks.map((link) => {
             const IconComponent = link.icon;
             return (
               <Link
                 key={link.name}
                 href={link.href}
-                className={`flex items-center relative py-4 gap-2 text-sm 
+                className={`flex items-center relative py-4 gap-1 text-sm 
                   ${currentPath === link.href.split('/')[1] ? 'text-primary' : 'text-gray-600'} 
                   hover:text-primary transition-colors duration-200 group
-                  after:content-[''] after:absolute after:bottom-0 after:block after:w-0 after:h-0.5 after:bg-primary after:transition-all after:duration-300
-                  ${currentPath === link.href.split('/')[1] ? 'after:w-full' : 'group-hover:after:w-full'}
+                  after:content-[''] after:absolute after:bottom-2 after:block
+                  
+                   after:w-0 after:h-0.5 after:bg-primary after:transition-all after:duration-300
+                  ${currentPath === link.href.split('/')[1] ? 'after:w-full' : 'hover:after:w-full'}
                 `}
               >
                 <IconComponent 
                   size={18} 
                   className={`hidden lg:inline-block mr-2 ${currentPath === link.href.split('/')[1] ? 'text-primary' : 'text-gray-500'} group-hover:text-primary transition-colors duration-200`} 
                 />
-                <span>{link.name}</span>
+                <span className=''>{link.name}</span>
               </Link>
             );
           })}
@@ -117,13 +120,15 @@ const Navbar = () => {
             onMouseLeave={() => setIsOpenUser(false)}
             className='md:hidden relative w-10 h-10 p-2 flex items-center justify-center rounded-full hover:bg-blue-200 cursor-pointer'>
             <User className="w-6 h-6 text-gray-600 group-hover:text-primary"/>
+           
             <AnimatePresence>
-              {isOpenUser && (
+              { isOpenUser && (
+                
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95, y: -10 }}
                   animate={{ opacity: 1, scale: 1, y: 0, transition: { staggerChildren: 0.05 } }}
                   exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                  className="absolute top-12 right-0 bg-white shadow-lg rounded-md overflow-hidden"
+                  className="absolute flex z-9999 top-12 right-0 bg-white shadow-lg rounded-md overflow-hidden"
                 >
                   <motion.div variants={dropdownItemVariants} className="flex flex-col">
                     <Link href="/login" className='px-4 py-2 hover:bg-blue-100 flex items-center gap-2 text-gray-700'>
