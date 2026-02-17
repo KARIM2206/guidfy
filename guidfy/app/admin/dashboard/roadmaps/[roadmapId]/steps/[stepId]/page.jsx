@@ -304,7 +304,7 @@ export default function StepPage() {
         {/* Lessons List */}
         {module.isExpanded && (
           <>
-            <div className="mb-8">
+            <div className="mb-8 ">
               <LessonsList
                 lessons={lessons}
                 onReorder={handleReorderLessons}
