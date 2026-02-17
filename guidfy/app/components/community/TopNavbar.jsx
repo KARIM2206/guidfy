@@ -7,30 +7,33 @@ import {
   User,
   Menu,
   X,
-  Sparkles
+  Sparkles,
+  Navigation
 } from 'lucide-react';
+import { useCommunity } from '@/app/CONTEXT/CommuntiyProvider';
 
 export default function TopNavbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { openSidebar, setOpenSidebar } = useCommunity();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   return (
-    <nav className="sticky top-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-      <div className="container mx-auto px-4">
+    <nav className="sticky top-0 z-20  mx-auto bg-white dark:bg-gray-800 border-b
+     border-gray-200 dark:border-gray-700">
+      <div className="w-full bg-white dark:bg-gray-800 mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
             <button
               className="lg:hidden mr-4 text-gray-500 dark:text-gray-400"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              onClick={() => setOpenSidebar(!openSidebar)}
               aria-label="Toggle menu"
             >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              {openSidebar ? <X size={24} /> : <Menu size={24} />}
             </button>
             <div className="flex items-center space-x-2">
-              <Sparkles className="h-6 w-6 text-blue-500" />
-              <span className="text-xl font-bold text-gray-900 dark:text-white">
-                DevHub
+              <Navigation className="h-6 w-6 text-blue-500" />
+              <span className="hidden md:block text-xl font-bold text-gray-900 dark:text-white">
+                Guidfy 
               </span>
             </div>
           </div>

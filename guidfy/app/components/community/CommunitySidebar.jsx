@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Home,
   Hash,
@@ -18,6 +18,9 @@ import {
   PlusCircle,
   Globe
 } from 'lucide-react';
+
+import { useCommunity } from '@/app/CONTEXT/CommuntiyProvider';
+import { useEffect } from 'react';
 
 const communities = [
   { id: 1, name: 'All Communities', icon: Home, path: '/community/feed', count: null },
@@ -46,11 +49,22 @@ const popularTags = [
 export default function CommunitySidebar() {
   const router = useRouter();
   const [activeCommunity, setActiveCommunity] = useState(1);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const { openSidebar, setOpenSidebar } = useCommunity();
 
   const handleCommunityClick = (community) => {
     setActiveCommunity(community.id);
     router.push(community.path);
   };
+useEffect(() => {
+  const handleScroll = () => {
+    setIsScrolling(true);
+  };
+
+  window.addEventListener("scroll", handleScroll);
+
+  return () => window.removeEventListener("scroll", handleScroll);
+}, []);
 
   const handleTagClick = (tagName) => {
     router.push(`/community/search?q=${encodeURIComponent(tagName)}&type=tag`);
@@ -63,7 +77,212 @@ export default function CommunitySidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto hidden lg:block">
+    <>
+  {/* Mobile Sidebar */}
+  <AnimatePresence>
+    {openSidebar && (
+      <>
+        {/* Backdrop */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.5 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 bg-black opacity-50  z-40 lg:hidden"
+          onClick={() => setOpenSidebar(false)}
+        />
+
+        {/* Sidebar */}
+        <motion.aside
+          initial={{ x: -300 }}
+          animate={{ x: 0 }}
+          exit={{ x: -300 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 25 }}
+          className="fixed left-0 top-16 h-full w-64 bg-white dark:bg-gray-800 z-50 overflow-y-auto lg:hidden"
+        >
+         <div className="p-6">
+        {/* Communities Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Communities
+            </h3>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {communities.length - 1} total
+            </span>
+          </div>
+          <ul className="space-y-1">
+            {communities.map((community) => {
+              const Icon = community.icon;
+              const isActive = activeCommunity === community.id;
+
+              return (
+                <motion.li
+                  key={community.id}
+                  whileHover={{ x: 4 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <button
+                    onClick={() => handleCommunityClick(community)}
+                    className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${isActive
+                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    aria-label={`Navigate to ${community.name}`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Icon size={18} />
+                      <span className="text-sm font-medium">{community.name}</span>
+                    </div>
+                    {community.count && (
+                      <span className={`text-xs font-medium px-2 py-1 rounded ${isActive
+                          ? 'bg-blue-100 dark:bg-blue-800/40 text-blue-700 dark:text-blue-300'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                        }`}>
+                        {community.count}
+                      </span>
+                    )}
+                  </button>
+                </motion.li>
+              );
+            })}
+          </ul>
+        </div>
+
+        {/* Create Community Button */}
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={handleCreateCommunity}
+          className="w-full mb-8 flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg font-medium transition-all shadow-sm hover:shadow"
+          aria-label="Create new community"
+        >
+          <PlusCircle size={18} />
+          <span>Create Community</span>
+        </motion.button>
+
+        {/* Popular Tags */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Popular Tags
+            </h3>
+            <Star size={14} className="text-gray-400" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {popularTags.map((tag) => (
+              <motion.button
+                key={tag.id}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleTagClick(tag.name)}
+                className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors group"
+                aria-label={`Browse ${tag.name} tagged content`}
+              >
+                <span className="group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  #{tag.name}
+                </span>
+                <span className="ml-1.5 text-xs text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300">
+                  {tag.count}
+                </span>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick Links */}
+        <div>
+          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
+            Quick Links
+          </h3>
+          <div className="space-y-2">
+            {[
+              { icon: Users, label: 'Top Contributors', path: '/community/contributors' },
+              { icon: BookOpen, label: 'Documentation', path: '/docs' },
+              { icon: TrendingUp, label: 'Trending', path: '/community/trending' },
+              { icon: Star, label: 'Featured', path: '/community/featured' },
+            ].map((link, index) => (
+              <motion.button
+                key={index}
+                onClick={() => router.push(link.path)}
+                whileHover={{ x: 4 }}
+                className="flex items-center space-x-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300 rounded-lg transition-colors w-full text-left"
+                aria-label={`Navigate to ${link.label}`}
+              >
+                <link.icon size={16} />
+                <span className="text-sm">{link.label}</span>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
+        {/* Recently Viewed */}
+        <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
+            Recently Viewed
+          </h3>
+          <div className="space-y-2">
+            {[
+              { name: 'React Hooks Guide', type: 'post', time: '2h ago' },
+              { name: 'Node.js Performance', type: 'question', time: '5h ago' },
+            ].map((item, index) => (
+              <motion.button
+                key={index}
+                whileHover={{ x: 4 }}
+                className="flex items-center justify-between w-full px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300 rounded-lg transition-colors"
+              >
+                <div className="flex items-center space-x-2">
+                  <div className={`h-2 w-2 rounded-full ${item.type === 'post' ? 'bg-purple-500' : 'bg-blue-500'}`} />
+                  <span className="text-sm truncate max-w-[140px]">{item.name}</span>
+                </div>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{item.time}</span>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
+        {/* User Stats */}
+        <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600 dark:text-gray-400">Your Activity</span>
+            <span className="font-medium text-gray-900 dark:text-white">42</span>
+          </div>
+          <div className="flex items-center justify-between text-sm mt-2">
+            <span className="text-gray-600 dark:text-gray-400">Communities</span>
+            <span className="font-medium text-gray-900 dark:text-white">8</span>
+          </div>
+          <div className="flex items-center justify-between text-sm mt-2">
+            <span className="text-gray-600 dark:text-gray-400">Reputation</span>
+            <span className="font-medium text-green-600 dark:text-green-400">1,245</span>
+          </div>
+        </div>
+      </div>
+        </motion.aside>
+      </>
+    )}
+  </AnimatePresence>
+
+  {/* Desktop Sidebar */}
+
+<aside
+ className={`
+  hidden
+  lg:flex
+  lg:w-64
+  sticky
+ top-16
+  h-[calc(100vh-4rem)]
+  overflow-y-auto
+  bg-white
+  dark:bg-gray-800
+  border-r
+  border-gray-200
+  dark:border-gray-700
+  flex-col
+  transition-transform`}
+
+>
+
       <div className="p-6">
         {/* Communities Section */}
         <div className="mb-8">
@@ -222,5 +441,6 @@ export default function CommunitySidebar() {
         </div>
       </div>
     </aside>
+    </>
   );
 }
