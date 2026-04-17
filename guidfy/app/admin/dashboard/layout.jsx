@@ -2,13 +2,22 @@
 
 import Sidebar from "@/app/components/admin/dashboard/Sidebar";
 import { AdminProvider, useAdminContext } from "@/app/CONTEXT/AdminProvider";
+import { JobProvider } from "@/app/CONTEXT/JobsContext";
+import { LearningPathProvider } from "@/app/CONTEXT/LearningPathContext";
+import { ProjectProvider } from "@/app/CONTEXT/ProjectContext";
 import { Menu } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 const DashboardAdminPanelLayoutWrapper = ({ children }) => {
   return (
     <AdminProvider>
+      <LearningPathProvider>
+      <JobProvider>
+        <ProjectProvider>
       <DashboardAdminPanelLayout>{children}</DashboardAdminPanelLayout>
+      </ProjectProvider>
+      </JobProvider>
+      </LearningPathProvider>
     </AdminProvider>
   );
 };

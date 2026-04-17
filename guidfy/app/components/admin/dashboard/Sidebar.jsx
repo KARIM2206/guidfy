@@ -1,7 +1,7 @@
 // app/components/Sidebar.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import {
@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   GraduationCap,
+  Briefcase,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAdminContext } from "@/app/CONTEXT/AdminProvider";
@@ -37,15 +38,15 @@ const navigationItems = [
     active: false,
   },
   {
-    id: "courses",
-    label: "Courses",
-    icon: BookOpen,
+    id: "jobs",
+    label: "Jobs",
+    icon: Briefcase,
     active: false,
   },
   {
-    id: "users",
-    label: "Users",
-    icon: Users,
+    id: "project",
+    label: "Projects",
+    icon: BookOpen,
     active: false,
   },
 ];
@@ -57,10 +58,26 @@ export default function Sidebar() {
   const router = useRouter();
   const { openSidebar, setOpenSidebar } = useAdminContext();
  const [mounted, setMounted] = useState(false);
+ const sidebarRef = useRef();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+  useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (!sidebarRef.current) return;
+
+    if (!sidebarRef.current.contains(event.target)) {
+      setOpenSidebar(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
 
   if (!mounted) return null;
   const handleItemClick = (id) => {
@@ -70,11 +87,11 @@ export default function Sidebar() {
   };
 
   return (
-    <>
+    <div >
       {createPortal(
         <AnimatePresence>
           {openSidebar && (
-            <>
+            <div >
               {/* Backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}
@@ -82,9 +99,11 @@ export default function Sidebar() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
                 className="fixed inset-0 bg-black opacity-50  z-40 lg:hidden"
-                onClick={() => setOpenSidebar(false)}
+                // onClick={() => setOpenSidebar(false)}
               />
               <motion.aside
+                ref={sidebarRef}
+                  onMouseDown={(e) => e.stopPropagation()}
                 initial={{ x: -100, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.3, type: "tween", stiffness: 300 }}
@@ -304,12 +323,13 @@ text-white h-[calc(100vh-4rem)] shadow-2xl ${
                   </div>
                 </motion.div>
               </motion.aside>
-            </>
+            </div>
           )}
         </AnimatePresence>,
         document.body,
       )}
       <motion.aside
+        ref={sidebarRef}
         initial={{ x: -100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
@@ -517,6 +537,6 @@ text-white h-[calc(100vh-4rem)] shadow-2xl ${
           </div>
         </motion.div>
       </motion.aside>
-    </>
+    </div>
   );
 }
