@@ -1,12 +1,18 @@
 // components/feed/Feed.jsx - النسخة المحدثة
+'use client';
 import { motion, AnimatePresence } from 'framer-motion';
 import QuestionCard from './QuestionCard';
 import PostCard from './PostCard';
 import ProjectCard from './ProjectCard';
+import { useState } from 'react';
+import CreateModal from './CreateModal';
+import { useCommunity } from '@/app/CONTEXT/CommuntiyProvider';
 
-const Feed = ({ items = [], onLoadMore, hasMore = false }) => {
+const Feed = ({ items = [], onLoadMore, hasMore = false , isLoadingMore = false, communityId}) => {
+  const{isCode}=useCommunity()
   if (items.length === 0) return null;
 
+const[isModalOpen, setIsModalOpen] = useState(false);
   const renderItem = (item) => {
     switch (item.type) {
       case 'question':
@@ -17,13 +23,16 @@ const Feed = ({ items = [], onLoadMore, hasMore = false }) => {
             title={item.title}
             excerpt={item.excerpt}
             tags={item.tags}
-            author={item.author}
+            author={item.author || item.author.name}
             votes={item.votes}
             answers={item.answers}
             views={item.views}
             isAnswered={item.isAnswered}
             createdAt={item.createdAt}
             community={item.community}
+            isCode={isCode}
+            body={item.body}
+            authorAvatar={item.authorAvatar}
           />
         );
       case 'post':
@@ -35,7 +44,7 @@ const Feed = ({ items = [], onLoadMore, hasMore = false }) => {
             excerpt={item.excerpt}
             image={item.image}
             tags={item.tags}
-            author={item.author}
+            author={item.author || item.author.name}
             likes={item.likes}
             comments={item.comments}
             bookmarks={item.bookmarks}
@@ -44,6 +53,7 @@ const Feed = ({ items = [], onLoadMore, hasMore = false }) => {
             isTrending={item.isTrending}
             createdAt={item.createdAt}
             community={item.community}
+            authorAvatar={item.authorAvatar}
           />
         );
       case 'project':
@@ -72,6 +82,16 @@ const Feed = ({ items = [], onLoadMore, hasMore = false }) => {
 
   return (
     <div className="space-y-6">
+           <div className="flex justify-end">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsModalOpen(true)}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+        >
+          Create
+        </motion.button>
+      </div>
       <AnimatePresence>
         {items.map((item, index) => (
           <motion.div
@@ -98,6 +118,7 @@ const Feed = ({ items = [], onLoadMore, hasMore = false }) => {
           </motion.button>
         </div>
       )}
+      <CreateModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} communityId={communityId} />
     </div>
   );
 };

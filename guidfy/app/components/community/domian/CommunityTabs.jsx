@@ -34,20 +34,8 @@ const tabs = [
       count: '9.3k',
       color: 'from-purple-500 to-pink-500'
     },
-    {
-      id: 'projects',
-      label: 'Projects',
-      icon: Code2,
-      count: '3.4k',
-      color: 'from-green-500 to-emerald-500'
-    },
-    {
-      id: 'resources',
-      label: 'Resources',
-      icon: BookOpen,
-      count: '1.2k',
-      color: 'from-orange-500 to-amber-500'
-    },
+   
+   
     {
       id: 'members',
       label: 'Members',

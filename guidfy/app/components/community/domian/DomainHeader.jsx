@@ -8,6 +8,7 @@ const DomainHeader = ({
   icon = '💻',
   color = 'blue',
   isMember = false,
+  members,
   onJoin
 }) => {
   const colorClasses = {
@@ -78,7 +79,7 @@ const DomainHeader = ({
 
           <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
             <Users size={16} />
-            <span>45k+ members</span>
+            <span>{members} members</span>
           </div>
 
           <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">

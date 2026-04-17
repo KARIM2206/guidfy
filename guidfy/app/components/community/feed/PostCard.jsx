@@ -1,4 +1,6 @@
 'use client';
+import { useAuth } from '@/app/CONTEXT/AuthProvider';
+import { timeAgo } from '@/lib/timeAgo';
 import { motion } from 'framer-motion';
 import {
   Heart,
@@ -10,7 +12,8 @@ import {
   User,
   TrendingUp,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { useParams, useRouter } from 'next/navigation';
 
 const PostCard = ({
   id,
@@ -25,9 +28,18 @@ const PostCard = ({
   views = 0,
   readTime = '5 min',
   isTrending = false,
+  authorAvatar,
+  authorId,
+  isAuthor = false,
   createdAt = '1 day ago',
   community = 'Frontend',
 }) => {
+ 
+  
+  console.log(authorAvatar);
+  const {domain}= useParams()
+  const {user}=useAuth()
+  const userId = user?.id;
   const router = useRouter();
   return (
     <motion.article
@@ -54,7 +66,7 @@ const PostCard = ({
           </span>
           <span className="flex items-center gap-1">
             <Clock size={12} />
-            {createdAt}
+            {createdAt?.indexOf('T') !== -1 ? timeAgo(createdAt): createdAt}
           </span>
           <span>• {readTime} read</span>
         </div>
@@ -62,7 +74,7 @@ const PostCard = ({
         {/* Title */}
         <h3 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white line-clamp-2">
           <a
-            href={`/post/${id}`}
+            href={`${domain?domain:community}/post/${id}`}
             className="hover:text-purple-500 dark:hover:text-purple-400 transition-colors"
           >
             {title}
@@ -90,19 +102,30 @@ const PostCard = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mt-2">
           {/* Author */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="h-8 w-8 sm:h-10 sm:w-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center cursor-pointer">
-              <User
+            <div className="h-8 w-8 relative  sm:h-10 sm:w-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center cursor-pointer">
+             {authorAvatar?
+             <Image
+                src={`http://localhost:8000${authorAvatar}`}
+                alt={typeof author === 'string' ? author : author.name}
+
+                  fill
+                  unoptimized
+                className="h-full w-full absolute rounded-full object-cover"
+                onClick={() => {userId === authorId ? router.push('/profile') : router.push(`/profile/${author}`)}}
+              />
+             : <User
                 size={14}
                 className="text-white"
                 onClick={() => router.push(`/profile/${author}`)}
-              />
+              />}
             </div>
             <div>
               <span
-                onClick={() => router.push(`/profile/${author}`)}
+        onClick={() => {userId === authorId ? router.push('/profile') : router.push(`/profile/${author}`)}}
+
                 className="text-sm sm:text-base font-medium cursor-pointer hover:text-purple-500 text-gray-900 dark:text-white block truncate"
               >
-                {author}
+                {typeof author === 'string' ? author : author.name}
               </span>
               <span className="text-xs text-gray-500 dark:text-gray-400 block truncate">
                 Software Engineer
@@ -129,7 +152,7 @@ const PostCard = ({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+        {   !isAuthor && <div className="flex items-center gap-2">
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -154,7 +177,7 @@ const PostCard = ({
               >
                 <Share2 size={16} />
               </motion.button>
-            </div>
+            </div>}
           </div>
         </div>
       </div>
