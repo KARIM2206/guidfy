@@ -1,4 +1,5 @@
 // components/profile/SidebarUserInfo.jsx
+import { timeAgo } from '@/lib/timeAgo';
 import { motion } from 'framer-motion';
 import { MapPin, Calendar, Globe, Mail } from 'lucide-react';
 
@@ -17,7 +18,7 @@ const SidebarUserInfo = ({ user }) => {
               <div 
                 className="h-full w-full rounded-full bg-gray-200 dark:bg-gray-700"
                 style={{
-                  backgroundImage: `url(${user.avatar})`,
+                  backgroundImage: `url(http://localhost:8000${user.avatar})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center'
                 }}
@@ -33,17 +34,7 @@ const SidebarUserInfo = ({ user }) => {
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">{user.name}</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{user.title}</p>
         
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 mt-4 w-full">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.stats.followers}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Followers</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.stats.following}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Following</div>
-          </div>
-        </div>
+   
 
         {/* Details */}
         <div className="space-y-2 mt-6 w-full">
@@ -53,20 +44,20 @@ const SidebarUserInfo = ({ user }) => {
               <span>{user.location}</span>
             </div>
           )}
-          
-          {user.joinDate && (
+
+          {user.createdAt && (
             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <Calendar size={14} />
-              <span>Joined {user.joinDate}</span>
+              <span>Joined {timeAgo(user.createdAt)}</span>
             </div>
           )}
           
-          {user.website && (
+          {/* {user.website && (
             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <Globe size={14} />
               <span className="truncate">{user.website.replace('https://', '')}</span>
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </motion.div>

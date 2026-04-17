@@ -1,137 +1,187 @@
-// components/profile/UserPosts.jsx
 import { motion } from 'framer-motion';
 import { Eye, Heart, MessageSquare, Bookmark, Clock, TrendingUp } from 'lucide-react';
+import PostCard from '../community/feed/PostCard';
 
-const UserPosts = ({ username }) => {
-  const posts = [
-    {
-      id: 1,
-      title: 'Building Scalable React Applications with TypeScript',
-      excerpt: 'A comprehensive guide to architecting large-scale React applications with TypeScript, including patterns for state management...',
-      likes: 245,
-      comments: 42,
-      views: 8900,
-      bookmarks: 124,
-      readTime: '8 min',
-      published: '2 days ago',
-      trending: true
-    },
-    {
-      id: 2,
-      title: 'The Future of State Management in React 18',
-      excerpt: 'Exploring the latest state management patterns and how React 18 features are changing the landscape...',
-      likes: 189,
-      comments: 28,
-      views: 6700,
-      bookmarks: 89,
-      readTime: '6 min',
-      published: '1 week ago',
-      trending: false
-    },
-    {
-      id: 3,
-      title: 'Advanced TypeScript Patterns for React Developers',
-      excerpt: 'Deep dive into advanced TypeScript patterns including conditional types, mapped types, and type guards...',
-      likes: 156,
-      comments: 19,
-      views: 4500,
-      bookmarks: 67,
-      readTime: '12 min',
-      published: '2 weeks ago',
-      trending: true
-    }
-  ];
+// Helper: format date from ISO string to readable format (e.g., "Mar 12, 2026")
+const formatDate = (isoString) => {
+  if (!isoString) return '';
+  return new Date(isoString).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
+// Helper: estimate read time from body text (approx. 200 words per minute)
+const estimateReadTime = (body) => {
+  if (!body) return '1 min';
+  const words = body.trim().split(/\s+/).length;
+  const minutes = Math.max(1, Math.ceil(words / 200));
+  return `${minutes} min`;
+};
+
+// Helper: generate excerpt from body (first 120 chars)
+const getExcerpt = (body, maxLength = 120) => {
+  if (!body) return '';
+  if (body.length <= maxLength) return body;
+  return body.slice(0, maxLength).trim() + '…';
+};
+
+// ───────────────────────────────
+// Skeleton Card Component
+// ───────────────────────────────
+const PostSkeleton = () => {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+    >
+      <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+        {/* Stats skeleton */}
+        <div className="lg:w-24 flex lg:flex-col items-center justify-between lg:justify-start">
+          <div className="flex lg:flex-col items-center gap-3 lg:gap-2">
+            {[...Array(4)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded"
+                animate={{
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Content skeleton */}
+        <div className="flex-1 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <motion.div
+                className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-full"
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+              <motion.div
+                className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded"
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+            </div>
+            <motion.div
+              className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
+          </div>
+          <motion.div
+            className="h-7 w-3/4 bg-gray-200 dark:bg-gray-700 rounded"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          />
+          <div className="space-y-2">
+            <motion.div
+              className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
+            <motion.div
+              className="h-4 w-5/6 bg-gray-200 dark:bg-gray-700 rounded"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
+          </div>
+          <div className="flex justify-between items-center border-t pt-4">
+            <div className="flex gap-4">
+              <motion.div
+                className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded"
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+              <motion.div
+                className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded"
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+            </div>
+            <motion.div
+              className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// ───────────────────────────────
+// Main Component
+// ───────────────────────────────
+const UserPosts = ({ posts = [], loading }) => {
+  // Loading state
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <PostSkeleton key={i} />
+        ))}
+      </div>
+    );
+  }
+
+  // Empty state
+  if (!posts.length) {
+    return (
+      <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+        No posts yet
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {posts.map((post, index) => (
-        <motion.article
+      {posts.map((post, index) => {
+        // Prepare display values
+        const publishedDate = formatDate(post.createdAt);
+        const readTime = post.readTime ? `${post.readTime} min` : estimateReadTime(post.body);
+        const excerpt = getExcerpt(post.body);
+        const likes = post.likes ?? 0;
+        const views = post.views ?? 0;
+        const bookmarks = post.bookmarks ?? 0;
+        // Comments field is not present in the API response; default to 0
+        const comments = 0;
+
+        return (
+       <PostCard
           key={post.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
-          whileHover={{ y: -2 }}
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
-        >
-          <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-            {/* Stats */}
-            <div className="lg:w-24 flex lg:flex-col items-center justify-between lg:justify-start">
-              <div className="flex lg:flex-col items-center lg:space-y-2">
-                <div className="flex items-center space-x-2 lg:space-x-0 lg:flex-col">
-                  <div className="flex items-center space-x-1 text-gray-600 dark:text-gray-400">
-                    <Heart size={16} />
-                    <span className="font-medium">{post.likes}</span>
-                  </div>
-                  <div className="flex items-center space-x-1 text-gray-600 dark:text-gray-400">
-                    <MessageSquare size={16} />
-                    <span className="font-medium">{post.comments}</span>
-                  </div>
-                </div>
-                
-                <div className="lg:mt-4 flex items-center space-x-3 lg:space-x-0 lg:flex-col lg:space-y-2">
-                  <div className="flex items-center space-x-1 text-gray-600 dark:text-gray-400">
-                    <Eye size={16} />
-                    <span className="font-medium">{post.views.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center space-x-1 text-gray-600 dark:text-gray-400">
-                    <Bookmark size={16} />
-                    <span className="font-medium">{post.bookmarks}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  {post.trending && (
-                    <span className="px-2 py-1 bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 text-orange-700 dark:text-orange-400 text-xs font-medium rounded-full flex items-center gap-1">
-                      <TrendingUp size={10} />
-                      Trending
-                    </span>
-                  )}
-                  <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                    <Clock size={10} />
-                    {post.published}
-                  </span>
-                </div>
-                
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {post.readTime} read
-                </span>
-              </div>
-
-              {/* Title */}
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                {post.title}
-              </h3>
-
-              {/* Excerpt */}
-              <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-                {post.excerpt}
-              </p>
-
-              {/* Actions */}
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-4">
-                  <button className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
-                    Read More
-                  </button>
-                  <button className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300 font-medium">
-                    Edit
-                  </button>
-                </div>
-                
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {Math.round(post.views / 1000)}k views
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.article>
-      ))}
+          id={post.id}
+          title={post.title}
+          excerpt={excerpt}
+          image={post.image}
+          tags={post.tags}
+          author={post.author?.name}
+          authorAvatar={post.author?.avatar}
+          authorId={post.author?.id}
+          likes={likes}
+          comments={comments}
+          bookmarks={bookmarks}
+          views={views}
+          readTime={readTime}
+          isTrending={likes > 100}
+          createdAt={publishedDate}
+          community={post.community}
+         isAuthor={true}
+        />
+        );
+      })}
     </div>
   );
 };

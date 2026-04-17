@@ -24,19 +24,12 @@ const ProfileTabs = ({ activeTab, onTabChange, counts = {} }) => {
       icon: CheckCircle,
       count: counts.answers || 0,
       color: 'from-green-500 to-emerald-500'
-    },
-    {
-      id: 'projects',
-      label: 'Projects',
-      icon: Code2,
-      count: counts.projects || 0,
-      color: 'from-orange-500 to-amber-500'
     }
   ];
 
   return (
     <div className="relative">
-      <div className="flex space-x-1 overflow-x-auto pb-2">
+      <div className="flex space-x-1 overflow-x-auto scrollbar-animated pb-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -66,7 +59,7 @@ const ProfileTabs = ({ activeTab, onTabChange, counts = {} }) => {
       </div>
 
       {/* Active Indicator */}
-      <motion.div
+      {/* <motion.div
         className="absolute bottom-0 h-1 rounded-full"
         initial={false}
         animate={{
@@ -85,6 +78,7 @@ const ProfileTabs = ({ activeTab, onTabChange, counts = {} }) => {
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       />
+       */}
     </div>
   );
 };

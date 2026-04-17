@@ -93,46 +93,7 @@ const ProfileStats = ({ stats = {} }) => {
       </div>
       
       {/* Streak Stats */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="mt-6 p-4 bg-gradient-to-r from-gray-900 to-black rounded-xl shadow-lg"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Zap size={20} className="text-yellow-400" />
-            <div>
-              <div className="text-lg font-bold text-white">42 day streak</div>
-              <div className="text-sm text-gray-300">Active for 6 weeks straight</div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-white">98%</div>
-              <div className="text-xs text-gray-300">Consistency</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-white">#124</div>
-              <div className="text-xs text-gray-300">Rank</div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Streak Visualization */}
-        <div className="flex items-center gap-1 mt-4">
-          {[...Array(30)].map((_, i) => (
-            <div
-              key={i}
-              className={`flex-1 h-2 rounded-full ${i < 28
-                ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
-                : 'bg-gray-700'
-              }`}
-            />
-          ))}
-        </div>
-      </motion.div>
+     
     </motion.div>
   );
 };

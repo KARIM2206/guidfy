@@ -34,17 +34,17 @@ const SidebarTracks = ({ tracks = [] }) => {
           <div key={track.id} className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-gray-900 dark:text-white">
-                {track.name}
+                {track.title}
               </span>
               <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
-                {track.progress}%
+                {track.progress.progressPercentage}%
               </span>
             </div>
             
             <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
-                animate={{ width: `${track.progress}%` }}
+                animate={{ width: `${track.progress.progressPercentage}%` }}
                 transition={{ duration: 1, delay: 0.2 }}
                 className={`h-full bg-gradient-to-r ${getColorClass(track.color)}`}
               />
