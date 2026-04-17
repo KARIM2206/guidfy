@@ -10,6 +10,11 @@ import { useState, useEffect } from "react";
 import HeaderSection from "@/app/components/learning-path/HeaderSection";
 import { TabsProvider } from "@/app/CONTEXT/LearningProvider";
 import PageContent from "./PageContent";
+import { RoadmapProvider } from "@/app/CONTEXT/RoadmapProvider";
+import { StepProvider } from "@/app/CONTEXT/StepProvider";
+import { LessonProvider } from "@/app/CONTEXT/LessonProvider";
+import { JobProvider } from "@/app/CONTEXT/JobsContext";
+import { ProjectProvider } from "@/app/CONTEXT/ProjectContext";
 
 const Layout = ({ params, children }) => {
   const resolvedParams = use(params);
@@ -26,6 +31,13 @@ const Layout = ({ params, children }) => {
     { name: "Projects", href: "/projects", icon: Folder, color: "#8B5CF6" },
   ];
   return (
+    <RoadmapProvider>
+      <JobProvider>
+        <ProjectProvider>
+      <StepProvider>
+        <LessonProvider>
+
+
     <TabsProvider>
       <PageContent
         title={title}
@@ -34,6 +46,11 @@ const Layout = ({ params, children }) => {
         {children}
       </PageContent>
     </TabsProvider>
+</LessonProvider>
+      </StepProvider>
+      </ProjectProvider>
+      </JobProvider>
+    </RoadmapProvider>
   );
 };
 

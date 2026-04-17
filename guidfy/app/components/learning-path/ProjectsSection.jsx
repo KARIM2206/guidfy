@@ -1,9 +1,22 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import ProjectCard from './ProjectCard';
+import { useProject } from '@/app/hooks/useProject';
+import { useParams } from 'next/navigation';
 
 const ProjectsSection = () => {
+  const {title}=useParams()
+  const{allProjects,
+    fetchAllProjects}=useProject()
+    useEffect(()=>{
+const fetch=async()=>{
+  await fetchAllProjects(title);
+}
+fetch()
+    },[])
+    console.log('projects',allProjects);
+    
   const projects = [
     {
       title: "Portfolio Website",
@@ -11,7 +24,7 @@ const ProjectsSection = () => {
       image: "/thumb-8.png",
       technologies: ["Next.js", "Tailwind", "React"],
       githubUrl: "https://github.com/username/portfolio",
-      demoUrl: "https://portfolio.example.com",
+     
       likes: 120,
       isFeatured: true,
     },
@@ -41,7 +54,7 @@ const ProjectsSection = () => {
         Projects
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-        {projects.map((project, index) => (
+        {allProjects.map((project, index) => (
           <ProjectCard key={index} project={project} />
         ))}
       </div>

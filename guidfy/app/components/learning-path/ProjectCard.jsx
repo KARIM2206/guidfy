@@ -33,16 +33,25 @@ const ProjectCard = ({ project }) => {
       className="group relative bg-white border border-gray-200 rounded-2xl 
                  overflow-hidden hover:shadow-2xl transition-all duration-300"
     >
+     
       {/* Project Image */}
       {project.image && (
-        <div className="relative w-full h-48 md:h-56 lg:h-64">
-          <Image
-            src={project.image}
-            alt={project.title}
-            fill
-            className="object-cover rounded-t-2xl"
-          />
-        </div>
+     <div className="relative w-full h-48 md:h-56 lg:h-64">
+      );
+      
+<Image
+  src={
+    project.image
+      ? `http://localhost:8000/${project.image.startsWith('/') ? project.image.slice(1) : project.image}`
+      : "/images/placeholder.png"
+  }
+  alt={project.title}
+  fill
+  className="object-cover rounded-t-2xl"
+  unoptimized
+/>
+
+</div>
       )}
 
       {/* Content */}

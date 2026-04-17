@@ -1,10 +1,20 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import JobCard from './JobCard';
+import { useJobs } from '@/app/hooks/useJobs';
+import { useParams } from 'next/navigation';
 
 const JobsSection = () => {
+  const {title}=useParams()
+  const{allJobs,fetchAllJobsTostudentByLearningPathTitle}=useJobs()
+  const fetch= async () => {
+    await fetchAllJobsTostudentByLearningPathTitle(title);
+  }
+useEffect(() => {
+  fetch()
+}, [])
   const jobs = [
     {
       title: "Frontend Developer",
@@ -49,11 +59,12 @@ const JobsSection = () => {
       description: "Design user interfaces and experiences for web apps",
     },
   ];
+console.log(allJobs);
 
   return (
     <div className='my-12 flex flex-col gap-6 w-full'>
       <div className='flex flex-col gap-6 md:grid md:grid-cols-2 lg:grid-cols-3'>
-        {jobs.map((job, index) => (
+        {allJobs.map((job, index) => (
           <JobCard key={index} job={job} />
         ))}
       </div>

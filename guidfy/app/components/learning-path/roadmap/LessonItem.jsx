@@ -1,159 +1,179 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
-import { BookOpen, Clock, CheckCircle, Circle, PlayCircle } from "lucide-react";
+import { motion } from 'framer-motion';
+import { Edit, Trash2, Video, FileText, HelpCircle, Eye } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import Button from '@/app/components/ui/Button';
+import LessonPreviewModal from './LessonPreviewModal';
+import QuizBuilder from './QuizBuilder';          // <-- import QuizBuilder
+import { useState } from 'react';
+import { useAuth } from '@/app/CONTEXT/AuthProvider';
 
+const typeConfig = {
+  VIDEO: {
+    icon: <Video size={16} />,
+    color: 'bg-blue-100 text-blue-600',
+    lightBg: 'bg-blue-50',
+  },
+  ARTICLE: {
+    icon: <FileText size={16} />,
+    color: 'bg-green-100 text-green-600',
+    lightBg: 'bg-green-50',
+  },
+  QUIZ: {
+    icon: <HelpCircle size={16} />,
+    color: 'bg-purple-100 text-purple-600',
+    lightBg: 'bg-purple-50',
+  },
+};
 
+const LessonItem = ({ lesson, onEdit, onDelete }) => {
+  const router = useRouter();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
 
-const LessonItem = ({ 
-  title, 
-  duration, 
-  status = 'upcoming',
-  index = 0,
-  onClick 
-}) => {
-  const getStatusConfig = () => {
-    switch (status) {
-      case 'completed':
-        return {
-          icon: CheckCircle,
-          iconColor: 'text-green-500',
-          bgColor: 'bg-green-50',
-          borderColor: 'border-green-200',
-          textColor: 'text-gray-900',
-          durationColor: 'text-green-600',
-          buttonText: 'Review',
-          buttonColor: 'bg-green-500 hover:bg-green-600',
-        };
-      case 'in-progress':
-        return {
-          icon: PlayCircle,
-          iconColor: 'text-blue-500',
-          bgColor: 'bg-blue-50',
-          borderColor: 'border-blue-200',
-          textColor: 'text-gray-900',
-          durationColor: 'text-blue-600',
-          buttonText: 'Continue',
-          buttonColor: 'bg-blue-500 hover:bg-blue-600',
-        };
-      case 'locked':
-        return {
-          icon: Circle,
-          iconColor: 'text-gray-400',
-          bgColor: 'bg-gray-50',
-          borderColor: 'border-gray-200',
-          textColor: 'text-gray-500',
-          durationColor: 'text-gray-500',
-          buttonText: 'Locked',
-          buttonColor: 'bg-gray-300 cursor-not-allowed',
-        };
-      default: // upcoming
-        return {
-          icon: BookOpen,
-          iconColor: 'text-gray-400',
-          bgColor: 'bg-white',
-          borderColor: 'border-gray-200',
-          textColor: 'text-gray-700',
-          durationColor: 'text-gray-500',
-          buttonText: 'Start Reading',
-          buttonColor: 'bg-gray-100 hover:bg-gray-200 text-gray-700',
-        };
-    }
+  const typeData = typeConfig[lesson.type] || {};
+  const [openPreviewModal, setOpenPreviewModal] = useState(false);
+  const [openQuizBuilder, setOpenQuizBuilder] = useState(false);   // <-- new state
+
+  const truncateTitle = (title) => {
+    if (!title) return '';
+    return title.length > 30 ? title.slice(0, 30) + '…' : title;
   };
 
-  const config = getStatusConfig();
-  const Icon = config.icon;
+  const formatDate = (date) => {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const handleClosePreviewModal = () => {
+    setOpenPreviewModal(false);
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-      whileHover={{ 
-        scale: status !== 'locked' ? 1.02 : 1,
-        boxShadow: status !== 'locked' ? '0 10px 25px -5px rgba(0, 0, 0, 0.1)' : 'none'
-      }}
-      className={`
-        flex items-center justify-between 
-        p-4 rounded-xl border 
-        ${config.borderColor} ${config.bgColor}
-        transition-all duration-200
-        ${status !== 'locked' ? 'cursor-pointer' : 'cursor-not-allowed'}
-      `}
-      onClick={status !== 'locked' ? onClick : undefined}
-    >
-      {/* Left Content */}
-      <div className="flex items-center gap-4 flex-1 min-w-0">
-        {/* Lesson Indicator */}
-        <div className="flex items-center justify-center relative">
-          {/* Background Number */}
-          <div className="absolute text-4xl font-bold text-gray-100 -z-10">
-            {index + 1}
-          </div>
-          
-          {/* Icon */}
-          <motion.div
-            whileHover={status !== 'locked' ? { scale: 1.1 } : {}}
-            className={`p-2 rounded-lg ${config.bgColor} border ${config.borderColor}`}
-          >
-            <Icon className={config.iconColor} size={22} />
-          </motion.div>
-        </div>
-
-        {/* Lesson Info */}
-        <div className="flex-1 min-w-0">
-          <h3 className={`font-medium truncate ${config.textColor}`}>
-            {title}
-          </h3>
-          <div className="flex items-center gap-3 mt-1">
-            <span className={`text-sm font-medium flex items-center gap-1 ${config.durationColor}`}>
-              <Clock size={14} />
-              {duration}
-            </span>
-            
-            {status === 'completed' && (
-              <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
-                Completed
-              </span>
-            )}
-            {status === 'in-progress' && (
-              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-                In Progress
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Action Button */}
-      <motion.button
-        whileHover={status !== 'locked' ? { scale: 1.05 } : {}}
-        whileTap={status !== 'locked' ? { scale: 0.95 } : {}}
-        className={`
-          px-4 py-2 rounded-lg font-medium text-sm
-          transition-all duration-200
-          flex items-center gap-2
-          ${config.buttonColor}
-          ${status === 'locked' ? 'cursor-not-allowed' : ''}
-        `}
-        disabled={status === 'locked'}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (onClick && status !== 'locked') onClick();
-        }}
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        whileHover={{ y: -2 }}
+        transition={{ type: 'spring', stiffness: 300 }}
+        className={`group relative bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-200 ${typeData.lightBg ? `hover:${typeData.lightBg}` : ''}`}
       >
-        {config.buttonText}
-        {status === 'upcoming' && (
-          <BookOpen size={16} />
-        )}
-        {status === 'completed' && (
-          <CheckCircle size={16} />
-        )}
-        {status === 'in-progress' && (
-          <PlayCircle size={16} />
-        )}
-      </motion.button>
-    </motion.div>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+          {/* Left side: icon + content */}
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className={`flex-shrink-0 w-8 h-8 rounded-lg ${typeData.color} flex items-center justify-center`}>
+              {typeData.icon}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="relative group/title w-fit max-w-full">
+                <h6 className="font-semibold text-gray-800 text-sm sm:text-base truncate max-w-[200px] sm:max-w-[300px]">
+                  {truncateTitle(lesson.title)}
+                </h6>
+                {lesson.title?.length > 30 && (
+                  <div className="absolute left-0 top-full mt-1 hidden group-hover/title:block bg-gray-900 text-white text-xs px-3 py-2 rounded-md shadow-lg z-50 whitespace-normal max-w-xs">
+                    {lesson.title}
+                  </div>
+                )}
+              </div>
+
+              {lesson.description && (
+                <p className="text-gray-500 text-xs sm:text-sm mt-1 line-clamp-2 sm:line-clamp-1">
+                  {lesson.description}
+                </p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <span className="text-xs text-gray-400">
+                  {formatDate(lesson.createdAt)}
+                </span>
+                <span className={`sm:hidden text-xs px-2 py-0.5 rounded-full ${typeData.color}`}>
+                  {lesson.type}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right side: type badge (desktop) + actions */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-2">
+            <span className={`hidden sm:inline-block text-xs px-3 py-1 rounded-full ${typeData.color}`}>
+              {lesson.type}
+            </span>
+
+            <div className="flex items-center gap-1 self-end sm:self-auto">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setOpenPreviewModal(true)}
+                className="gap-1 !px-2 !py-1 text-xs"
+                leftIcon={<Eye size={14} />}
+              >
+                View
+              </Button>
+
+              {isAdmin && (
+                <>
+                  {/* Only show Quiz Builder button for QUIZ lessons */}
+                  {lesson.type === 'QUIZ' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setOpenQuizBuilder(true)}
+                      className="gap-1 !px-2 !py-1 text-xs text-purple-600 hover:bg-purple-50"
+                      leftIcon={<HelpCircle size={14} />}
+                    >
+                      Quiz
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEdit(lesson)}
+                    className="gap-1 !px-2 !py-1 text-xs text-blue-600 hover:bg-blue-50"
+                    leftIcon={<Edit size={14} />}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDelete(lesson.id)}
+                    className="gap-1 !px-2 !py-1 text-xs text-red-600 hover:bg-red-50"
+                    leftIcon={<Trash2 size={14} />}
+                  >
+                    Delete
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Modals */}
+      <LessonPreviewModal
+        isOpen={openPreviewModal}
+        onClose={handleClosePreviewModal}
+        lesson={lesson}
+        isAdmin={isAdmin}                       // <-- pass admin flag
+        onOpenQuizBuilder={() => setOpenQuizBuilder(true)}  // <-- callback to open QuizBuilder from preview
+      />
+
+      {isAdmin && lesson.type === 'QUIZ' && (
+        <QuizBuilder
+          isOpen={openQuizBuilder}
+          onClose={() => setOpenQuizBuilder(false)}
+          lessonId={lesson.id}
+          // quizId prop is optional; QuizBuilder will fetch by lessonId
+        />
+      )}
+    </>
   );
 };
 

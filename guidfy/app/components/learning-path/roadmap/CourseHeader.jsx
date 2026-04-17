@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { BadgeCheck, PlayCircle } from "lucide-react";
 
-
 const CourseHeader = ({
   title,
   description,
@@ -23,7 +22,7 @@ const CourseHeader = ({
 
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 p-6 md:p-10">
         {/* Left Content */}
-        <div className="flex flex-col justify-center text-white space-y-4">
+        <div className="flex flex-col justify-center text-white space-y-4 w-full">
           {badge && (
             <span className="inline-flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-sm font-medium w-fit">
               <BadgeCheck size={16} />
@@ -31,11 +30,13 @@ const CourseHeader = ({
             </span>
           )}
 
-          <h1 className="text-3xl md:text-4xl xl:text-5xl font-bold leading-tight">
+          {/* Title */}
+          <h1 className="text-3xl md:text-4xl xl:text-5xl font-bold leading-tight break-words">
             {title}
           </h1>
 
-          <p className="text-white/90 text-base md:text-lg max-w-xl">
+          {/* Description */}
+          <p className="text-white/90 text-base md:text-lg break-words">
             {description}
           </p>
 
@@ -50,11 +51,12 @@ const CourseHeader = ({
         {/* Right Thumbnail */}
         <div className="relative w-full h-[220px] md:h-[280px] lg:h-full rounded-2xl overflow-hidden shadow-xl">
           <Image
-            src={thumbnailUrl}
+            src={`http://localhost:8000${thumbnailUrl}`}
             alt={title}
             fill
             className="object-cover"
             priority
+            unoptimized
           />
         </div>
       </div>

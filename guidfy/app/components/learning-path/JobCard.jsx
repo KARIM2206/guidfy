@@ -9,9 +9,12 @@ const JobCard = ({ job }) => {
   const [isBookmarked, setIsBookmarked] = useState(false);
 
   const timeAgo = (timestamp) => {
+    console.log(timestamp);
+    
     const now = Date.now();
     const diff = now - timestamp;
-
+    console.log(now);
+    
     const seconds = Math.floor(diff / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
@@ -89,7 +92,7 @@ const JobCard = ({ job }) => {
       {/* Posted Time */}
       <div className="flex items-center gap-2 text-gray-500 text-xs mb-4">
         <Clock size={14} />
-        <span>{timeAgo(job.postedAt)}</span>
+        <span>{timeAgo(+new Date(job.createdAt))}</span>
       </div>
 
       {/* Actions Footer */}

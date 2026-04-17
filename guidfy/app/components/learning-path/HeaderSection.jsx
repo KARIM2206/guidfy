@@ -16,11 +16,25 @@ function useMounted() {
 export default function HeaderSection({ title, navLinks }) {
   const mounted = useMounted();
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
+  
   const [isScrolled, setIsScrolled] = useState(false);
   const { currentTab, setCurrentTab } = useTabs();
   const menuRef = useRef(null);
+const [isOpen, setIsOpen] = useState(false);
+const timeoutRef = useRef(null);
 
+const handleMouseEnter = () => {
+  if (timeoutRef.current) {
+    clearTimeout(timeoutRef.current);
+  }
+  setIsOpen(true);
+};
+
+const handleMouseLeave = () => {
+  timeoutRef.current = setTimeout(() => {
+    setIsOpen(false);
+  }, 300); // ⏱ delay 300ms
+};
   /* ✅ Prevent hydration mismatch */
   useEffect(() => {
     if (!mounted) return;
@@ -55,7 +69,7 @@ export default function HeaderSection({ title, navLinks }) {
         animate={{ y: isScrolled ? 0 : -100 }}
         transition={{ duration: 0.3 }}
         className="fixed top-16 left-0 right-0 bg-white/90 backdrop-blur-md 
-                   border-b border-gray-200 shadow-sm z-40 lg:hidden"
+                   border-b border-gray-200 shadow-sm z-20 lg:hidden"
       >
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -117,8 +131,56 @@ export default function HeaderSection({ title, navLinks }) {
               </div>
 
               {/* Desktop Nav */}
-              <MenuIcon  className="md:hidden block w-6 h-6"  onClick={() => setIsOpen(!isOpen)} onMouseLeave={() => setIsOpen(false)}/>
-              <nav className="hidden lg:flex items-center gap-1">
+<div className="relative md:hidden">
+  
+  <MenuIcon
+    className="block w-6 h-6"
+    onMouseEnter={handleMouseEnter}
+    onMouseLeave={handleMouseLeave}
+  />
+
+  <AnimatePresence>
+    {isOpen && (
+      <motion.div
+        ref={menuRef}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        className="absolute top-20 right-4 bg-white border border-gray-200 rounded-lg shadow-lg w-48 z-50"
+      >
+        <div className="flex flex-col">
+          {navLinks.map((link) => {
+            const isActive = currentTab === link.name;
+
+            return (
+              <motion.button
+                key={link.name}
+                onClick={() => {
+                  setCurrentTab(link.name);
+                  setIsOpen(false);
+                }}
+                whileHover={{ y: -2 }}
+                className={`px-4 py-2 rounded-lg font-medium text-left
+                  ${
+                    isActive
+                      ? "text-blue-600 bg-blue-50"
+                      : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
+                  }`}
+              >
+                <div className="flex items-center gap-2">
+                  <link.icon size={18} />
+                  {link.name}
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+</div>              <nav className="hidden lg:flex items-center gap-1">
                 {navLinks.map((link) => {
                   const isActive = currentTab === link.name;
                   return (
@@ -139,43 +201,7 @@ export default function HeaderSection({ title, navLinks }) {
                   );
                 })}
               </nav>
-              <AnimatePresence>
-                {isOpen && (
-  <div
-    ref={menuRef}
-    className="absolute top-20 right-4 bg-white border border-gray-200 rounded-lg shadow-lg w-48 z-50"
-  >
-    <div className="flex flex-col">
-      {navLinks.map((link) => {
-        const isActive = currentTab === link.name;
-
-        return (
-          <motion.button
-            key={link.name}
-            onClick={() => {
-              setCurrentTab(link.name);
-              setIsOpen(false);
-            }}
-            whileHover={{ y: -2 }}
-            className={`px-4 py-2 rounded-lg font-medium text-left
-              ${
-                isActive
-                  ? "text-blue-600 bg-blue-50"
-                  : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
-              }`}
-          >
-            <div className="flex items-center gap-2">
-              <link.icon size={18} />
-              {link.name}
-            </div>
-          </motion.button>
-        );
-      })}
-    </div>
-  </div>
-)}
-
-              </AnimatePresence>
+              
             </div>
             {/* ===== Collapsible Content ===== */}
             <motion.div
