@@ -1,0 +1,764 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  STUDENT
+  SUPER_ADMIN
+  ADMIN
+}
+ enum NotificationType {
+  LIKE
+  ANSWER
+  FOLLOW
+  SYSTEM
+  VOTE
+}
+enum LevelRoadmap {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum LessonType {
+  VIDEO
+  ARTICLE
+  QUIZ
+}
+
+enum RoadmapStatus {
+  DRAFT
+  ASSIGNED
+  IN_PROGRESS
+  REVIEW
+  NEEDS_REVISION
+  PUBLISHED
+}
+
+enum ProjectStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum JobType {
+  REMOTE
+  ONSITE
+  HYBRID
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  ACCEPTED
+  REJECTED
+}
+enum VoteType {
+  QUESTION
+  ANSWER
+  POST
+}
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  name     String?
+  password String
+  role     Role    @default(STUDENT)
+   title    String? // مسمى وظيفي
+
+  avatar String?  // صورة شخصية
+  cover  String?  // صورة غلاف optional
+  bio    String?  // نبذة عن المستخدم 
+  resetToken       String?
+  resetTokenExpiry DateTime?
+
+  quizAttempts QuizAttempt[]
+ stats     UserStats?
+  badges    UserBadge[]
+  tracks    TrackProgress[]
+  // Enrollment
+  enrolledRoadmaps      UserRoadmap[]
+  enrolledLearningPaths UserLearningPath[]
+  stepProgress          UserStepProgress[]
+  // Created Content
+  createdRoadmaps       Roadmap[]
+  createdLearningPaths  LearningPath[]
+   
+  lessonProgress   UserLessonProgress[]
+  roadmapProgress  UserRoadmapProgress[]
+  notifications    Notification[]
+  assignedRoadmaps RoadmapAssignment[]
+  reports          Report[]
+  // Jobs
+  createdJobs      Job[]
+  jobApplications  JobApplication[]
+  createdProjects  Project[] // المشاريع اللي هو عاملها
+
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  assignedLearningPaths LearningPathAdmin[]      @relation("User_Admin_Assign")
+  projectViews          UserProjectView[]
+  assignedProjects      ProjectAssignment[]
+  permissions           LearningPathPermission[]
+  assignedJobs          JobAssignment[]
+  recommendations LearningPathRecommendation[]
+  createdCommunities Community[] @relation("CommunityCreator")
+ communitiesJoined Community[] @relation("CommunityMembers")
+ communityQuestions  CommunityQuestion[] @relation("UserCommunityQuestions")
+communityAnswers    CommunityAnswer[]   @relation("UserCommunityAnswers")
+posts               Post[]              @relation("UserPosts")
+postComments        PostComment[]       @relation("UserPostComments")
+sentMessages     ChatMessage[] @relation("SentMessages")
+receivedMessages ChatMessage[] @relation("ReceivedMessages")
+votes               Vote[]             
+views               View[]             
+}
+model Community {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  icon        String?
+  createdAt   DateTime  @default(now())
+  color       String?
+  // علاقات
+  createdById Int
+  createdBy   User      @relation("CommunityCreator", fields: [createdById], references: [id])
+  members     User[]    @relation("CommunityMembers")
+    questions   CommunityQuestion[]
+  posts       Post[]
+}
+// ✅ أضف الـ models دي في آخر الـ schema
+
+model CommunityQuestion {
+  id          Int       @id @default(autoincrement())
+  title       String
+  body        String    @db.LongText
+  tags        Json
+  votes       Int       @default(0)
+  views       Int       @default(0)
+  isAnswered  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  authorId    Int
+  author      User      @relation("UserCommunityQuestions", fields: [authorId], references: [id], onDelete: Cascade)
+
+  communityId Int
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  answers     CommunityAnswer[]
+
+ 
+}
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  body      String   @db.LongText
+  image     String?
+  tags      Json     // ["tailwindcss", "storybook"]
+  readTime  String?
+  likes     Int      @default(0)
+  bookmarks Int      @default(0)
+  views     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authorId    Int
+  author      User      @relation("UserPosts", fields: [authorId], references: [id], onDelete: Cascade)
+
+  communityId Int
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  comments    PostComment[]
+}
+model View {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  targetId   Int
+  targetType String   // "POST" | "QUESTION"
+  createdAt  DateTime @default(now())
+
+  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetId, targetType])
+}
+model CommunityAnswer {
+  id         Int      @id @default(autoincrement())
+  body       String   @db.LongText
+  votes      Int      @default(0)
+  isAccepted Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  authorId   Int
+  author     User     @relation("UserCommunityAnswers", fields: [authorId], references: [id], onDelete: Cascade)
+
+  questionId Int
+  question   CommunityQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+ 
+}
+model Vote {
+  id         Int    @id @default(autoincrement())
+  userId     Int
+  targetId   Int
+  targetType String // "question" | "answer" | "post"
+  value      Int    // 1 = upvote, -1 = downvote
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetId, targetType])
+}
+
+model ChatMessage {
+  id         Int      @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+  content    String   @db.Text
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("SentMessages",   fields: [senderId],   references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId])
+  @@index([createdAt])
+}
+model PostComment {
+  id        Int      @id @default(autoincrement())
+  body      String
+  createdAt DateTime @default(now())
+
+  authorId  Int
+  author    User @relation("UserPostComments", fields: [authorId], references: [id], onDelete: Cascade)
+
+  postId    Int
+  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  // ─── Nested replies support ───
+  parentId  Int?
+  parent    PostComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   PostComment[] @relation("CommentReplies")
+}
+model UserStats {
+  id       Int @id @default(autoincrement())
+  userId   Int @unique
+  reputation Int @default(0)
+  followers Int @default(0)
+  following Int @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model Badge {
+  id    Int    @id @default(autoincrement())
+  name  String
+  icon  String
+  color String
+  userBadges UserBadge[] 
+}
+
+model UserBadge {
+  id      Int @id @default(autoincrement())
+  userId  Int
+  badgeId Int
+  
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+}
+model TrackProgress {
+  id       Int @id @default(autoincrement())
+  userId   Int
+  trackName String
+  progress  Int    // 0-100%
+  color     String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model LearningPathRecommendation {
+  id             Int          @id @default(autoincrement())
+
+  // ── Student answers ──────────────────────────────────────
+  experience     String       // "Beginner" | "Intermediate" | "Advanced"
+  skills         Json     // ["python", "sql", "react"]
+  interest       String       // "Frontend" | "AI/ML" | ...
+  hoursPerDay    Int          // 1-6
+  targetGoal     String?      // optional free text
+
+  // ── AI result ────────────────────────────────────────────
+  recommendedPath String      // "Frontend" | "Backend" | ...
+  confidence      Float?      // top confidence score 0.0 - 1.0
+  topPaths        Json?       // [{ path, confidence }, ...]
+
+  // ── Relations ─────────────────────────────────────────────
+  userId          Int
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  learningPathId  Int?         // nullable — لو الـ recommended path موجودة في DB
+  learningPath    LearningPath? @relation(fields: [learningPathId], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime     @default(now())
+
+  @@index([userId])
+  @@index([learningPathId])
+}
+model LearningPath {
+  id          Int    @id @default(autoincrement())
+  title       String @unique
+  description String
+  jobs        Int
+
+  estimatedDuration Int
+  isPublished       Boolean @default(false)
+  image             String?
+  createdById       Int
+  createdBy         User    @relation(fields: [createdById], references: [id])
+
+  projects Project[] // كل المشاريع المرتبطة بالـ LearningPath
+
+  roadmaps       LearningPathRoadmap[]
+  enrollments    UserLearningPath[]
+  jobsList       Job[]
+  assignedAdmins LearningPathAdmin[]      @relation("LP_Admin_Assign")
+  permissions    LearningPathPermission[]
+  recommendations LearningPathRecommendation[]
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+}
+
+model LearningPathPermission {
+  id Int @id @default(autoincrement())
+
+  userId         Int
+  learningPathId Int
+  section        Section
+
+  user         User         @relation(fields: [userId], references: [id])
+  learningPath LearningPath @relation(fields: [learningPathId], references: [id])
+
+  @@unique([userId, learningPathId, section])
+}
+
+enum Section {
+  PROJECT
+  JOB
+  ROADMAP
+}
+
+model LearningPathAdmin {
+  id             Int      @id @default(autoincrement())
+  learningPathId Int
+  adminId        Int
+  assignedAt     DateTime @default(now())
+
+  // الربط مع LearningPath
+  learningPath LearningPath @relation(fields: [learningPathId], references: [id], name: "LP_Admin_Assign", onDelete: Cascade)
+
+  // الربط مع User
+  admin User @relation(fields: [adminId], references: [id], name: "User_Admin_Assign", onDelete: Cascade)
+
+  @@unique([learningPathId, adminId])
+}
+
+model Project {
+  id           Int           @id @default(autoincrement())
+  title        String
+  description  String        @db.LongText
+  image        String?
+  technologies Json?
+  githubUrl    String?
+  likes        Int           @default(0)
+  isFeatured   Boolean       @default(false)
+  status       ProjectStatus @default(DRAFT)
+  createdById  Int
+  createdBy    User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  learningPathId Int
+  learningPath   LearningPath        @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
+  views          UserProjectView[]
+  assignments    ProjectAssignment[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+}
+
+model ProjectAssignment {
+  id Int @id @default(autoincrement())
+
+  projectId Int
+  adminId   Int
+
+  assignedAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  admin   User    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, adminId])
+}
+
+model Roadmap {
+  id                Int          @id @default(autoincrement())
+  title             String
+  slug              String       @unique
+  description       String?
+  category          String
+  level             LevelRoadmap @default(BEGINNER)
+  estimatedDuration Int
+  isPublished       Boolean      @default(false)
+
+  status   RoadmapStatus @default(DRAFT)
+  deadline DateTime?
+  progress Int           @default(0)
+
+  createdById Int
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  steps Step[]
+
+  assignments RoadmapAssignment[]
+  reports     Report[]
+
+  learningPaths   LearningPathRoadmap[]
+  enrollments     UserRoadmap[]
+  roadmapProgress UserRoadmapProgress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RoadmapAssignment {
+  id Int @id @default(autoincrement())
+
+  roadmapId Int
+  adminId   Int
+
+  assignedAt DateTime @default(now())
+
+  roadmap Roadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  admin   User    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@unique([roadmapId, adminId])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  message   String   @db.Text
+  type      String   @default("info")
+  read      Boolean  @default(false)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+
+model Job {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String  @db.LongText
+  company     String
+  location    String?
+  salary      String?
+
+  jobType JobType
+  status  JobStatus @default(DRAFT)
+
+  deadline   DateTime?
+  isFeatured Boolean   @default(false)
+
+  // 🔗 Relation مع Admin اللي عمل Create
+  createdById Int
+  createdBy   User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  // 🔗 Relation مع LearningPath
+  learningPathId Int
+  learningPath   LearningPath @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
+
+  applications JobApplication[]
+  assignments  JobAssignment[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model JobAssignment {
+  id Int @id @default(autoincrement())
+
+  jobId   Int
+  adminId Int
+
+  assignedAt DateTime @default(now())
+
+  job   Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, adminId])
+}
+
+model UserProjectView {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  projectId Int
+  viewedAt  DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId]) // لو عايز كل يوزر يتسجل مرة واحدة فقط
+}
+
+model JobApplication {
+  id Int @id @default(autoincrement())
+
+  jobId  Int
+  userId Int
+
+  cvUrl       String?
+  coverLetter String?           @db.LongText
+  status      ApplicationStatus @default(PENDING)
+
+  appliedAt DateTime @default(now())
+
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, userId])
+}
+
+model UserStepProgress {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  stepId Int
+
+  progressPercentage Int     @default(0)
+  completed          Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  step Step @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stepId])
+}
+
+model Report {
+  id Int @id @default(autoincrement())
+
+  roadmapId Int
+  adminId   Int
+
+  content String @db.LongText
+  status  String @default("PENDING")
+
+  createdAt DateTime @default(now())
+
+  roadmap Roadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  admin   User    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+}
+
+model LearningPathRoadmap {
+  id Int @id @default(autoincrement())
+
+  learningPathId Int
+  roadmapId      Int
+  order          Int
+
+  learningPath LearningPath @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
+  roadmap      Roadmap      @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+
+  @@unique([learningPathId, roadmapId])
+}
+
+model Step {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String?
+  order       Int
+
+  roadmapId Int
+  roadmap   Roadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+
+  lessons      Lesson[]
+  stepProgress UserStepProgress[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@unique([roadmapId, order])
+}
+
+model Lesson {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  type        LessonType
+  order       Int
+  duration    Int?
+
+  stepId Int
+  step   Step @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  video   VideoLesson?
+  article ArticleLesson?
+  quiz    Quiz?
+
+  progress UserLessonProgress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([stepId, order])
+}
+
+model VideoLesson {
+  id Int @id @default(autoincrement())
+
+  lessonId Int    @unique
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  videoUrl   String
+  provider   String?
+  thumbnail  String?
+  duration   Int?
+  isExternal Boolean @default(false)
+
+  createdAt DateTime @default(now())
+}
+
+model ArticleLesson {
+  id Int @id @default(autoincrement())
+
+  lessonId Int    @unique
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  title      String  @default("New Article")
+  content    String  @db.LongText
+  isExternal Boolean @default(false)
+
+  createdAt DateTime @default(now())
+}
+
+model Quiz {
+  id    Int    @id @default(autoincrement())
+  title String
+
+  lessonId Int    @unique
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  timeLimit    Int?
+  passingScore Int?
+
+  questions Question[]
+  attempts  QuizAttempt[]
+
+  createdAt DateTime @default(now())
+}
+
+model Question {
+  id       Int    @id @default(autoincrement())
+  question String
+
+  quizId Int
+  quiz   Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  options Option[]
+
+  createdAt DateTime @default(now())
+}
+
+model Option {
+  id        Int     @id @default(autoincrement())
+  text      String
+  isCorrect Boolean @default(false)
+
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model QuizAttempt {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  quizId Int
+
+  score  Int
+  passed Boolean
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([userId, quizId])
+}
+
+model UserLessonProgress {
+  id Int @id @default(autoincrement())
+
+  userId   Int
+  lessonId Int
+
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+}
+
+model UserRoadmap {
+  id Int @id @default(autoincrement())
+
+  userId    Int
+  roadmapId Int
+
+  enrolledAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roadmap Roadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roadmapId])
+}
+
+model UserLearningPath {
+  id Int @id @default(autoincrement())
+
+  userId         Int
+  learningPathId Int
+
+  enrolledAt DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  learningPath LearningPath @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, learningPathId])
+}
+
+model UserRoadmapProgress {
+  id Int @id @default(autoincrement())
+
+  userId    Int
+  roadmapId Int
+
+  progressPercentage Int     @default(0)
+  completed          Boolean @default(false)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roadmap Roadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roadmapId])
+}
