@@ -4,6 +4,9 @@ import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { ToastContainer } from "react-toastify";
+import { AuthProvider } from "./CONTEXT/AuthProvider";
+import NotificationListener from "./components/notification/NotificationListener";
+import { NotificationProvider } from "./CONTEXT/NotificationContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,23 +26,18 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ToastContainer />
-
-        <div className="min-h-screen flex flex-col bg-zinc-50 font-sans dark:bg-black">
-          
-          <Header />
-
-          {/* 👇 ده أهم تعديل */}
-          <main className="flex-1 flex flex-col">
-            {children}
-          </main>
-
-          <Footer />
-
-        </div>
+      <body>
+        <AuthProvider>
+          <NotificationProvider>
+            <ToastContainer />
+            <NotificationListener />
+            <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-black">
+              <Header />
+              <main className="flex-1 flex flex-col">{children}</main>
+              <Footer />
+            </div>
+          </NotificationProvider>
+        </AuthProvider>
       </body>
     </html>
   );

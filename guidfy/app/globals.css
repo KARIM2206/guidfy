@@ -113,7 +113,31 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none; /* Chrome, Safari and Opera */
 }
+/* ملف CSS عام أو globals.css */
+.scrollbar-animated {
+  scroll-behavior: smooth; /* smooth scrolling */
+}
 
+/* تخصيص Scrollbar */
+.scrollbar-animated::-webkit-scrollbar {
+  width: 8px; /* سمك السكوربار */
+  height: 8px; /* للhorizontal scrollbar */
+}
+
+.scrollbar-animated::-webkit-scrollbar-track {
+  background: #f1f1f1; /* لون الخلفية */
+  border-radius: 9999px;
+}
+
+.scrollbar-animated::-webkit-scrollbar-thumb {
+  background-color: #3b82f6; /* الأزرق */
+  border-radius: 9999px;
+  transition: background-color 0.3s ease; /* تأثير الانميشن */
+}
+
+.scrollbar-animated::-webkit-scrollbar-thumb:hover {
+  background-color: #2563eb; /* أزرق أغمق عند hover */
+}
 /* Example default body styling */
 body {
   background: var(--background);
