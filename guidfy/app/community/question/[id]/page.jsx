@@ -1,587 +1,765 @@
-// app/question/[id]/page.jsx
-'use client';
+// app/community/question/[communityId]/[id]/page.jsx
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import QuestionHeader from '../../../components/community/question/QuestionHeader';
-import QuestionBody from '../../../components/community/question/QuestionBody';
-import QuestionTags from '../../../components/community/question/QuestionTags';
-import QuestionActions from '../../../components/community/question/QuestionActions';
-import AnswerList from '../../../components/community/question/AnswerList';
-import AnswerForm from '../../../components/community/question/AnswerForm';
-import CommentList from '../../../components/community/question/CommentList';
-import CommentForm from '../../../components/community/question/CommentForm';
-import CodeBlock from '../../../components/ui/CodeBlock';
-import SidebarPanel from '../../../components/community/question/SidebarPanel';
-import { 
-  ArrowLeft, 
-  Share2, 
-  Bookmark, 
-  Flag, 
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowLeft,
   Eye,
   Clock,
   MessageSquare,
+  TrendingUp,
+  ChevronUp,
+  ChevronDown,
+  Bookmark,
   CheckCircle,
-  TrendingUp
-} from 'lucide-react';
+  Loader2,
+  AlertCircle,
+  Send,
+  Trash2,
+  User,
+  RefreshCw,
+} from "lucide-react";
+import { useCommunity } from "@/app/CONTEXT/CommuntiyProvider";
+import { useAuth } from "@/app/CONTEXT/AuthProvider";
+import CodeBlock from "@/app/components/ui/CodeBlock";
+import Image from "next/image";
+import DeleteModel from "@/app/components/admin/dashboard/roadmap/DeleteModel";
+import DeleteConfirmModal from "@/app/components/admin/dashboard/jobs/DeleteConfirmModal";
 
-// Mock data
-const mockQuestion = {
-  id: 'q123',
-  title: 'How to optimize React re-renders with useMemo and useCallback in large applications?',
-  author: {
-    name: 'Sarah Johnson',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-    reputation: 12450,
-    badges: ['gold', 'silver', 'bronze']
-  },
-  createdAt: '2 hours ago',
-  updatedAt: '30 minutes ago',
-  views: 2450,
-  votes: 124,
-  isBookmarked: false,
-  isUpvoted: false,
-  isDownvoted: false,
-  tags: ['react', 'performance', 'hooks', 'optimization', 'typescript'],
-  content: `
-I'm working on a large-scale React application with hundreds of components. The application is starting to suffer from performance issues due to unnecessary re-renders. 
-
-I understand the basic concepts of \`useMemo\` and \`useCallback\`, but I'm struggling with when to use them effectively in a complex codebase.
-
-**Current Issues:**
-1. Child components re-rendering when parent state changes unnecessarily
-2. Expensive calculations running on every render
-3. Event handlers causing re-renders in memoized components
-
-**Example Code:**
-
-\`\`\`jsx
-// Current implementation causing issues
-function UserDashboard({ users, filters }) {
-  const [selectedUser, setSelectedUser] = useState(null);
-  
-  const filteredUsers = users.filter(user => {
-    // Expensive calculation running on every render
-    return userMatchesFilters(user, filters);
+// ─── Date helper ──────────────────────────────────
+function timeAgo(d) {
+  if (!d) return "";
+  const s = Math.floor((Date.now() - new Date(d)) / 1000);
+  if (s < 60) return "Just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  if (s < 86400 * 7) return `${Math.floor(s / 86400)}d ago`;
+  return new Date(d).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
-  
-  const handleUserSelect = (user) => {
-    setSelectedUser(user);
-  };
-  
+}
+
+// ─── Body parser ──────────────────────────────────
+function BodyRenderer({ body }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!body) return null;
+
+  const segments = [];
+  const regex = /```(\w+)?\s*\n([\s\S]*?)```/g;
+  let last = 0,
+    match;
+
+  while ((match = regex.exec(body)) !== null) {
+    if (match.index > last) {
+      const t = body.slice(last, match.index).trim();
+      if (t) segments.push({ type: "text", content: t });
+    }
+    segments.push({
+      type: "code",
+      language: match[1] || "javascript",
+      content: match[2].trimEnd(),
+    });
+    last = match.index + match[0].length;
+  }
+
+  if (last < body.length) {
+    const t = body.slice(last).trim();
+    if (t) segments.push({ type: "text", content: t });
+  }
+
+  // ✅ نحسب عدد السطور للنص فقط
+  const textContent = segments
+    .filter((s) => s.type === "text")
+    .map((s) => s.content)
+    .join("\n");
+
+  const lines = textContent.split("\n");
+  const shouldClamp = lines.length > 8;
+
   return (
-    <div>
-      <UserList 
-        users={filteredUsers} 
-        onSelect={handleUserSelect}
-      />
-      <UserDetails user={selectedUser} />
+    <div className="space-y-4">
+      {segments.map((seg, i) => {
+        if (seg.type === "text") {
+          const displayText =
+            !expanded && shouldClamp
+              ? lines.slice(0, 8).join("\n")
+              : seg.content;
+
+          return (
+            <p
+              key={i}
+              className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap"
+            >
+              {displayText}
+            </p>
+          );
+        }
+
+        return (
+          <CodeBlock key={i} code={seg.content} language={seg.language} />
+        );
+      })}
+
+      {/* 🔥 Show more / less */}
+      {shouldClamp && (
+        <button
+          onClick={() => setExpanded((prev) => !prev)}
+          className="text-blue-600 hover:underline text-sm"
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      )}
     </div>
   );
 }
-\`\`\`
 
-**Questions:**
-1. When should I use \`useMemo\` vs \`useCallback\`?
-2. Are there any performance overheads to overusing these hooks?
-3. Best practices for TypeScript with these hooks?
-4. How to debug unnecessary re-renders effectively?
-
-Any real-world examples or performance benchmarks would be greatly appreciated!
-`,
-  comments: [
-    {
-      id: 'c1',
-      author: 'Mike Wilson',
-      content: 'Great question! Have you tried using the React DevTools Profiler?',
-      createdAt: '1 hour ago',
-      votes: 15
-    },
-    {
-      id: 'c2',
-      author: 'Alex Chen',
-      content: 'Also check out the React.memo HOC for preventing re-renders.',
-      createdAt: '45 minutes ago',
-      votes: 8
-    }
-  ],
-  answers: [
-    {
-      id: 'a1',
-      author: {
-        name: 'React Performance Expert',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Expert',
-        reputation: 24560,
-        badges: ['gold', 'platinum']
-      },
-      content: `
-This is a common issue in large React applications. Here's a comprehensive approach:
-
-## 1. When to use useMemo
-
-Use \`useMemo\` when:
-- Computing expensive values
-- Preventing unnecessary calculations
-- Memoizing values passed as props to memoized components
-
-**Optimized Example:**
-
-\`\`\`jsx
-function UserDashboard({ users, filters }) {
-  const [selectedUser, setSelectedUser] = useState(null);
-  
-  const filteredUsers = useMemo(() => {
-    return users.filter(user => userMatchesFilters(user, filters));
-  }, [users, filters]); // Only recalculates when dependencies change
-  
-  // Rest of the component...
+// ─── Author chip ──────────────────────────────────
+function AuthorChip({ author, date }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      {author?.avatar ? (
+        <div className="w-8 h-8 rounded-full relative  bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center  ring-white dark:ring-gray-800">
+          <Image
+            src={`http://localhost:8000${author.avatar}`}
+            alt={author.name}
+            fill
+            unoptimized
+            className="absolute rounded-full inset-0 object-cover  ring-white dark:ring-gray-800"
+          />
+        </div>
+      ) : (
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center  ring-white dark:ring-gray-800">
+          <User size={14} className="text-white" />
+        </div>
+      )}
+      <div>
+        <p className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
+          {author?.name ?? "Unknown"}
+        </p>
+        {date && (
+          <p className="text-[11px] text-gray-400 leading-tight">{date}</p>
+        )}
+      </div>
+    </div>
+  );
 }
-\`\`\`
 
-## 2. When to use useCallback
+// ─── Vote column ──────────────────────────────────
+function VoteCol({ votes, userVote, onUp, onDown }) {
+  return (
+    <div className="flex flex-col items-center gap-0.5 flex-shrink-0 w-10">
+     <motion.button
+  whileHover={{ scale: 1.15 }}
+  whileTap={{ scale: 0.9 }}
+  onClick={onUp}
+  disabled={userVote === 1}
+  className={`p-1.5 rounded-lg transition-colors ${
+    userVote === 1
+      ? "text-green-500 bg-green-50 cursor-not-allowed"
+      : "text-gray-400 hover:text-green-500 hover:bg-green-50"
+  }`}
+>
+  <ChevronUp size={20} />
+</motion.button>
+     <span className="text-base font-bold text-gray-900 dark:text-white tabular-nums">
+  {votes ?? 0}
+</span>
+  <motion.button
+  whileHover={{ scale: 1.15 }}
+  whileTap={{ scale: 0.9 }}
+  onClick={onDown}
+  disabled={userVote === -1}
+  className={`p-1.5 rounded-lg transition-colors ${
+    userVote === -1
+      ? "text-red-500 bg-red-50 cursor-not-allowed"
+      : "text-gray-400 hover:text-red-500 hover:bg-red-50"
+  }`}
+>
+  <ChevronDown size={20} />
+</motion.button>
+    </div>
+  );
+}
 
-Use \`useCallback\` when:
-- Passing functions as props to memoized components
-- Functions are dependencies in other hooks
-- Preventing function recreation on every render
+// ─── Answer form ──────────────────────────────────
+function AnswerForm({ communityId, questionId, onSuccess }) {
+  const { addAnswer, loading, answers } = useCommunity();
+  const [body, setBody] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const ref = useRef(null);
 
-**Optimized Example:**
-
-\`\`\`jsx
-const handleUserSelect = useCallback((user) => {
-  setSelectedUser(user);
-}, []); // Empty dependency array = function never changes
-\`\`\`
-
-## 3. Performance Overheads
-
-Yes, there are overheads:
-- Memory usage increases
-- Hook execution time
-- Dependency comparison cost
-
-**Rule of thumb:** Only use when you can measure performance improvements.
-
-## 4. Debugging Tools
-
-1. React DevTools Profiler
-2. Why Did You Render library
-3. Chrome Performance Tab
-4. Custom \`useWhyDidYouUpdate\` hook
-
-\`\`\`jsx
-// Custom debug hook
-function useWhyDidYouUpdate(name, props) {
-  const previousProps = useRef();
-  
   useEffect(() => {
-    if (previousProps.current) {
-      const allKeys = Object.keys({ ...previousProps.current, ...props });
-      const changes = {};
-      
-      allKeys.forEach(key => {
-        if (previousProps.current[key] !== props[key]) {
-          changes[key] = {
-            from: previousProps.current[key],
-            to: props[key]
-          };
-        }
-      });
-      
-      if (Object.keys(changes).length) {
-        console.log('[why-did-you-update]', name, changes);
-      }
+    ref.current?.focus();
+  }, []);
+
+  const submit = async () => {
+    if (!body.trim() || body.trim().length < 10) {
+      setError("Write at least 10 characters");
+      return;
     }
-    
-    previousProps.current = props;
+    setError("");
+    const payload = { body: body.trim() };
+    try {
+      await addAnswer(communityId, questionId, payload);
+      setSuccess(true);
+      setBody("");
+      setTimeout(() => {
+        setSuccess(false);
+        onSuccess?.();
+      }, 900);
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white dark:bg-gray-800 rounded-xl border border-blue-200 dark:border-blue-800 p-5 shadow-sm"
+    >
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
+        <MessageSquare size={14} className="text-blue-500" /> Your Answer
+      </h3>
+      <textarea
+        ref={ref}
+        value={body}
+        onChange={(e) => {
+          setBody(e.target.value);
+          setError("");
+        }}
+        placeholder={
+          "Write your answer...\n\nTip: wrap code in ```language\ncode\n```"
+        }
+        rows={7}
+        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none leading-relaxed font-mono transition-all"
+      />
+      {error && (
+        <p className="mt-1.5 text-xs text-rose-500 flex items-center gap-1">
+          <AlertCircle size={11} />
+          {error}
+        </p>
+      )}
+      <div className="flex justify-end mt-3 gap-2">
+        <button
+          onClick={submit}
+          disabled={loading || success}
+          className="flex items-center gap-2 px-5 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition-all shadow-sm"
+        >
+          {loading ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : success ? (
+            <CheckCircle size={14} />
+          ) : (
+            <Send size={14} />
+          )}
+          {loading ? "Posting..." : success ? "Posted!" : "Post Answer"}
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Answer card ──────────────────────────────────
+function AnswerCard({
+  answer,
+  communityId,
+  questionId,
+  isQuestionAuthor,
+  currentUserId,
+}) {
+  const { removeAnswer, acceptQuestionAnswer, loading,addVote,fetchVotes} = useCommunity();
+  const [localVotes, setLocalVotes] = useState(answer.votes ?? 0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const[voteChange, setVoteChange] = useState(false);
+const [localUserVote, setLocalUserVote] = useState(0);
+  const isMyAnswer = answer.author?.id === currentUserId;
+
+useEffect(() => {
+  const fetch = async () => {
+    const res = await fetchVotes(answer.id, "ANSWER");
+    // res.data مش res لأن الـ context بترجع الـ response
+    setLocalVotes(res.data.totalVotes);
+    setLocalUserVote(res.data.userVote);
+  };
+  fetch();
+}, [answer.id, voteChange]);
+// AnswerCard
+const handleVote = async (value) => {
+  await addVote({
+    targetId: answer.id,
+    targetType: "ANSWER",
+    value,
   });
-}
-\`\`\`
-
-## 5. TypeScript Best Practices
-
-\`\`\`typescript
-// Explicitly type dependencies
-const filteredUsers = useMemo<User[]>(() => {
-  return users.filter(user => userMatchesFilters(user, filters));
-}, [users, filters]);
-
-// Use generic types for useCallback
-const handleSelect = useCallback<(user: User) => void>(
-  (user) => setSelectedUser(user),
-  []
-);
-\`\`\`
-`,
-      createdAt: '1 hour ago',
-      votes: 89,
-      isAccepted: true,
-      comments: [
-        {
-          id: 'ac1',
-          author: 'Original Poster',
-          content: 'This is extremely helpful! The TypeScript examples are exactly what I needed.',
-          createdAt: '30 minutes ago',
-          votes: 12
-        }
-      ]
-    },
-    {
-      id: 'a2',
-      author: {
-        name: 'Senior Frontend Dev',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Senior',
-        reputation: 15670,
-        badges: ['gold', 'silver']
-      },
-      content: `
-Adding to the excellent answer above:
-
-## Real-world Benchmark
-
-I ran benchmarks on our production app (10k+ components):
-
-**Before optimization:**
-- Average render time: 45ms
-- Unnecessary re-renders: 68%
-- Memory usage: 1.2GB
-
-**After optimization:**
-- Average render time: 18ms
-- Unnecessary re-renders: 12%
-- Memory usage: 1.5GB
-
-## Additional Tips:
-
-1. **Combine with React.memo:**
-\`\`\`jsx
-const UserList = React.memo(function UserList({ users, onSelect }) {
-  // Component implementation
-});
-\`\`\`
-
-2. **Use useReducer for complex state:**
-\`\`\`jsx
-const [state, dispatch] = useReducer(userReducer, initialState);
-// More stable than multiple useState calls
-\`\`\`
-
-3. **Lazy load components:**
-\`\`\`jsx
-const UserDetails = React.lazy(() => import('./UserDetails'));
-\`\`\`
-
-4. **Virtualize long lists:**
-\`\`\`jsx
-import { FixedSizeList } from 'react-window';
-\`\`\`
-`,
-      createdAt: '45 minutes ago',
-      votes: 42,
-      isAccepted: false,
-      comments: []
-    }
-  ]
+  setVoteChange(prev => !prev); // useEffect هيجيب الداتا
 };
-
- const QuestionDetailPage=()=> {
-  const params = useParams();
-  const id = params.id;
-  
-  const [question, setQuestion] = useState(mockQuestion);
-  const [showAnswerForm, setShowAnswerForm] = useState(false);
-  const [activeCommentId, setActiveCommentId] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    // Simulate API call
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-  }, [id]);
-
-  const handleVote = (type) => {
-    setQuestion(prev => ({
-      ...prev,
-      votes: type === 'up' ? prev.votes + 1 : prev.votes - 1,
-      isUpvoted: type === 'up' ? !prev.isUpvoted : false,
-      isDownvoted: type === 'down' ? !prev.isDownvoted : false
-    }));
-  };
-
-  const handleBookmark = () => {
-    setQuestion(prev => ({
-      ...prev,
-      isBookmarked: !prev.isBookmarked
-    }));
-  };
-
-  const handleAcceptAnswer = (answerId) => {
-    setQuestion(prev => ({
-      ...prev,
-      answers: prev.answers.map(answer => ({
-        ...answer,
-        isAccepted: answer.id === answerId
-      }))
-    }));
-  };
-
-  const handleSubmitAnswer = (content) => {
-    const newAnswer = {
-      id: `a${Date.now()}`,
-      author: {
-        name: 'Current User',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Current',
-        reputation: 850,
-        badges: ['bronze']
-      },
-      content,
-      createdAt: 'Just now',
-      votes: 0,
-      isAccepted: false,
-      comments: []
-    };
-
-    setQuestion(prev => ({
-      ...prev,
-      answers: [...prev.answers, newAnswer]
-    }));
-    setShowAnswerForm(false);
-  };
-
-  const handleAddComment = (comment, targetId, type) => {
-    if (type === 'question') {
-      setQuestion(prev => ({
-        ...prev,
-        comments: [...prev.comments, {
-          id: `c${Date.now()}`,
-          author: { name: 'Current User' },
-          content: comment,
-          createdAt: 'Just now',
-          votes: 0
-        }]
-      }));
-    } else {
-      setQuestion(prev => ({
-        ...prev,
-        answers: prev.answers.map(answer => 
-          answer.id === targetId ? {
-            ...answer,
-            comments: [...answer.comments, {
-              id: `ac${Date.now()}`,
-              author: { name: 'Current User' },
-              content: comment,
-              createdAt: 'Just now',
-              votes: 0
-            }]
-          } : answer
-        )
-      }));
+  const handleAccept = async () => {
+    try {
+      await acceptQuestionAnswer(communityId, questionId, answer.id);
+    } catch (e) {
+      console.error(e.message);
     }
-    setActiveCommentId(null);
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto px-4 py-8">
-          <div className="animate-pulse space-y-8">
-            {/* Skeleton loader */}
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-              ))}
-            </div>
+  const handleDelete = async () => {
+    try {
+      await removeAnswer(communityId, questionId, answer.id);
+      setIsDeleting(false);
+    } catch (e) {
+      console.error(e.message);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`bg-white dark:bg-gray-800 rounded-xl border overflow-hidden ${
+        answer.isAccepted
+          ? "border-green-400 dark:border-green-600 shadow-green-100 dark:shadow-green-900/20 shadow-md"
+          : "border-gray-200 dark:border-gray-700"
+      }`}
+    >
+      {/* Accepted banner */}
+      {answer.isAccepted && (
+        <div className="flex items-center gap-2 px-5 py-2 bg-green-50 dark:bg-green-900/20 border-b border-green-200 dark:border-green-700">
+          <CheckCircle
+            size={14}
+            className="text-green-600 dark:text-green-400"
+          />
+          <span className="text-xs font-semibold text-green-700 dark:text-green-400">
+            Accepted Answer
+          </span>
+        </div>
+      )}
+
+      <div className="flex gap-4 p-5">
+        {/* Votes + accept btn */}
+        <div className="flex flex-col items-center gap-1 flex-shrink-0">
+<VoteCol
+  votes={localVotes}
+  userVote={localUserVote}
+  onUp={() => handleVote(1)}
+  onDown={() => handleVote(-1)}
+/>
+          {/* Accept — يظهر بس للـ question owner لو الإجابة مش accepted */}
+          {isQuestionAuthor && !answer.isAccepted && (
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleAccept}
+              disabled={loading}
+              title="Mark as accepted answer"
+              className="mt-2 p-1.5 rounded-lg text-gray-300 dark:text-gray-600 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+            >
+              <CheckCircle size={18} />
+            </motion.button>
+          )}
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 min-w-0">
+          <BodyRenderer body={answer.body} />
+
+          {/* Footer */}
+          <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-100 dark:border-gray-700/50">
+            <AuthorChip
+              author={answer.author}
+              date={timeAgo(answer.createdAt)}
+            />
+            {/* Delete — يظهر لصاحب الإجابة فقط */}
+            {isMyAnswer && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setIsDeleting(true)}
+                disabled={loading}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
+              >
+                <Trash2 size={12} /> Delete
+              </motion.button>
+            )}
+
+            <DeleteModel
+              isOpen={isDeleting}
+              onClose={() => setIsDeleting(false)}
+              confirmDelete={handleDelete}
+            />
           </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ═══════════════════════════════════════════════════
+//  PAGE
+// ═══════════════════════════════════════════════════
+export default function QuestionDetailPage() {
+  const { id: questionId } = useParams();
+  const router = useRouter();
+
+  const {
+    currentQuestion,
+    fetchQuestionById,
+    castVoteOnQuestion,
+    removeQuestion,
+    loading,
+    error,
+    answers,
+    addVote,
+      fetchVotes,
+     fetchViews,
+    addView
+  } = useCommunity();
+
+  const { user } = useAuth(); // { id, name, avatar, role }
+    const [localViews, setLocalViews] = useState(0);
+  const [showAnswerForm, setShowAnswerForm] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [localVotes, setLocalVotes] = useState(0);
+  const [localUserVote, setLocalUserVote] = useState(0);
+  const [voteChange, setVoteChange] = useState(false);
+useEffect(() => {
+  let interval;
+
+  const fetchData = async () => {
+    const res = await fetchVotes(questionId, "QUESTION");
+    setLocalVotes(res.data.totalVotes);
+    setLocalUserVote(res.data.userVote);
+  };
+
+  // أول تحميل
+  fetchData();
+
+  // polling
+  interval = setInterval(fetchData, 5000);
+
+  return () => clearInterval(interval); // 🧹 مهم
+}, [questionId]);
+useEffect(() => {
+  const key = `viewed_question_${questionId}`;
+
+  const fetch = async () => {
+    try {
+      const res = await fetchViews(questionId, "QUESTION");
+      setLocalViews(res?.views);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const incrementView = async () => {
+    try {
+      const payload = { targetId: questionId, targetType: "QUESTION" };
+      const res = await addView(payload);
+
+      // تحديث العدد مباشرة من الباك
+      setLocalViews(res?.views);
+
+      // نحفظ إن المستخدم شاف السؤال
+      localStorage.setItem(key, Date.now());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const init = async () => {
+    // 1. جيب الفيوز الأول
+    await fetch();
+
+    // 2. لو مش متسجل قبل كده → زوّد view
+    const alreadyViewed = localStorage.getItem(key);
+
+    if (!alreadyViewed) {
+      const timer = setTimeout(() => {
+        incrementView();
+      }, 300); // 30 ثانية
+
+      return () => clearTimeout(timer);
+    }
+  };
+
+  init();
+}, [questionId]);
+const handleVote = async (value) => {
+  const res = await addVote({
+    targetId: questionId,
+    targetType: "QUESTION",
+    value,
+  });
+
+  // 🔥 optimistic update
+  const change = res.change;
+
+  setLocalVotes(prev => prev + change);
+
+  setLocalUserVote(prev => {
+    if (prev === value) return 0; // cancel
+    if (prev === -value) return value; // switch
+    return value; // new vote
+  });
+};
+  // ── Fetch on mount ────────────────────────────
+  useEffect(() => {
+    const fetch = async () => {
+      if (questionId) {
+        await fetchQuestionById(questionId);
+      }
+    };
+    fetch();
+  }, [questionId]);
+
+
+  // ── Sync votes لما يتحمّل السؤال ─────────────
+  useEffect(() => {
+    if (currentQuestion) setLocalVotes(currentQuestion.votes ?? 0);
+  }, [currentQuestion?.id]);
+
+
+
+  // ── Delete question ───────────────────────────
+  const handleDeleteQuestion = async () => {
+    try {
+      await removeQuestion(communityId, questionId);
+
+      router.back();
+    } catch (e) {
+      console.error(e.message);
+    }
+  };
+
+  // ── Loading ───────────────────────────────────
+  if (loading && !currentQuestion) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 size={36} className="animate-spin text-blue-500" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Loading question...
+          </p>
         </div>
       </div>
     );
   }
 
+  // ── Error ─────────────────────────────────────
+  if (error && !currentQuestion) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-4">
+        <AlertCircle size={40} className="text-rose-400" />
+        <p className="text-gray-600 dark:text-gray-400">{error}</p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => fetchQuestionById(communityId, questionId)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-xl text-sm"
+          >
+            <RefreshCw size={14} /> Try again
+          </button>
+          <button
+            onClick={() => router.back()}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-xl text-sm"
+          >
+            Go back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentQuestion) return null;
+
+  const q = currentQuestion;
+  const isMyQuestion = q.authorId === user?.id;
+  const sortedAnswers = [...(q.answers ?? [])].sort((a, b) => {
+    if (a.isAccepted && !b.isAccepted) return -1;
+    if (!a.isAccepted && b.isAccepted) return 1;
+    return (b.votes ?? 0) - (a.votes ?? 0);
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto px-4 py-8">
-        {/* Back Navigation */}
+      <div className=" px-4 py-8">
+        {/* ── Back ────────────────────────────────── */}
         <motion.button
-          initial={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 0, x: -14 }}
           animate={{ opacity: 1, x: 0 }}
-          onClick={() => window.history.back()}
-          className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300 mb-6 group"
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 group"
         >
-          <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-          <span className="text-sm font-medium">Back to questions</span>
+          <ArrowLeft
+            size={15}
+            className="group-hover:-translate-x-1 transition-transform"
+          />
+          Back to questions
         </motion.button>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Question Header */}
-            <QuestionHeader
-              title={question.title}
-              author={question.author}
-              createdAt={question.createdAt}
-              updatedAt={question.updatedAt}
-              views={question.views}
-            />
+        {/* ── Stats bar ───────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-wrap items-center gap-4 mb-5 px-4 py-2.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400"
+        >
+          <span className="flex items-center gap-1.5">
+            <Eye size={12} />
+            {(q.views ?? 0).toLocaleString()} views
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Clock size={12} />
+            {timeAgo(q.createdAt)}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <MessageSquare size={12} />
+            {sortedAnswers.length} answers
+          </span>
+          <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-medium">
+            <TrendingUp size={12} />
+            {localVotes} votes
+          </span>
+          {q.isAnswered && (
+            <span className="ml-auto flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
+              <CheckCircle size={12} /> Answered
+            </span>
+          )}
+        </motion.div>
 
-            {/* Question Stats Bar */}
-            <div className="flex items-center gap-6 mb-6 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                <Eye size={16} />
-                <span className="text-sm font-medium">{question.views.toLocaleString()} views</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                <Clock size={16} />
-                <span className="text-sm">Asked {question.createdAt}</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                <MessageSquare size={16} />
-                <span className="text-sm">{question.answers.length} answers</span>
-              </div>
-              <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                <TrendingUp size={16} />
-                <span className="text-sm">{question.votes} votes</span>
-              </div>
+        {/* ── Question card ────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6"
+        >
+          <div className="flex gap-4 p-6">
+            {/* Votes + bookmark */}
+            <div className="flex flex-col items-center gap-1 flex-shrink-0">
+            <VoteCol
+  votes={localVotes}
+  userVote={localUserVote}
+  onUp={() => handleVote(1)}
+  onDown={() => handleVote(-1)}
+/>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setBookmarked((v) => !v)}
+                className={`mt-2 p-1.5 rounded-lg transition-colors ${bookmarked ? "text-yellow-500" : "text-gray-300 dark:text-gray-600 hover:text-yellow-500"}`}
+              >
+                <Bookmark
+                  size={16}
+                  fill={bookmarked ? "currentColor" : "none"}
+                />
+              </motion.button>
             </div>
 
-            {/* Question Content */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-8">
-              <div className="flex">
-                {/* Sticky Vote Sidebar */}
-                <div className="hidden md:flex flex-col items-center p-4 border-r border-gray-200 dark:border-gray-700">
-                  <QuestionActions
-                    votes={question.votes}
-                    isUpvoted={question.isUpvoted}
-                    isDownvoted={question.isDownvoted}
-                    isBookmarked={question.isBookmarked}
-                    onVote={handleVote}
-                    onBookmark={handleBookmark}
-                    onShare={() => console.log('Share')}
-                    onReport={() => console.log('Report')}
-                  />
-                </div>
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              {/* Community pill */}
+              <span className="inline-block mb-3 px-2.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                {q.community?.name ?? `Community #${q.communityId}`}
+              </span>
 
-                {/* Question Body */}
-                <div className="flex-1 p-6">
-                  <QuestionBody content={question.content} />
-                  
-                  {/* Question Tags */}
-                  <div className="mt-8">
-                    <QuestionTags tags={question.tags} />
-                  </div>
+              {/* Title */}
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-snug mb-4">
+                {q.title}
+              </h1>
 
-                  {/* Question Actions (Mobile) */}
-                  <div className="md:hidden mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <QuestionActions
-                      votes={question.votes}
-                      isUpvoted={question.isUpvoted}
-                      isDownvoted={question.isDownvoted}
-                      isBookmarked={question.isBookmarked}
-                      onVote={handleVote}
-                      onBookmark={handleBookmark}
-                      onShare={() => console.log('Share')}
-                      onReport={() => console.log('Report')}
-                    />
-                  </div>
+              {/* Body */}
+              <BodyRenderer body={q.body} />
 
-                  {/* Question Comments */}
-                  <div className="mt-8">
-                    <CommentList
-                      comments={question.comments}
-                      onAddComment={() => setActiveCommentId('question')}
-                    />
-                    {activeCommentId === 'question' && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                      >
-                        <CommentForm
-                          onSubmit={(comment) => handleAddComment(comment, 'question', 'question')}
-                          onCancel={() => setActiveCommentId(null)}
-                          placeholder="Add a comment to the question..."
-                        />
-                      </motion.div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Answers Section */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {question.answers.length} {question.answers.length === 1 ? 'Answer' : 'Answers'}
-                </h2>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    Sorted by: <span className="font-medium text-gray-700 dark:text-gray-300">Most votes</span>
-                  </span>
-                  <button
-                    onClick={() => setShowAnswerForm(true)}
-                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
-                  >
-                    Post Your Answer
-                  </button>
-                </div>
-              </div>
-
-              <AnswerList
-                answers={question.answers}
-                onAcceptAnswer={handleAcceptAnswer}
-                onAddComment={(answerId) => setActiveCommentId(answerId)}
-              />
-
-              {/* Answer Form */}
-              <AnimatePresence>
-                {showAnswerForm && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                  >
-                    <AnswerForm
-                      onSubmit={handleSubmitAnswer}
-                      onCancel={() => setShowAnswerForm(false)}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Answer Comment Forms */}
-              <AnimatePresence>
-                {question.answers.map(answer => (
-                  activeCommentId === answer.id && (
-                    <motion.div
-                      key={`comment-form-${answer.id}`}
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-4"
+              {/* Tags */}
+              {q.tags?.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-5">
+                  {q.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2.5 py-1 text-xs font-mono rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                     >
-                      <CommentForm
-                        onSubmit={(comment) => handleAddComment(comment, answer.id, 'answer')}
-                        onCancel={() => setActiveCommentId(null)}
-                        placeholder="Add a comment to this answer..."
-                      />
-                    </motion.div>
-                  )
-                ))}
-              </AnimatePresence>
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Footer: author + actions */}
+              <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 dark:border-gray-700/50">
+                <AuthorChip
+                  author={q.author}
+                  date={`Asked ${timeAgo(q.createdAt)}`}
+                />
+                {/* Delete — بس لصاحب السؤال */}
+                {isMyQuestion && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleDeleteQuestion}
+                    disabled={loading}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
+                  >
+                    <Trash2 size={12} /> Delete
+                  </motion.button>
+                )}
+              </div>
             </div>
           </div>
+        </motion.div>
 
-          {/* Sidebar */}
-          <div className="lg:w-80">
-            <SidebarPanel question={question} />
+        {/* ── Answers ─────────────────────────────── */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">
+              {sortedAnswers.length}{" "}
+              {sortedAnswers.length === 1 ? "Answer" : "Answers"}
+            </h2>
+            <button
+              onClick={() => setShowAnswerForm((v) => !v)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
+            >
+              <Send size={13} />
+              {showAnswerForm ? "Cancel" : "Write Answer"}
+            </button>
           </div>
+
+          {/* Answer form */}
+          <AnimatePresence>
+            {showAnswerForm && (
+              <div className="mb-5">
+                <AnswerForm
+                  communityId={currentQuestion.communityId}
+                  questionId={questionId}
+                  onSuccess={() => setShowAnswerForm(false)}
+                />
+              </div>
+            )}
+          </AnimatePresence>
+
+          {/* Answers list */}
+          {sortedAnswers.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-gray-400">
+              <MessageSquare size={36} strokeWidth={1.5} />
+              <p className="text-sm">No answers yet — be the first!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sortedAnswers.map((answer) => (
+                <AnswerCard
+                  key={answer.id}
+                  answer={answer}
+                  communityId={currentQuestion.communityId}
+                  questionId={questionId}
+                  isQuestionAuthor={isMyQuestion}
+                  currentUserId={user?.id}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
-export default QuestionDetailPage
