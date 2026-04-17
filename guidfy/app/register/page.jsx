@@ -18,6 +18,7 @@ import {
   Github,
   Chrome,
 } from "lucide-react";
+import { register } from "@/services/auth";
 
 export default function Register() {
   const [fullName, setFullName] = useState("");
@@ -76,11 +77,17 @@ export default function Register() {
     }
 
     try {
-      await new Promise((r) => setTimeout(r, 1500));
-      toast.success("Registration successful! Redirecting...");
-      setTimeout(() => router.push("/dashboard"), 1000);
-    } catch {
-      toast.error("Something went wrong");
+     const response=await register({ name: fullName, email, password, confirmPassword });
+     if (response.success) {
+       toast.success(response.message);
+       setTimeout(() => {
+         router.push("/login");
+       }, 2000);
+     } else {
+       toast.error(response.error || "Registration failed");
+     }
+    } catch (error) {
+      console.error("Something went wrong: " + error.message);
     } finally {
       setLoading(false);
     }

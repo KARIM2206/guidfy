@@ -18,6 +18,7 @@ import {
   Loader2,
   Chrome,
 } from "lucide-react";
+import { useAuth } from "../CONTEXT/AuthProvider";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -26,6 +27,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const { fetchLogin, loadingForLogin } = useAuth();
   const router = useRouter();
 
   const containerVariants = {
@@ -48,42 +50,14 @@ export default function Login() {
     },
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (loading) return;
-
-    setLoading(true);
-    setError("");
-
-    if (!email || !password) {
-      toast.error("Please fill in all required fields");
-      setLoading(false);
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast.error("Please enter a valid email address");
-      setLoading(false);
-      return;
-    }
-
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters long");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      await new Promise((r) => setTimeout(r, 1500));
-      toast.success("Login successful! Redirecting...");
-      setTimeout(() => router.push("/dashboard"), 1000);
-    } catch {
-      toast.error("Invalid credentials");
-    } finally {
-      setLoading(false);
-    }
-  };
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    await fetchLogin(email, password);
+  } catch (err) {
+    console.error("handleSubmit error:", err);
+  }
+};
 
   return (
    <>
@@ -136,6 +110,8 @@ export default function Login() {
               type="email"
               id="email"
               placeholder=" "
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="
                 peer w-full px-12 py-4
                 border border-gray-300 rounded-xl
@@ -216,10 +192,10 @@ export default function Login() {
           <motion.button
             variants={itemVariants}
             type="submit"
-            disabled={loading}
+            disabled={loadingForLogin}
             className="w-full bg-gradient-to-r from-blue-500 to-blue-600 cursor-pointer text-white py-4 rounded-xl flex items-center justify-center gap-3"
           >
-            {loading ? (
+            {loadingForLogin ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
                 Signing in...
