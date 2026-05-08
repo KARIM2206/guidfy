@@ -83,6 +83,11 @@ const communityRoute = require('./routes/communityRoute');
 const postRoute = require('./routes/postRoute');
 const notificationRoutes = require('./routes/notificationRoutes');
 const chatRoutes=require('./routes/chatRoutes');
+const superAdminRoute = require("./routes/community/superAdminRoute");
+const adminRoute = require("./routes/community/adminRoute");
+const reportRoute = require("./routes/community/reportRoute");
+const n8nRoutes = require('./routes/n8nRoutes');
+
 
 app.use('/api/auth', authRoute);
 app.use('/api/admin/roadmaps', roadmapRoute);
@@ -98,7 +103,11 @@ app.use('/api', postRoute);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/chat', chatRoutes);
 app.use("/api/quiz", require("./routes/quizRoute"));
-
+app.use("/api/admin", adminRoute);
+app.use("/api/super-admin", superAdminRoute);
+app.use("/api/reports", reportRoute);
+app.use('/api/n8n', n8nRoutes);
+app.use('/api/recommendations', require('./routes/recommendationRoute'));
 // =====================
 // TEST SOCKET ROUTE (اختياري مفيد جدًا)
 // =====================
