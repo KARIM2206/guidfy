@@ -14,7 +14,7 @@ const e = require("express");
 const { default: axios } = require("axios");
 
 const addLearningPath = async (req, res, next) => {
-  const { title, description, jobs, projects, estimatedDuration } = req.body;
+  const { title, description, estimatedDuration } = req.body;
   const currentUser = req.user;
 
   try {
@@ -30,8 +30,7 @@ const addLearningPath = async (req, res, next) => {
       data: {
         title,
         description,
-        jobs: parseInt(jobs) || 0,
-        projects: parseInt(projects) || 0,
+      //  jobs: 0,
         estimatedDuration: Number(estimatedDuration),
         createdById: currentUser.id,
         image: imagePath,
@@ -53,26 +52,52 @@ const addLearningPath = async (req, res, next) => {
 // ==========================
 const getAllLearningPaths = async (req, res, next) => {
   const userId = req.user.id;
-  const user=await prisma.user.findUnique({where:{id:userId}})
-  const role=user.role
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const role = user.role;
 
-  let where={};
-  let whereEnrollments={};
+  const { search, topic, level, duration, special } = req.query;
 
-  if(role=='STUDENT'){
-    where.isPublished=true
-    whereEnrollments.userId=userId
+  let where = {};
+  let whereEnrollments = {};
+
+  if (role === 'STUDENT') {
+    where.isPublished = true;
+    whereEnrollments.userId = userId;
+  } else if (role === 'SUPER_ADMIN') {
+    // بدون شروط إضافية
   }
-  else if(role=='SUPER_ADMIN'){
-    whereEnrollments={}
+
+  // البحث النصي
+  const searchText = search || topic;
+  if (searchText) {
+    where.OR = [
+      { title: { contains: searchText } },          // بدون mode
+      { description: { contains: searchText } }
+    ];
   }
+
+  // فلتر المدة
+  if (duration && duration !== 'Any Duration') {
+    const match = duration.match(/(\d+)-(\d+)\s*hrs/);
+    if (match) {
+      const minHours = parseInt(match[1], 10);
+      const maxHours = parseInt(match[2], 10);
+      where.estimatedDuration = {
+        gte: minHours,
+        lte: maxHours,
+      };
+    }
+  }
+
+  // يمكن إضافة فلاتر level و special عندما تصبح الحقول موجودة في الموديل
+
   try {
     const learningPaths = await prisma.learningPath.findMany({
-   where,
+      where,
       include: {
         roadmaps: {
           include: { roadmap: true },
-          orderBy: { order: "asc" },
+          orderBy: { order: 'asc' },
         },
         assignedAdmins: {
           select: {
@@ -80,19 +105,21 @@ const getAllLearningPaths = async (req, res, next) => {
             adminId: true,
           },
         },
-      permissions: true,
+        permissions: true,
         createdBy: true,
         enrollments: {
-          where: whereEnrollments},
+          where: whereEnrollments,
+        },
         projects: true,
-       
       },
-     
-      
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     });
-   
-    res.json({ success: true, data: learningPaths ,message:"Learning Paths fetched successfully" });
+
+    res.json({
+      success: true,
+      data: learningPaths,
+      message: 'Learning Paths fetched successfully',
+    });
   } catch (error) {
     next(error);
   }
@@ -495,6 +522,7 @@ const assignAdminsToSection = async (req, res, next) => {
           type: "ASSIGN_SECTION",
           section: sectionUpper,
           learningPathId,
+          roadmapId: null,
         }
       );
     }
@@ -508,6 +536,7 @@ const assignAdminsToSection = async (req, res, next) => {
           type: "REMOVE_SECTION",
           section: sectionUpper,
           learningPathId,
+         
         }
       );
     }

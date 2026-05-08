@@ -3,6 +3,8 @@ const prisma = new PrismaClient();
 const fs = require("fs");
 const path = require("path");
 const errorHandler = require("../../utils/errorHandler");
+const { extractSkillsFromText } = require('../../services/learning_skill_extractor.service');
+
 // Helper لحذف الفيديو
 const deleteVideoFile = (filePath) => {
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
@@ -11,6 +13,9 @@ const deleteVideoFile = (filePath) => {
 // ========================
 // إضافة Lesson جديد
 // ========================
+
+
+
 const addLessonToStep = async (req, res, next) => {
   try {
     const {
@@ -30,21 +35,21 @@ const addLessonToStep = async (req, res, next) => {
     if (!title || !type)
       return next(errorHandler("Title and type are required", 400));
 
-    // ── Validate BEFORE transaction ──────────────────────
+    // ── التحقق من صحة المدخلات قبل المعاملة ──────────────────────
     if (type === "VIDEO" && !req.file && !externalLink)
       return next(errorHandler("Video file or external URL is required", 400));
 
     if (type === "ARTICLE" && !content && !externalLink)
       return next(errorHandler("Content or external link is required", 400));
 
-    // ── Order ────────────────────────────────────────────
+    // ── الترتيب (Order) ────────────────────────────────────────────
     const lastLesson = await prisma.lesson.findFirst({
       where: { stepId: Number(stepId) },
       orderBy: { order: "desc" },
     });
     const newOrder = lastLesson ? lastLesson.order + 1 : 1;
 
-    // ── Transaction ──────────────────────────────────────
+    // ── المعاملة (Transaction) ──────────────────────────────────────
     const lesson = await prisma.$transaction(async (tx) => {
       const newLesson = await tx.lesson.create({
         data: { title, description, type, order: newOrder, stepId: Number(stepId) },
@@ -88,7 +93,24 @@ const addLessonToStep = async (req, res, next) => {
       return newLesson;
     });
 
-    // ── Notifications (بعد Transaction تمت بنجاح) ────────
+    // ✨ استخراج المهارات تلقائياً من AI وتحديث الدرس
+    try {
+      // الوصف قد يكون description المباشر أو المحتوى (للدروس المقالية) أو مزيج
+      const textForAI = description || content || '';
+      const skills = await extractSkillsFromText(title, textForAI);
+      if (skills && skills.length > 0) {
+        const updatedLesson = await prisma.lesson.update({
+          where: { id: lesson.id },
+          data: { skills },
+        });
+        lesson.skills = skills; // إضافتها للكائن المُعاد
+      }
+    } catch (aiError) {
+      console.error('AI skill extraction failed for lesson:', aiError.message);
+      // لا نوقف العملية
+    }
+
+    // ── الإشعارات (Notifications) ─────────────────────────────────
     try {
       const step = await prisma.step.findUnique({
         where: { id: Number(stepId) },
@@ -148,11 +170,11 @@ const addLessonToStep = async (req, res, next) => {
         }
       }
     } catch (notifError) {
-      // مش هنوقف الـ response لو الـ notification فشلت
       console.error("Notification error (non-fatal):", notifError.message);
+      // لا نوقف الـ response
     }
 
-    // ── Response ─────────────────────────────────────────
+    // ── الاستجابة ─────────────────────────────────────────
     res.status(201).json({
       lesson,
       message: "Lesson created successfully",
@@ -162,6 +184,7 @@ const addLessonToStep = async (req, res, next) => {
   } catch (error) {
     console.error("addLessonToStep error:", error);
 
+    // حذف الملف المرفوع في حالة الفشل
     if (req.file) {
       const filePath = path.join(process.cwd(), "uploads/lessons", req.file.filename);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);

@@ -51,6 +51,10 @@ enum JobType {
   REMOTE
   ONSITE
   HYBRID
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
 }
 
 enum JobStatus {
@@ -70,6 +74,13 @@ enum VoteType {
   ANSWER
   POST
 }
+enum CommunityStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+
 model User {
   id       Int     @id @default(autoincrement())
   email    String  @unique
@@ -123,7 +134,25 @@ postComments        PostComment[]       @relation("UserPostComments")
 sentMessages     ChatMessage[] @relation("SentMessages")
 receivedMessages ChatMessage[] @relation("ReceivedMessages")
 votes               Vote[]             
-views               View[]             
+views               View[]     
+adminActionLogs AdminActionLog[]
+submittedReports CommunityReport[] @relation("ReporterUser")
+resolvedReports  CommunityReport[] @relation("ResolvedByUser")
+
+}
+model AdminActionLog {
+  id         Int      @id @default(autoincrement())
+  adminId    Int
+  action     String   // "SUSPEND_COMMUNITY" | "DELETE_POST" | etc.
+  targetType String   // "COMMUNITY" | "POST" | "USER" | "REPORT"
+  targetId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  admin      User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([targetType, targetId])
 }
 model Community {
   id          Int       @id @default(autoincrement())
@@ -133,14 +162,38 @@ model Community {
   icon        String?
   createdAt   DateTime  @default(now())
   color       String?
+  status      CommunityStatus @default(ACTIVE)
   // علاقات
   createdById Int
   createdBy   User      @relation("CommunityCreator", fields: [createdById], references: [id])
   members     User[]    @relation("CommunityMembers")
     questions   CommunityQuestion[]
   posts       Post[]
+  reports CommunityReport[]
 }
-// ✅ أضف الـ models دي في آخر الـ schema
+model CommunityReport {
+  id           Int      @id @default(autoincrement())
+  reporterId   Int
+  communityId  Int
+  targetType   String   // "POST" | "QUESTION" | "COMMUNITY" | "USER"
+  targetId     Int
+  reason       String
+  description  String?  @db.Text
+  status       String   @default("PENDING") // "PENDING" | "RESOLVED" | "DISMISSED"
+  notes        String?  @db.Text
+  resolvedById Int?
+  resolvedAt   DateTime?
+  createdAt    DateTime @default(now())
+
+  reporter     User      @relation("ReporterUser", fields: [reporterId],   references: [id], onDelete: Cascade)
+  community    Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  resolvedBy   User?     @relation("ResolvedByUser", fields: [resolvedById], references: [id])
+
+  @@index([communityId])
+  @@index([reporterId])
+  @@index([status])
+}
+
 
 model CommunityQuestion {
   id          Int       @id @default(autoincrement())
@@ -319,7 +372,7 @@ model LearningPath {
   id          Int    @id @default(autoincrement())
   title       String @unique
   description String
-  jobs        Int
+  
 
   estimatedDuration Int
   isPublished       Boolean @default(false)
@@ -492,6 +545,21 @@ model Job {
 
   applications JobApplication[]
   assignments  JobAssignment[]
+  applyLink String? @db.Text 
+
+source String? // linkedin
+
+externalId String? @unique
+
+experienceLevel String?
+
+postedAt DateTime?
+
+matchScore Float?
+
+skills Json?
+
+scrapedAt DateTime @default(now())
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 }
@@ -596,7 +664,7 @@ model Step {
   stepProgress UserStepProgress[]
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
-
+  skills Json?
   @@unique([roadmapId, order])
 }
 
@@ -619,7 +687,7 @@ model Lesson {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  skills Json?
   @@unique([stepId, order])
 }
 

@@ -31,19 +31,18 @@ useEffect(() => {
 
 if (loading) return <p>Loading...</p>;
 
+console.log('path id \n',studentRoadmaps);
 
   
   return (
     <div>
    {
-   (( currentTab == 'blog' || currentTab == 'Blog')&&
-   <BlogSection/>)||
 (currentTab === 'roadmap' || currentTab === 'Roadmap') && (
   <CoursePage learningPath={studentRoadmaps} />
 )
    ||
    (currentTab == 'jobs' || currentTab == 'Jobs'&&
-   <JobsSection />)
+   <JobsSection  learningPathId={studentRoadmaps?.id} />)
    ||
    (currentTab == 'projects' || currentTab == 'Projects'&&
    <ProjectsSection />)

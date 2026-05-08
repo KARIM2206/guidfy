@@ -20,7 +20,6 @@ const Layout = ({ params, children }) => {
   const resolvedParams = use(params);
   const { title } = resolvedParams;
   const navLinks = [
-    { name: "Blog", href: "/blog", icon: BookOpen, color: "#3B82F6" },
     {
       name: "Roadmap",
       href: "/roadmap",

@@ -30,8 +30,7 @@ export default function LearningPathForm({
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    jobs: '',
-    projects: '',
+  
     estimatedDuration: '',
   });
 
@@ -48,8 +47,6 @@ export default function LearningPathForm({
       setFormData({
         title: initialData.title || '',
         description: initialData.description || '',
-        jobs: initialData.jobs || '',
-        projects: initialData.projects || '',
         estimatedDuration: initialData.estimatedDuration || '',
       });
       // Set image preview if there's an existing image URL
@@ -125,8 +122,7 @@ export default function LearningPathForm({
     const formattedFormData = new FormData();
     formattedFormData.append('title', formData.title);
     formattedFormData.append('description', formData.description);
-    formattedFormData.append('jobs', formData.jobs);
-    formattedFormData.append('projects', formData.projects);
+   
     formattedFormData.append('estimatedDuration', formData.estimatedDuration);
 
     // Handle image: if new file selected, append it; otherwise, if existing image URL and no new file, maybe append the URL? 
@@ -147,8 +143,6 @@ export default function LearningPathForm({
     setFormData({
       title: '',
       description: '',
-      jobs: '',
-      projects: '',
       estimatedDuration: '',
     });
     setImageFile(null);
@@ -292,6 +286,7 @@ export default function LearningPathForm({
         </motion.div>
 
         {/* Jobs & Projects Grid */}
+{/*         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <motion.div custom={3} variants={fieldVariants} initial="hidden" animate="visible">
             <Input
@@ -324,7 +319,7 @@ export default function LearningPathForm({
               placeholder="Number of projects"
             />
           </motion.div>
-        </div>
+        </div> */}
 
         {/* Estimated Duration */}
         <motion.div custom={5} variants={fieldVariants} initial="hidden" animate="visible">

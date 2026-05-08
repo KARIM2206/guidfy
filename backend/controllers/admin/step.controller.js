@@ -1,7 +1,7 @@
 // controllers/stepController.js
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-
+const { extractSkillsFromText } = require('../../services/learning_skill_extractor.service');
 // Helper: إرسال notification للـ SUPER_ADMIN
 const notifySuperAdmins = async (message, metadata = {}) => {
   const superAdmins = await prisma.user.findMany({
@@ -23,16 +23,19 @@ const notifySuperAdmins = async (message, metadata = {}) => {
   return superAdmins.map((sa) => sa.id);
 };
 
+
+
 const addStepToRoadmap = async (req, res) => {
   const { title, description, roadmapId } = req.body;
   const admin = req.user;
 
   try {
+    // ✅ التحقق من الحقول المطلوبة
     if (!title || !description || !roadmapId) {
       return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
-    // ✅ هات آخر order
+    // ✅ جلب آخر ترتيب
     const lastStep = await prisma.step.findFirst({
       where: { roadmapId: Number(roadmapId) },
       orderBy: { order: "desc" },
@@ -40,7 +43,7 @@ const addStepToRoadmap = async (req, res) => {
 
     const newOrder = lastStep ? lastStep.order + 1 : 1;
 
-    // ✅ create step
+    // ✅ إنشاء الخطوة
     const step = await prisma.step.create({
       data: {
         title,
@@ -49,18 +52,34 @@ const addStepToRoadmap = async (req, res) => {
         roadmapId: Number(roadmapId),
       },
     });
-    // ── جيب اسم الـ roadmap ──────────────────────────
-   const roadmap = await prisma.roadmap.findUnique({
-  where: { id: Number(roadmapId) },
-  include: {
-    learningPaths: {
-      select: { id: true }
-    }
-  }
-});
-console.log(`Roadmap fetched for notification:`, roadmap?.learningPaths);
 
-    // ── جيب كل الـ SUPER_ADMINs ──────────────────────
+    // ✨ استخراج المهارات تلقائياً من AI وتحديث الخطوة
+    try {
+      const skills = await extractSkillsFromText(title, description);
+      if (skills && skills.length > 0) {
+        await prisma.step.update({
+          where: { id: step.id },
+          data: { skills }, // JSON
+        });
+        step.skills = skills; // إضافتها للكائن المُعاد
+      }
+    } catch (aiError) {
+      console.error('AI skill extraction failed for step:', aiError.message);
+      // لا نوقف العملية إذا فشل الـ AI
+    }
+   console.log('skills of step \n',step?.skills);
+   
+    // ── جلب اسم الـ roadmap مع learningPathId ──────────────────────────
+    const roadmap = await prisma.roadmap.findUnique({
+      where: { id: Number(roadmapId) },
+      include: {
+        learningPaths: {
+          select: { id: true },
+        },
+      },
+    });
+
+    // ── جلب كل الـ SUPER_ADMINs ──────────────────────
     const superAdmins = await prisma.user.findMany({
       where: { role: "SUPER_ADMIN" },
       select: { id: true },
@@ -70,7 +89,7 @@ console.log(`Roadmap fetched for notification:`, roadmap?.learningPaths);
       const io = req.app.get("io");
 
       for (const sa of superAdmins) {
-        // ✅ save في DB
+        // حفظ الإشعار في قاعدة البيانات
         const notification = await prisma.notification.create({
           data: {
             userId: sa.id,
@@ -88,8 +107,8 @@ console.log(`Roadmap fetched for notification:`, roadmap?.learningPaths);
             },
           },
         });
-        // console.log(`Notification created for SUPER_ADMIN ${sa.id}:`, notification);
-        // ✅ emit real-time بنفس الـ pattern
+
+        // إرسال الإشعار في الوقت الفعلي
         io?.to(`user_${sa.id}`).emit("new_notification", {
           id: notification.id,
           message: notification.message,
