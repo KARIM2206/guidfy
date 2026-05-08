@@ -73,8 +73,8 @@ const DashboardAdminPanelLayout = ({ children }) => {
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto transition-all duration-300">
-          <div className="p-2 sm:p-6 pb-0">
-            <div className="px-1 py-2 md:p-6">{children}</div>
+          <div className=" pb-0">
+            <div className="">{children}</div>
           </div>
         </main>
       </div>

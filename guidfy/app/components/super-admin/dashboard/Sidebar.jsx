@@ -17,6 +17,8 @@ import {
   GraduationCap,
   Briefcase,
   Folder,
+  Globe,
+  Bell,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -25,7 +27,10 @@ const superAdminNavItems = [
   { id: "users", label: "Users", icon: Users },
   { id: "learning-paths", label: "Learning Paths", icon: BookOpen },
   { id: "jobs", label: "Jobs", icon: Briefcase },
-  { id: "project", label: "Projects", icon: Folder },
+  { id: "projects", label: "Projects", icon: Folder },
+  { id: "communities", label: "Communities", icon: Globe },
+  { id: "notifications", label: "Notifications", icon: Bell },
+
 ];
 
 export default function SuperAdminSidebar() {
