@@ -19,8 +19,8 @@ const LANGUAGES = [
 ];
 
 const TABS = [
-  { key: 'question', label: 'Question', icon: MessageSquare, gradient: 'from-blue-500 to-cyan-500',     focusBorder: 'focus:border-blue-500',   ring: 'focus:ring-blue-500/20'   },
-  { key: 'post',     label: 'Post',     icon: FileText,      gradient: 'from-violet-500 to-purple-600', focusBorder: 'focus:border-violet-500', ring: 'focus:ring-violet-500/20' },
+  { key: 'questions', label: 'Question', icon: MessageSquare, gradient: 'from-blue-500 to-cyan-500',     focusBorder: 'focus:border-blue-500',   ring: 'focus:ring-blue-500/20'   },
+  { key: 'posts',     label: 'Post',     icon: FileText,      gradient: 'from-violet-500 to-purple-600', focusBorder: 'focus:border-violet-500', ring: 'focus:ring-violet-500/20' },
 ];
 
 function uid() { return Math.random().toString(36).slice(2, 8); }
@@ -145,7 +145,7 @@ function CodeBlockEditor({ block, onChange, onDelete }) {
 //  MAIN
 // ═══════════════════════════════════════════════════
 export default function CreateModal({
-  isOpen, onClose, communityId, communityName = 'Community', defaultType = 'question', onSuccess,
+  isOpen, onClose, communityId, communityName = 'Community', isFeed,defaultType = 'questions', onSuccess,
 }) {
   const { addQuestion, addPost } = useCommunity();
 
@@ -161,8 +161,9 @@ export default function CreateModal({
   const [errMsg,     setErrMsg]     = useState('');
 
   const titleRef  = useRef(null);
-  const activeTab = TABS.find((t) => t.key === activeType);
-
+  const activeTab = TABS.find((t) => t.key == activeType )
+  console.log('active \n',activeType,activeTab,defaultType);
+  
   const reset = () => {
     setTitle('');
     setBlocks([{ id: uid(), type: 'code', code: '', language: 'javascript' }]);
@@ -245,7 +246,7 @@ export default function CreateModal({
     setStatus('loading'); setErrMsg('');
     try {
       const payload = { title: title.trim(), body: buildBody(), tags };
-      if (activeType === 'question') await addQuestion(communityId, payload);
+      if (activeType === 'questions') await addQuestion(communityId, payload);
       else                           await addPost(communityId, payload);
       setStatus('success');
       setTimeout(() => { onSuccess?.(); onClose(); }, 1200);
@@ -296,7 +297,7 @@ export default function CreateModal({
               className="pointer-events-auto w-full max-w-2xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col max-h-[92vh]"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className={`h-1 bg-gradient-to-r ${activeTab.gradient} rounded-t-2xl flex-shrink-0`} />
+              <div className={`h-1 bg-gradient-to-r ${activeTab?.gradient} rounded-t-2xl flex-shrink-0`} />
 
               {/* Header */}
               <div className="flex items-center justify-between px-6 pt-4 pb-3 flex-shrink-0">
@@ -309,8 +310,8 @@ export default function CreateModal({
               </div>
 
               {/* Tabs */}
-              <div className="flex items-center gap-2 px-6 pb-4 flex-shrink-0">
-                {TABS.map((tab) => {
+              <div className={`flex items-center ${isFeed==true?"":"justify-end"} gap-2 px-6 pb-4 flex-shrink-0`}>
+                {isFeed&&TABS.map((tab) => {
                   const Icon = tab.icon; const isActive = activeType === tab.key;
                   return (
                     <button key={tab.key} onClick={() => setActiveType(tab.key)}
@@ -342,7 +343,7 @@ export default function CreateModal({
                         ref={titleRef}
                         value={title}
                         onChange={(e) => { setTitle(e.target.value); setErrors((er) => ({ ...er, title: '' })); }}
-                        placeholder={activeType === 'question' ? 'What do you want to ask?' : 'Give your post a clear title'}
+                        placeholder={activeType === 'questions' ? 'What do you want to ask?' : 'Give your post a clear title'}
                         maxLength={150}
                         className={`w-full px-4 py-3 rounded-xl border text-sm bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${errors.title ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : `border-gray-200 dark:border-gray-700 ${activeTab.focusBorder} ${activeTab.ring}`}`}
                       />
@@ -449,7 +450,7 @@ export default function CreateModal({
                   className={`flex-1 px-5 py-2.5 rounded-xl text-white text-sm font-semibold bg-gradient-to-r ${activeTab.gradient} hover:opacity-90 disabled:opacity-70 transition-all flex items-center justify-center gap-2 shadow-sm`}>
                   {status === 'loading' && <Loader2 size={15} className="animate-spin" />}
                   {status === 'success' && <CheckCircle2 size={15} />}
-                  <span>{status === 'loading' ? 'Posting...' : status === 'success' ? 'Posted!' : activeType === 'question' ? 'Post Question' : 'Publish Post'}</span>
+                  <span>{status === 'loading' ? 'Posting...' : status === 'success' ? 'Posted!' : activeType === 'questions' ? 'Post Question' : 'Publish Post'}</span>
                   {status === 'idle' && <ChevronRight size={15} />}
                 </button>
               </div>

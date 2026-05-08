@@ -89,9 +89,24 @@ function SidebarContent({ onClose ,isAdmin,setModalOpen }) {
   } = useCommunity();
 
   // جلب الكميونتيز عند أول render
-  useEffect(() => {
-    fetchAllCommunities();
-  }, []);
+ // داخل SidebarContent
+const [sidebarLoading, setSidebarLoading] = useState(false);
+const [sidebarError, setSidebarError] = useState(null);
+
+useEffect(() => {
+  const loadCommunities = async () => {
+    setSidebarLoading(true);
+    setSidebarError(null);
+    try {
+      await fetchAllCommunities();   // من الكونتكست
+    } catch (err) {
+      setSidebarError(err.message);
+    } finally {
+      setSidebarLoading(false);
+    }
+  };
+  loadCommunities();
+}, []);
 
   const handleCommunityClick = (community) => {
     router.push(`/community/${community.slug}`);
@@ -126,7 +141,7 @@ function SidebarContent({ onClose ,isAdmin,setModalOpen }) {
         </div>
 
         {/* Loading state */}
-        {loading && (
+        {sidebarLoading && (
           <div className="flex items-center justify-center py-8 gap-2 text-gray-400">
             <Loader2 size={16} className="animate-spin" />
             <span className="text-sm">Loading...</span>
@@ -134,10 +149,10 @@ function SidebarContent({ onClose ,isAdmin,setModalOpen }) {
         )}
 
         {/* Error state */}
-        {error && !loading && (
+        {sidebarError && !sidebarLoading && (
           <div className="flex flex-col items-center gap-2 py-4 text-red-400">
             <AlertCircle size={20} />
-            <span className="text-xs text-center">{error}</span>
+            <span className="text-xs text-center">{sidebarError}</span>
             <button
               onClick={fetchAllCommunities}
               className="text-xs text-blue-500 hover:underline"
@@ -148,7 +163,7 @@ function SidebarContent({ onClose ,isAdmin,setModalOpen }) {
         )}
 
         {/* Communities list */}
-        {!loading && !error && (
+        {!sidebarLoading && !sidebarError && (
           <ul className="space-y-1">
             {/* All Communities */}
             <motion.li whileHover={{ x: 4 }} whileTap={{ scale: 0.98 }}>
@@ -231,15 +246,7 @@ function SidebarContent({ onClose ,isAdmin,setModalOpen }) {
       </div>
 
       {/* ── Create Community Button ──────────────── */}
-    { isAdmin && <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => setModalOpen(true)}
-        className="w-full mb-8 flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg font-medium transition-all shadow-sm hover:shadow"
-      >
-        <PlusCircle size={18} />
-        <span>Create Community</span>
-      </motion.button>}
+   
 
       {/* ── Popular Tags ─────────────────────────── */}
       <div className="mb-8">
@@ -269,25 +276,8 @@ function SidebarContent({ onClose ,isAdmin,setModalOpen }) {
         </div>
       </div>
 
-      {/* ── Quick Links ──────────────────────────── */}
-      <div>
-        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
-          Quick Links
-        </h3>
-        <div className="space-y-2">
-          {QUICK_LINKS.map((link, index) => (
-            <motion.button
-              key={index}
-              onClick={() => { router.push(link.path); onClose?.(); }}
-              whileHover={{ x: 4 }}
-              className="flex items-center space-x-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300 rounded-lg transition-colors w-full text-left"
-            >
-              <link.icon size={16} />
-              <span className="text-sm">{link.label}</span>
-            </motion.button>
-          ))}
-        </div>
-      </div>
+
+     
 
       {/* ── User Stats ───────────────────────────── */}
       <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">

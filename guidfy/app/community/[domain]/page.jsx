@@ -143,6 +143,7 @@ export default function CommunityDomainPage() {
   const [page,           setPage]           = useState(1);
   const [pageError,      setPageError]      = useState(null);
   const [contentLoading, setContentLoading] = useState(false);
+console.log('current community',currentCommunity);
 
   // ── 1. جلب بيانات الكميونتى ───────────────────
   useEffect(() => {
@@ -187,7 +188,7 @@ export default function CommunityDomainPage() {
 
   // ── Map raw API → Feed shape ──────────────────
   const communityName = currentCommunity?.name ?? '';
-  const feedItems = activeTab === 'questions'
+  const feedItems = activeTab == 'questions'
     ? questions.map((q) => mapQuestion(q, communityName))
     : posts.map((p) => mapPost(p, communityName));
  
@@ -219,6 +220,7 @@ export default function CommunityDomainPage() {
         hasMore={page < pagination.pages}
         isLoadingMore={contentLoading && feedItems.length > 0}
         communityId={currentCommunity?.id}
+        type={activeTab}
       />
     );
   };
@@ -271,7 +273,7 @@ export default function CommunityDomainPage() {
           name={currentCommunity.name}
           description={currentCommunity.description}
           icon={currentCommunity.icon}
-          color={currentCommunity.color}
+          color={currentCommunity?.color}
           isMember={currentCommunity.isJoined}
           onJoin={handleJoin}
           members={currentCommunity.stats?.members ?? 0}

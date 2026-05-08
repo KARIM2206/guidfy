@@ -13,7 +13,7 @@ import {
   ResponsiveContainer, AreaChart, Area,
 } from 'recharts';
 import { useCommunity } from '@/app/CONTEXT/CommuntiyProvider';
-import { getCommunityAnalytics } from '@/services/community';
+import { getCommunityAnalytics } from '@/services/community/community';
 // import { getCommunityAnalytics } from '@/services/community.js';
 
 const COLOR = {

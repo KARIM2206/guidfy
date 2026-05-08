@@ -4,14 +4,53 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, CheckCircle2, AlertCircle, Hash, Type, FileText, Palette } from 'lucide-react';
 import { useCommunity } from '@/app/CONTEXT/CommuntiyProvider';
-
+import Modal from '../ui/Modal';
+import { updateAdminCommunity } from '@/services/community/adminCommonutiy.service';
+import { getCommunityBySlug } from '@/services/community/community';
 // ─── Emoji picker options ─────────────────────────
 const EMOJI_OPTIONS = [
-  '💻', '🛢️', '📱', '☁️', '🔐', '🤖', '🌐', '⛓️',
-  '📊', '🎮', '🎨', '🚀', '⚙️', '🧪', '📡', '🔬',
-  '🧠', '💡', '🔥', '⚡', '🌍', '🎯', '🛠️', '📦',
-];
+  // Core Tech
+  '💻', '🖥️', '🖱️', '⌨️', '🧑‍💻', '👨‍💻', '👩‍💻',
 
+  // Backend / Database
+  '🛢️', '🗄️', '🗃️', '💾', '🧾',
+
+  // Mobile / Apps
+  '📱', '📲', '📳',
+
+  // Cloud / DevOps
+  '☁️', '🌩️', '⚙️', '🧰', '🛠️', '🚀', '📦',
+
+  // Security
+  '🔐', '🔒', '🛡️', '🔑', '🧷',
+
+  // Networking
+  '🌐', '📡', '📶', '🔗', '⛓️',
+
+  // AI / Data Science
+  '🤖', '🧠', '🧪', '📊', '📈', '📉', '🔬',
+
+  // Design / UI-UX
+  '🎨', '🖌️', '🖍️', '🧩',
+
+  // Performance / Debug
+  '🐞', '🔧', '⚡', '🔥', '💥',
+
+  // Ideas / Innovation
+  '💡', '🧠', '🎯', '🚀',
+
+  // Global / Web
+  '🌍', '🌎', '🌏', '🖥️',
+
+  // Gaming / Fun tech
+  '🎮', '🕹️', '👾',
+
+  // Tools / Files
+  '🗂️', '📁', '📂', '📄', '📝', '📦',
+
+  // Misc Dev vibes
+  '🏗️', '🧱', '🧬', '🔄', '♻️'
+];
 // ─── Color options ────────────────────────────────
 const COLOR_OPTIONS = [
   { label: 'Blue',    value: 'blue',    class: 'bg-blue-500'   },
@@ -56,7 +95,7 @@ function Field({ label, icon: Icon, error, children }) {
 // ═══════════════════════════════════════════════════
 //  MAIN MODAL
 // ═══════════════════════════════════════════════════
-export default function CreateCommunityModal({ isOpen, onClose }) {
+export default function CreateCommunityModal({ isOpen,setRefresh,onClose,isEdit=false,data=null }) {
   const { addCommunity } = useCommunity();
 
   const [form, setForm]       = useState({ name: '', description: '', icon: '💻', color: 'blue' });
@@ -73,6 +112,14 @@ export default function CreateCommunityModal({ isOpen, onClose }) {
       setForm({ name: '', description: '', icon: '💻', color: 'blue' });
       setErrors({});
       setStatus('idle');
+      if (isEdit && data) {
+        setForm({
+          name: data.name,
+          description: data.description || '',
+          icon: data.icon || '💻',
+          color: data.color || 'blue',
+        });
+      }
     }
   }, [isOpen]);
 
@@ -84,8 +131,7 @@ export default function CreateCommunityModal({ isOpen, onClose }) {
   }, [onClose]);
 
   // ── slug preview ─────────────────────────────────
-  const slugPreview = form.name
-    .toLowerCase()
+  const slugPreview = form.name?.toLowerCase()
     .trim()
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '');
@@ -107,12 +153,29 @@ export default function CreateCommunityModal({ isOpen, onClose }) {
 
     setStatus('loading');
     try {
+      if (isEdit && data) {
+      await updateAdminCommunity(data.slug, {
+        name:        form.name.trim(),
+        description: form.description.trim() || undefined,
+        icon:        form.icon,
+        color:       form.color,
+      });
+      setRefresh(prev=>!prev);
+    //   setTimeout(() => {
+    //     const fetch =async()=>{
+    //       const data = await getCommunityBySlug(data.slug);
+    //     }
+    //  fetch()
+
+    //   }, 2000);
+    } else {
       await addCommunity({
         name:        form.name.trim(),
         description: form.description.trim() || undefined,
         icon:        form.icon,
         color:       form.color,
       });
+      }
       setStatus('success');
       setTimeout(() => { onClose(); setStatus('idle'); }, 1400);
     } catch (err) {
@@ -133,18 +196,21 @@ export default function CreateCommunityModal({ isOpen, onClose }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50  bg-black/60 backdrop-blur-sm"
             onClick={onClose}
           />
 
           {/* ── Modal panel ──────────────────────── */}
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1,    y: 0  }}
             exit={{   opacity: 0, scale: 0.95, y: 20  }}
             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
-          >
+            className="fixed inset-0 z-50 flex items-center justify-center
+             p-4 pointer-events-none max-h-[80vh] overflow-auto scrollbar-animated"
+          > */}
+            <Modal onClose={onClose} className="pointer-events-auto" 
+            title={isEdit?`Edit ${data.name} Community`:'Create Community'} isOpen={isOpen}>
             <div
               className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl pointer-events-auto overflow-hidden"
               onClick={(e) => e.stopPropagation()}
@@ -153,7 +219,7 @@ export default function CreateCommunityModal({ isOpen, onClose }) {
               <div className={`h-1.5 w-full bg-gradient-to-r ${gradient}`} />
 
               {/* ── Preview header ───────────────── */}
-              <div className={`bg-gradient-to-br ${gradient} bg-opacity-10 px-6 pt-5 pb-4`}>
+              <div className={`bg-gradient-to-br ${gradient} bg-opacity-10 `}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-2xl shadow-lg`}>
@@ -170,12 +236,12 @@ export default function CreateCommunityModal({ isOpen, onClose }) {
                       )}
                     </div>
                   </div>
-                  <button
+                  {/* <button
                     onClick={onClose}
                     className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
                   >
                     <X size={16} />
-                  </button>
+                  </button> */}
                 </div>
               </div>
 
@@ -304,14 +370,14 @@ export default function CreateCommunityModal({ isOpen, onClose }) {
                   >
                     {status === 'loading' && <Loader2 size={15} className="animate-spin" />}
                     {status === 'success' && <CheckCircle2 size={15} />}
-                    {status === 'loading' ? 'Creating...'
-                      : status === 'success' ? 'Created!'
-                      : 'Create Community'}
+                    {status === 'loading' ? isEdit ? 'Updating...' : 'Creating...'
+                      : status === 'success' ? isEdit ? 'Updated!' : 'Created!' : isEdit ? 'Update Community' : 'Create Community'}
                   </button>
                 </div>
               </form>
             </div>
-          </motion.div>
+            </Modal>
+          {/* </motion.div> */}
         </>
       )}
     </AnimatePresence>

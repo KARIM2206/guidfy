@@ -100,7 +100,8 @@ const FeedEmptyState = ({ type = 'questions', communityId, communityName = 'this
       {/* Modal */}
    { canCreate && (
         <CreateModal
-          type={type}
+        defaultType={type}
+           
           communityId={communityId}
           communityName={communityName}
           onClose={() => setModalOpen(false)}

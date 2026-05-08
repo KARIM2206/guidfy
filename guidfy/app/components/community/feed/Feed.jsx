@@ -8,11 +8,12 @@ import { useState } from 'react';
 import CreateModal from './CreateModal';
 import { useCommunity } from '@/app/CONTEXT/CommuntiyProvider';
 
-const Feed = ({ items = [], onLoadMore, hasMore = false , isLoadingMore = false, communityId}) => {
+const Feed = ({ items = [], type='questions',onLoadMore, hasMore = false , isLoadingMore = false, communityId}) => {
   const{isCode}=useCommunity()
   if (items.length === 0) return null;
 
 const[isModalOpen, setIsModalOpen] = useState(false);
+const[itemType, setItemType] = useState(null);
   const renderItem = (item) => {
     switch (item.type) {
       case 'question':
@@ -86,7 +87,8 @@ const[isModalOpen, setIsModalOpen] = useState(false);
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => setIsModalOpen(true)}
+          onClick={() =>{ setIsModalOpen(true) 
+          }}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
         >
           Create
@@ -118,7 +120,7 @@ const[isModalOpen, setIsModalOpen] = useState(false);
           </motion.button>
         </div>
       )}
-      <CreateModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} communityId={communityId} />
+      <CreateModal isOpen={isModalOpen} defaultType={type} onClose={() => setIsModalOpen(false)} communityId={communityId} />
     </div>
   );
 };

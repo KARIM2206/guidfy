@@ -161,6 +161,7 @@ const getAllCommunities = async (req, res) => {
       stats: { members: c._count.members, questions: c._count.questions, posts: c._count.posts },
       isJoined: c.members.length > 0,
       isMyCreation: c.createdBy.id === userId,
+      createdAt: c.createdAt,
     }));
 
     return res.json(result);
