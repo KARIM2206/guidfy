@@ -321,9 +321,9 @@ const changeStatus = async (req, res, next) => {
   const { status } = req.body;
 
   try {
-    // ❌ بس SUPER_ADMIN
-    if (req.user.role !== "SUPER_ADMIN") {
-      return next(errorHandler("Only Super Admin can change status", 403));
+    // ❌ بس SUPER_ADMIN & admin
+    if (req.user.role !== "SUPER_ADMIN" && req.user.role !== "ADMIN") {
+      return next(errorHandler("Only Super Admin and admin can change status", 403));
     }
 
     const job = await prisma.job.findUnique({
@@ -331,10 +331,11 @@ const changeStatus = async (req, res, next) => {
       include: {
         learningPath: {
           include: {
-            enrollments: true, // users
-            assignedAdmins: true, // admins
+            enrollments: true, // students
+            assignedAdmins: true, // admins مسندين للـ learning path
           },
         },
+        createdBy: true, // الادمن اللي عمل الجوب
       },
     });
 
@@ -349,9 +350,19 @@ const changeStatus = async (req, res, next) => {
 
     // 🔥 جمع كل اليوزرز + الأدمنز
     const studentIds = job.learningPath.enrollments.map(e => e.userId);
-    const adminIds = job.learningPath.assignedAdmins.map(a => a.adminId);
+    const learningPathAdminIds = job.learningPath.assignedAdmins.map(a => a.adminId);
+    
+    // إضافة الادمن اللي عمل الجوب إذا كان مختلف
+    const allAdminIds = [job.createdById, ...learningPathAdminIds];
+    const uniqueAdminIds = [...new Set(allAdminIds)];
+    
+    const allUsers = [...new Set([...studentIds, ...uniqueAdminIds])];
 
-    const allUsers = [...new Set([...studentIds, ...adminIds])];
+    console.log('Job ID:', job.id, 'Learning Path ID:', job.learningPathId);
+    console.log('Students:', studentIds);
+    console.log('Learning Path Admins:', learningPathAdminIds);
+    console.log('Job Creator (Admin):', job.createdById);
+    console.log('All users to notify:', allUsers);
 
     // 🔔 Notification
     await sendNotification(req, allUsers, {
@@ -359,7 +370,9 @@ const changeStatus = async (req, res, next) => {
       metadata: {
         type: "CHANGE_STATUS",
         jobId: job.id,
+        jobTitle: job.title,
         status,
+        changedBy: req.user.id,
       },
     });
 

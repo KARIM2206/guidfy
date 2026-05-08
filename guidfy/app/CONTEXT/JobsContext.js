@@ -15,7 +15,8 @@ import {
   getJobById,
   getAllJobs,
   changeStatus,
-  getAlljobsToStudentByLearningPathTitle,
+  // getAlljobsToStudentByLearningPathTitle,
+  getAlljobsToStudentByLearningPathId,
 } from '@/services/admin/jobs'; // عدل المسار حسب مشروعك
 
 const JobContext = createContext();
@@ -60,12 +61,12 @@ export const JobProvider = ({ children }) => {
       setLoading(false);
     }
   }, []);
-  const fetchAllJobsTostudentByLearningPathTitle = useCallback(async (title) => {
+  const fetchAllJobsTostudentByLearningPathId = useCallback(async ({learningPathId,page,limit}) => {
     setLoading(true);
     setError(null);
 
     try {
-      const data = await getAlljobsToStudentByLearningPathTitle(title);
+      const data = await getAlljobsToStudentByLearningPathId({learningPathId,page,limit});
       console.log(data,'data in get jobs');
       
       setAllJobs(data.jobs || data);
@@ -94,107 +95,59 @@ export const JobProvider = ({ children }) => {
     }
   }, []);
 
-  /* ===============================
-     Create Job (Admin)
-  ================================= */
-  const createJob = useCallback(async (jobData) => {
-    setLoading(true);
-    setError(null);
+// JobContext / Provider
+const createJob = useCallback(async (jobData) => {
+  setLoading(true);
+  try {
+    const newJob = await addJob(jobData);
+    await fetchAllJobs();        // ← الأهم للسوبر ادمن
+    await fetchJobs();           // للأدمن
+    return newJob;
+  } catch (err) {
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+}, [fetchAllJobs, fetchJobs]);
 
-    try {
-      const newJob = await addJob(jobData);
-     
-      // تضيفه للقائمة فوراً
-      setJobs((prev) => [...prev, newJob.data || newJob]);
-   await fetchJobs();
-      return newJob;
-    } catch (err) {
-      setError(err.message || 'Failed to create job');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+const editJob = useCallback(async (id, jobData) => {
+  setLoading(true);
+  try {
+    await updateJob(id, jobData);
+    await fetchAllJobs();
+    await fetchJobs();
+  } catch (err) {
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+}, [fetchAllJobs, fetchJobs]);
 
-  /* ===============================
-     Update Job
-  ================================= */
-  const editJob = useCallback(async (id, jobData) => {
-    setLoading(true);
-    setError(null);
+const changeStatusForJob = useCallback(async (id, status) => {
+  setLoading(true);
+  try {
+    await changeStatus(id, status);
+    await fetchAllJobs();   // مهم جداً للسوبر ادمن
+    await fetchJobs();
+  } catch (err) {
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+}, [fetchAllJobs, fetchJobs]);
 
-    try {
-      const updated = await updateJob(id, jobData);
-
-      setJobs((prev) =>
-        prev.map((job) =>
-          job.id === id ? (updated.data || updated) : job
-        )
-      );
-  await fetchJobs();
-      if (currentJob?.id === id) {
-        setCurrentJob(updated.data || updated);
-      }
-
-      return updated;
-    } catch (err) {
-      setError(err.message || 'Failed to update job');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [currentJob]);
-  /* ===============================
-     Change Status Job
-  ================================= */
-  const changeStatusForJob = useCallback(async (id, status) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const updated = await changeStatus(id,status );
-
-      setAllJobs((prev) =>
-        prev.map((job) =>
-          job.id === id ? (updated.data || updated) : job
-        )
-      );
-  // await fetchJobs();
-      if (currentJob?.id === id) {
-        setCurrentJob(updated.data || updated);
-      }
-
-      return updated;
-    } catch (err) {
-      setError(err.message || 'Failed to update job');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /* ===============================
-     Delete Job
-  ================================= */
-  const removeJob = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-   const res=await deleteJob(id);
-    if (res.success) {
-         setAllJobs(prev => prev.filter(job => job.id !== id));
-           setJobs(prev => prev.filter(job => job.id !== id));
-
-    }
-    
-    } catch (err) {
-      setError(err.message || 'Failed to delete job');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+const removeJob = useCallback(async (id) => {
+  setLoading(true);
+  try {
+    await deleteJob(id);
+    await fetchAllJobs();
+    await fetchJobs();
+  } catch (err) {
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+}, [fetchAllJobs, fetchJobs]);
 
   const value = {
     jobs,
@@ -209,7 +162,7 @@ export const JobProvider = ({ children }) => {
     allJobs,
     fetchAllJobs,
     changeStatusForJob,
-    fetchAllJobsTostudentByLearningPathTitle
+    fetchAllJobsTostudentByLearningPathId
   };
 
   return (

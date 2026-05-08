@@ -14,7 +14,7 @@ import { useLearningPaths } from "@/app/hooks/useLearningPath";
 // import { toast } from 'react-hot-toast';
 
 export default function JobsPage() {
-  const { jobs, fetchJobs, createJob, editJob, removeJob } = useJobs();
+  const { jobs, fetchJobs, createJob, editJob, removeJob, changeStatusForJob } = useJobs();
   const { adminLearningPaths, fetchLearningPathsToAdmins } = useLearningPaths();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("add"); // add, edit, view
@@ -68,6 +68,16 @@ export default function JobsPage() {
     }
   };
 
+   const handleStatusChange = async (jobId, newStatus) => {
+      try {
+        console.log(jobId, newStatus);
+        
+        await changeStatusForJob(jobId, newStatus);
+        toast.success('Job status updated');
+      } catch (err) {
+        toast.error('Failed to update job status');
+      }
+    };
   const handleDelete = async (id) => {
     try {
       await removeJob(id);
@@ -118,6 +128,7 @@ export default function JobsPage() {
           setModalMode={setModalMode}
           setSelectedJob={setSelectedJob}
           setDeleteOpen={setDeleteOpen}
+          onStatusChange={handleStatusChange}
         />
       )}
 

@@ -7,13 +7,13 @@ import { Eye, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useJobs } from '@/app/hooks/useJobs';
 
-export default function JobsTable({ selectedLearningPath, openJobModal, openDeleteModal ,onStatusChange}) {
-  const { allJobs, editJob, removeJob, loading, } = useJobs();
+export default function JobsTable({ selectedLearningPath, openJobModal, openDeleteModal ,onStatusChange,jobs}) {
+  const {   loading, } = useJobs();
 
   // فلترة الجوبز حسب الليرننج باس المحدد
   const filteredJobs = selectedLearningPath
-    ? allJobs.filter((job) => job.learningPathId == selectedLearningPath)
-    : allJobs;
+    ? jobs.filter((job) => job.learningPathId == selectedLearningPath)
+    : jobs;
 
   // const handleStatusChange = async (jobId, newStatus) => {
   //   try {

@@ -6,7 +6,7 @@ import Table from '@/app/components/ui/Table';
 import Button from '@/app/components/ui/Button';
 import StatusBadge from './StatusBadge';
 
-export default function JobsTable({ jobs, setModalOpen, setModalMode, setSelectedJob, setDeleteOpen }) {
+export default function JobsTable({ jobs, setModalOpen, setModalMode, setSelectedJob, setDeleteOpen, onStatusChange }) {
 console.log(jobs);
 
   const handleEdit = (job) => {
@@ -14,6 +14,7 @@ console.log(jobs);
     setModalMode('edit');
     setModalOpen(true);
   };
+ 
 
   const handleView = (job) => {
     setSelectedJob(job);
@@ -38,7 +39,13 @@ console.log(jobs);
   render: (row) => row.learningPath?.title || '—' 
 },
         { key: 'jobType', label: 'Job Type' },
-        { key: 'status', label: 'Status' },
+        { 
+             key: 'status', 
+             label: 'Status',
+             render: (job) => (
+              <StatusBadge status={job.status} onChange={(newStatus) => onStatusChange(job.id, newStatus)} />
+             )
+           },
         { key: 'deadline', label: 'Deadline', render: (row) => row.deadline ? new Date(row.deadline).toLocaleDateString() : '—' },
       ]}
       renderActions={(job) => (
