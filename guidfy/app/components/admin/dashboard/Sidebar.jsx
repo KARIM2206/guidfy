@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import {
   LayoutDashboard,
-  FileText,
+  MessageSquare,
   Map,
   BookOpen,
   Users,
@@ -14,8 +14,9 @@ import {
   ChevronRight,
   GraduationCap,
   Briefcase,
+  Bell,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAdminContext } from "@/app/CONTEXT/AdminProvider";
 
 const navigationItems = [
@@ -25,12 +26,7 @@ const navigationItems = [
     icon: LayoutDashboard,
     active: true,
   },
-  {
-    id: "articles",
-    label: "Articles",
-    icon: FileText,
-    active: false,
-  },
+ 
   {
     id: "roadmaps",
     label: "Roadmaps",
@@ -49,6 +45,24 @@ const navigationItems = [
     icon: BookOpen,
     active: false,
   },
+  {
+    id: "chat",
+    label: "Chat",
+    icon: MessageSquare,
+    active: false,
+  },
+  {
+    id: "community",
+    label: "Community",
+    icon: Users,
+    active: false,
+  },
+  {
+    id: "notifications",
+    label: "Notifications",
+    icon: Bell,
+    active: false,
+  },
 ];
 
 export default function Sidebar() {
@@ -59,9 +73,15 @@ export default function Sidebar() {
   const { openSidebar, setOpenSidebar } = useAdminContext();
  const [mounted, setMounted] = useState(false);
  const sidebarRef = useRef();
-
+ let path = usePathname();
+ const activePath= path.split("/").slice(-1)[0];
   useEffect(() => {
     setMounted(true);
+    console.log("Active path:", activePath);
+    const currentItem = navigationItems.find((item) => item.id === activePath);
+    if (currentItem) {
+      setActiveItem(currentItem.id);
+    }
   }, []);
   useEffect(() => {
   const handleClickOutside = (event) => {

@@ -24,14 +24,11 @@ const Navbar = () => {
   const router = useRouter();
 
   const navLinks = [
-    {
-      name: "Dashboard",
-      icon: LayoutDashboard,
-      href: `${user?.role === 'SUPER_ADMIN' ? '/super-admin/dashboard' : '/admin/dashboard'}`
-    },
     { name: "Learning Paths", icon: GraduationCap, href: "/learning-paths" },
     { name: "Community",      icon: Users,          href: "/community" },
   ];
+
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
   const dropdownItemVariants = {
     hidden:  { opacity: 0, y: -10 },
@@ -79,13 +76,30 @@ const Navbar = () => {
 
           {token ? (
             <>
-              {/* ✅ Notification Bell - بتظهر بس لو ADMIN أو SUPER_ADMIN */}
-              {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
-                <>
+              {/* Admin & Super Admin Only Section */}
+              {isAdmin && (
+                <div className="flex items-center gap-2">
+                  {/* Dashboard Link */}
+                  <Link
+                    href={user?.role === 'ADMIN' ? "/admin/dashboard" : "/super-admin/dashboard"}
+                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors group relative"
+                    title="Dashboard"
+                  >
+                    <LayoutDashboard 
+                      size={22} 
+                      className="text-gray-700 group-hover:text-primary transition-colors" 
+                    />
+                  </Link>
+
+                  {/* Notification Bell */}
                   <NotificationBell />
+
+                  {/* Chat Icon */}
                   <ChatIcon />
-                </>
+                </div>
               )}
+
+              {/* User Menu */}
               <UserMenu name={user?.name} avatar={user?.avatar} />
             </>
           ) : (
@@ -114,7 +128,7 @@ const Navbar = () => {
             </div>
           )}
 
-          {/* Mobile Menu */}
+          {/* Mobile Menu Button */}
           <div
             onMouseEnter={() => setIsOpenMenu(true)}
             onMouseLeave={() => setIsOpenMenu(false)}
@@ -127,7 +141,7 @@ const Navbar = () => {
                   initial={{ opacity: 0, scale: 0.95, y: -10 }}
                   animate={{ opacity: 1, scale: 1, y: 0, transition: { staggerChildren: 0.05 } }}
                   exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                  className="absolute top-12 right-0 bg-white shadow-lg rounded-md overflow-hidden"
+                  className="absolute top-12 right-0 bg-white shadow-lg rounded-md overflow-hidden min-w-[180px]"
                 >
                   {navLinks.map((link) => {
                     const IconComponent = link.icon;

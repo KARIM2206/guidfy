@@ -4,14 +4,16 @@ import {
   Mail, 
   MapPin, 
   Phone, 
-  Facebook, 
-  Instagram, 
-  Twitter, 
-  Github,
-  Youtube,
-  Linkedin
+ 
 } from 'lucide-react';
-
+import {
+  FaFacebook,
+  FaInstagram,
+  FaTwitter,
+  FaGithub,
+  FaYoutube,
+  FaLinkedin
+} from "react-icons/fa";
 export default function Footer() {
   return (
     <footer className="bg-white flex   border-t border-gray-200 ">
@@ -49,49 +51,49 @@ export default function Footer() {
             </div>
 
             {/* Social Links */}
-            <ul className="mt-8 flex gap-4">
-              <li>
-                <a href="#" className="text-gray-400 transition hover:text-blue-600">
-                  <span className="sr-only">Facebook</span>
-                  <Facebook className="size-5" />
-                </a>
-              </li>
+           <ul className="mt-8 flex gap-4">
+  <li>
+    <a href="#" className="text-gray-400 transition hover:text-blue-600">
+      <span className="sr-only">Facebook</span>
+      <FaFacebook className="size-5" />
+    </a>
+  </li>
 
-              <li>
-                <a href="#" className="text-gray-400 transition hover:text-pink-500">
-                  <span className="sr-only">Instagram</span>
-                  <Instagram className="size-5" />
-                </a>
-              </li>
+  <li>
+    <a href="#" className="text-gray-400 transition hover:text-pink-500">
+      <span className="sr-only">Instagram</span>
+      <FaInstagram className="size-5" />
+    </a>
+  </li>
 
-              <li>
-                <a href="#" className="text-gray-400 transition hover:text-blue-400">
-                  <span className="sr-only">Twitter</span>
-                  <Twitter className="size-5" />
-                </a>
-              </li>
+  <li>
+    <a href="#" className="text-gray-400 transition hover:text-blue-400">
+      <span className="sr-only">Twitter</span>
+      <FaTwitter className="size-5" />
+    </a>
+  </li>
 
-              <li>
-                <a href="#" className="text-gray-400 transition hover:text-gray-700">
-                  <span className="sr-only">GitHub</span>
-                  <Github className="size-5" />
-                </a>
-              </li>
+  <li>
+    <a href="#" className="text-gray-400 transition hover:text-gray-700">
+      <span className="sr-only">GitHub</span>
+      <FaGithub className="size-5" />
+    </a>
+  </li>
 
-              <li>
-                <a href="#" className="text-gray-400 transition hover:text-red-600">
-                  <span className="sr-only">YouTube</span>
-                  <Youtube className="size-5" />
-                </a>
-              </li>
+  <li>
+    <a href="#" className="text-gray-400 transition hover:text-red-600">
+      <span className="sr-only">YouTube</span>
+      <FaYoutube className="size-5" />
+    </a>
+  </li>
 
-              <li>
-                <a href="#" className="text-gray-400 transition hover:text-blue-700">
-                  <span className="sr-only">LinkedIn</span>
-                  <Linkedin className="size-5" />
-                </a>
-              </li>
-            </ul>
+  <li>
+    <a href="#" className="text-gray-400 transition hover:text-blue-700">
+      <span className="sr-only">LinkedIn</span>
+      <FaLinkedin className="size-5" />
+    </a>
+  </li>
+</ul>
           </div>
 
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:col-span-2 lg:grid-cols-3">
