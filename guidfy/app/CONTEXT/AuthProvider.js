@@ -10,6 +10,7 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const router = useRouter();
+  
 //   const { cleanupSocket } = useNotifications();
   // ✅ لا مشاكل SSR — بنجيب الـ token بعد الـ mount بس
   const [token, setToken] = useState(null);

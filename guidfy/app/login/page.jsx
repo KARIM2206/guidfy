@@ -27,9 +27,9 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const { fetchLogin, loadingForLogin } = useAuth();
+  const { fetchLogin, loadingForLogin, user } = useAuth();
   const router = useRouter();
-
+const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -54,6 +54,11 @@ export default function Login() {
   e.preventDefault();
   try {
     await fetchLogin(email, password);
+    if(isAdmin){
+      router.push('/dashboard');
+    }else{
+      router.push('/profile');
+    }
   } catch (err) {
     console.error("handleSubmit error:", err);
   }
