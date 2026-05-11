@@ -108,6 +108,7 @@ app.use("/api/super-admin", superAdminRoute);
 app.use("/api/reports", reportRoute);
 app.use('/api/n8n', n8nRoutes);
 app.use('/api/recommendations', require('./routes/recommendationRoute'));
+app.use('/api/feedback', require('./routes/feedbackRouter'));
 // =====================
 // TEST SOCKET ROUTE (اختياري مفيد جدًا)
 // =====================
@@ -126,6 +127,7 @@ app.get("/test-socket/:userId", (req, res) => {
 // =====================
 // START SERVER
 // =====================
+
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

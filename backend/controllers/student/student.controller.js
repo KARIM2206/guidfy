@@ -810,4 +810,6 @@ console.log('user id \n', userId);
     });
   }
 };
-module.exports = { getStudentRoadmaps,enrollStudentInLearningPath, updateStepProgress, updateLessonProgress , getStudentRoadmapStepsById, getStudentLessonsByStepId, getStepProgress, getRoadmapProgress,enrollStudentInLearningPath,getUserContent };
+module.exports = { getStudentRoadmaps,enrollStudentInLearningPath,
+   updateStepProgress, updateLessonProgress , getStudentRoadmapStepsById, 
+   getStudentLessonsByStepId, getStepProgress, getRoadmapProgress,enrollStudentInLearningPath,getUserContent };

@@ -12,13 +12,15 @@ enum Role {
   SUPER_ADMIN
   ADMIN
 }
- enum NotificationType {
+
+enum NotificationType {
   LIKE
   ANSWER
   FOLLOW
   SYSTEM
   VOTE
 }
+
 enum LevelRoadmap {
   BEGINNER
   INTERMEDIATE
@@ -69,17 +71,18 @@ enum ApplicationStatus {
   ACCEPTED
   REJECTED
 }
+
 enum VoteType {
   QUESTION
   ANSWER
   POST
 }
+
 enum CommunityStatus {
   ACTIVE
   SUSPENDED
   ARCHIVED
 }
-
 
 model User {
   id       Int     @id @default(autoincrement())
@@ -87,18 +90,18 @@ model User {
   name     String?
   password String
   role     Role    @default(STUDENT)
-   title    String? // مسمى وظيفي
+  title    String? // مسمى وظيفي
 
-  avatar String?  // صورة شخصية
-  cover  String?  // صورة غلاف optional
-  bio    String?  // نبذة عن المستخدم 
+  avatar           String? // صورة شخصية
+  cover            String? // صورة غلاف optional
+  bio              String? // نبذة عن المستخدم 
   resetToken       String?
   resetTokenExpiry DateTime?
-
-  quizAttempts QuizAttempt[]
- stats     UserStats?
-  badges    UserBadge[]
-  tracks    TrackProgress[]
+   experienceYears  Int?
+  quizAttempts          QuizAttempt[]
+  stats                 UserStats?
+  badges                UserBadge[]
+  tracks                TrackProgress[]
   // Enrollment
   enrolledRoadmaps      UserRoadmap[]
   enrolledLearningPaths UserLearningPath[]
@@ -106,7 +109,7 @@ model User {
   // Created Content
   createdRoadmaps       Roadmap[]
   createdLearningPaths  LearningPath[]
-   
+
   lessonProgress   UserLessonProgress[]
   roadmapProgress  UserRoadmapProgress[]
   notifications    Notification[]
@@ -117,111 +120,112 @@ model User {
   jobApplications  JobApplication[]
   createdProjects  Project[] // المشاريع اللي هو عاملها
 
-  createdAt             DateTime                 @default(now())
-  updatedAt             DateTime                 @updatedAt
-  assignedLearningPaths LearningPathAdmin[]      @relation("User_Admin_Assign")
-  projectViews          UserProjectView[]
-  assignedProjects      ProjectAssignment[]
-  permissions           LearningPathPermission[]
-  assignedJobs          JobAssignment[]
-  recommendations LearningPathRecommendation[]
-  createdCommunities Community[] @relation("CommunityCreator")
- communitiesJoined Community[] @relation("CommunityMembers")
- communityQuestions  CommunityQuestion[] @relation("UserCommunityQuestions")
-communityAnswers    CommunityAnswer[]   @relation("UserCommunityAnswers")
-posts               Post[]              @relation("UserPosts")
-postComments        PostComment[]       @relation("UserPostComments")
-sentMessages     ChatMessage[] @relation("SentMessages")
-receivedMessages ChatMessage[] @relation("ReceivedMessages")
-votes               Vote[]             
-views               View[]     
-adminActionLogs AdminActionLog[]
-submittedReports CommunityReport[] @relation("ReporterUser")
-resolvedReports  CommunityReport[] @relation("ResolvedByUser")
-
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime                     @updatedAt
+  assignedLearningPaths      LearningPathAdmin[]          @relation("User_Admin_Assign")
+  projectViews               UserProjectView[]
+  assignedProjects           ProjectAssignment[]
+  permissions                LearningPathPermission[]
+  assignedJobs               JobAssignment[]
+  recommendations            LearningPathRecommendation[]
+  createdCommunities         Community[]                  @relation("CommunityCreator")
+  communitiesJoined          Community[]                  @relation("CommunityMembers")
+  communityQuestions         CommunityQuestion[]          @relation("UserCommunityQuestions")
+  communityAnswers           CommunityAnswer[]            @relation("UserCommunityAnswers")
+  posts                      Post[]                       @relation("UserPosts")
+  postComments               PostComment[]                @relation("UserPostComments")
+  sentMessages               ChatMessage[]                @relation("SentMessages")
+  receivedMessages           ChatMessage[]                @relation("ReceivedMessages")
+  votes                      Vote[]
+  views                      View[]
+  adminActionLogs            AdminActionLog[]
+  submittedReports           CommunityReport[]            @relation("ReporterUser")
+  resolvedReports            CommunityReport[]            @relation("ResolvedByUser")
+  jobRecommendationFeedbacks JobRecommendationFeedback[]
 }
+
 model AdminActionLog {
   id         Int      @id @default(autoincrement())
   adminId    Int
-  action     String   // "SUSPEND_COMMUNITY" | "DELETE_POST" | etc.
-  targetType String   // "COMMUNITY" | "POST" | "USER" | "REPORT"
+  action     String // "SUSPEND_COMMUNITY" | "DELETE_POST" | etc.
+  targetType String // "COMMUNITY" | "POST" | "USER" | "REPORT"
   targetId   String
   metadata   Json?
   createdAt  DateTime @default(now())
 
-  admin      User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@index([adminId])
   @@index([targetType, targetId])
 }
+
 model Community {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  slug        String    @unique
+  id          Int                 @id @default(autoincrement())
+  name        String              @unique
+  slug        String              @unique
   description String?
   icon        String?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime            @default(now())
   color       String?
-  status      CommunityStatus @default(ACTIVE)
+  status      CommunityStatus     @default(ACTIVE)
   // علاقات
   createdById Int
-  createdBy   User      @relation("CommunityCreator", fields: [createdById], references: [id])
-  members     User[]    @relation("CommunityMembers")
-    questions   CommunityQuestion[]
+  createdBy   User                @relation("CommunityCreator", fields: [createdById], references: [id])
+  members     User[]              @relation("CommunityMembers")
+  questions   CommunityQuestion[]
   posts       Post[]
-  reports CommunityReport[]
+  reports     CommunityReport[]
 }
+
 model CommunityReport {
-  id           Int      @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   reporterId   Int
   communityId  Int
-  targetType   String   // "POST" | "QUESTION" | "COMMUNITY" | "USER"
+  targetType   String // "POST" | "QUESTION" | "COMMUNITY" | "USER"
   targetId     Int
   reason       String
-  description  String?  @db.Text
-  status       String   @default("PENDING") // "PENDING" | "RESOLVED" | "DISMISSED"
-  notes        String?  @db.Text
+  description  String?   @db.Text
+  status       String    @default("PENDING") // "PENDING" | "RESOLVED" | "DISMISSED"
+  notes        String?   @db.Text
   resolvedById Int?
   resolvedAt   DateTime?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
 
-  reporter     User      @relation("ReporterUser", fields: [reporterId],   references: [id], onDelete: Cascade)
-  community    Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  resolvedBy   User?     @relation("ResolvedByUser", fields: [resolvedById], references: [id])
+  reporter   User      @relation("ReporterUser", fields: [reporterId], references: [id], onDelete: Cascade)
+  community  Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  resolvedBy User?     @relation("ResolvedByUser", fields: [resolvedById], references: [id])
 
   @@index([communityId])
   @@index([reporterId])
   @@index([status])
 }
 
-
 model CommunityQuestion {
-  id          Int       @id @default(autoincrement())
-  title       String
-  body        String    @db.LongText
-  tags        Json
-  votes       Int       @default(0)
-  views       Int       @default(0)
-  isAnswered  Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id         Int      @id @default(autoincrement())
+  title      String
+  body       String   @db.LongText
+  tags       Json
+  votes      Int      @default(0)
+  views      Int      @default(0)
+  isAnswered Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  authorId    Int
-  author      User      @relation("UserCommunityQuestions", fields: [authorId], references: [id], onDelete: Cascade)
+  authorId Int
+  author   User @relation("UserCommunityQuestions", fields: [authorId], references: [id], onDelete: Cascade)
 
   communityId Int
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
-  answers     CommunityAnswer[]
-
- 
+  answers CommunityAnswer[]
 }
+
 model Post {
   id        Int      @id @default(autoincrement())
   title     String
   body      String   @db.LongText
   image     String?
-  tags      Json     // ["tailwindcss", "storybook"]
+  tags      Json // ["tailwindcss", "storybook"]
   readTime  String?
   likes     Int      @default(0)
   bookmarks Int      @default(0)
@@ -229,25 +233,27 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  authorId    Int
-  author      User      @relation("UserPosts", fields: [authorId], references: [id], onDelete: Cascade)
+  authorId Int
+  author   User @relation("UserPosts", fields: [authorId], references: [id], onDelete: Cascade)
 
   communityId Int
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
-  comments    PostComment[]
+  comments PostComment[]
 }
+
 model View {
   id         Int      @id @default(autoincrement())
   userId     Int
   targetId   Int
-  targetType String   // "POST" | "QUESTION"
+  targetType String // "POST" | "QUESTION"
   createdAt  DateTime @default(now())
 
-  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, targetId, targetType])
 }
+
 model CommunityAnswer {
   id         Int      @id @default(autoincrement())
   body       String   @db.LongText
@@ -255,20 +261,19 @@ model CommunityAnswer {
   isAccepted Boolean  @default(false)
   createdAt  DateTime @default(now())
 
-  authorId   Int
-  author     User     @relation("UserCommunityAnswers", fields: [authorId], references: [id], onDelete: Cascade)
+  authorId Int
+  author   User @relation("UserCommunityAnswers", fields: [authorId], references: [id], onDelete: Cascade)
 
   questionId Int
   question   CommunityQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
-
- 
 }
+
 model Vote {
   id         Int    @id @default(autoincrement())
   userId     Int
   targetId   Int
   targetType String // "question" | "answer" | "post"
-  value      Int    // 1 = upvote, -1 = downvote
+  value      Int // 1 = upvote, -1 = downvote
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -283,96 +288,101 @@ model ChatMessage {
   read       Boolean  @default(false)
   createdAt  DateTime @default(now())
 
-  sender   User @relation("SentMessages",   fields: [senderId],   references: [id], onDelete: Cascade)
+  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@index([senderId, receiverId])
   @@index([createdAt])
 }
+
 model PostComment {
   id        Int      @id @default(autoincrement())
   body      String
   createdAt DateTime @default(now())
 
-  authorId  Int
-  author    User @relation("UserPostComments", fields: [authorId], references: [id], onDelete: Cascade)
+  authorId Int
+  author   User @relation("UserPostComments", fields: [authorId], references: [id], onDelete: Cascade)
 
-  postId    Int
-  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId Int
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   // ─── Nested replies support ───
-  parentId  Int?
-  parent    PostComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   PostComment[] @relation("CommentReplies")
+  parentId Int?
+  parent   PostComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  PostComment[] @relation("CommentReplies")
 }
+
 model UserStats {
-  id       Int @id @default(autoincrement())
-  userId   Int @unique
+  id         Int @id @default(autoincrement())
+  userId     Int @unique
   reputation Int @default(0)
-  followers Int @default(0)
-  following Int @default(0)
+  followers  Int @default(0)
+  following  Int @default(0)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
 model Badge {
-  id    Int    @id @default(autoincrement())
-  name  String
-  icon  String
-  color String
-  userBadges UserBadge[] 
+  id         Int         @id @default(autoincrement())
+  name       String
+  icon       String
+  color      String
+  userBadges UserBadge[]
 }
 
 model UserBadge {
   id      Int @id @default(autoincrement())
   userId  Int
   badgeId Int
-  
+
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, badgeId])
 }
+
 model TrackProgress {
-  id       Int @id @default(autoincrement())
-  userId   Int
+  id        Int     @id @default(autoincrement())
+  userId    Int
   trackName String
-  progress  Int    // 0-100%
+  progress  Int // 0-100%
   color     String?
-  
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
 model LearningPathRecommendation {
-  id             Int          @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
   // ── Student answers ──────────────────────────────────────
-  experience     String       // "Beginner" | "Intermediate" | "Advanced"
-  skills         Json     // ["python", "sql", "react"]
-  interest       String       // "Frontend" | "AI/ML" | ...
-  hoursPerDay    Int          // 1-6
-  targetGoal     String?      // optional free text
+  experience  String // "Beginner" | "Intermediate" | "Advanced"
+  skills      Json // ["python", "sql", "react"]
+  interest    String // "Frontend" | "AI/ML" | ...
+  hoursPerDay Int // 1-6
+  targetGoal  String? // optional free text
 
   // ── AI result ────────────────────────────────────────────
-  recommendedPath String      // "Frontend" | "Backend" | ...
-  confidence      Float?      // top confidence score 0.0 - 1.0
-  topPaths        Json?       // [{ path, confidence }, ...]
+  recommendedPath String // "Frontend" | "Backend" | ...
+  confidence      Float? // top confidence score 0.0 - 1.0
+  topPaths        Json? // [{ path, confidence }, ...]
 
   // ── Relations ─────────────────────────────────────────────
-  userId          Int
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  learningPathId  Int?         // nullable — لو الـ recommended path موجودة في DB
-  learningPath    LearningPath? @relation(fields: [learningPathId], references: [id], onDelete: SetNull)
+  learningPathId Int? // nullable — لو الـ recommended path موجودة في DB
+  learningPath   LearningPath? @relation(fields: [learningPathId], references: [id], onDelete: SetNull)
 
-  createdAt       DateTime     @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([learningPathId])
 }
+
 model LearningPath {
   id          Int    @id @default(autoincrement())
   title       String @unique
   description String
-  
 
   estimatedDuration Int
   isPublished       Boolean @default(false)
@@ -382,14 +392,14 @@ model LearningPath {
 
   projects Project[] // كل المشاريع المرتبطة بالـ LearningPath
 
-  roadmaps       LearningPathRoadmap[]
-  enrollments    UserLearningPath[]
-  jobsList       Job[]
-  assignedAdmins LearningPathAdmin[]      @relation("LP_Admin_Assign")
-  permissions    LearningPathPermission[]
+  roadmaps        LearningPathRoadmap[]
+  enrollments     UserLearningPath[]
+  jobsList        Job[]
+  assignedAdmins  LearningPathAdmin[]          @relation("LP_Admin_Assign")
+  permissions     LearningPathPermission[]
   recommendations LearningPathRecommendation[]
-  createdAt      DateTime                 @default(now())
-  updatedAt      DateTime                 @updatedAt
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
 }
 
 model LearningPathPermission {
@@ -520,7 +530,6 @@ model Notification {
   @@index([createdAt])
 }
 
-
 model Job {
   id          Int     @id @default(autoincrement())
   title       String
@@ -545,23 +554,46 @@ model Job {
 
   applications JobApplication[]
   assignments  JobAssignment[]
-  applyLink String? @db.Text 
+  applyLink    String?          @db.Text
 
-source String? // linkedin
+  source String? // linkedin
 
-externalId String? @unique
+  externalId String? @unique
 
-experienceLevel String?
+  experienceLevel String?
 
-postedAt DateTime?
+  postedAt DateTime?
 
-matchScore Float?
+  matchScore Float?
 
-skills Json?
+  skills                     Json?
+  jobRecommendationFeedbacks JobRecommendationFeedback[]
+  scrapedAt                  DateTime                    @default(now())
+  createdAt                  DateTime                    @default(now())
+  updatedAt                  DateTime                    @updatedAt
+}
 
-scrapedAt DateTime @default(now())
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+model JobRecommendationFeedback {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  jobId        Int
+  action       String
+  score        Float?
+  skillOverlap Float?
+  expMatch     Boolean?
+  freshness    Float?
+  careerFit    Float?
+  learningGap  Float?
+  lpAlignment  Float?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  job  Job  @relation(fields: [jobId], references: [id])
+   label Int?
+  @@index([userId])
+  @@index([jobId])
+  @@index([action])
+  @@index([createdAt])
 }
 
 model JobAssignment {
@@ -622,7 +654,15 @@ model UserStepProgress {
 
   @@unique([userId, stepId])
 }
+model UserJobWeight {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  feature    String   // "skillOverlap", "careerFit", "freshness" ...
+  weight     Float    @default(1.0)
+  updatedAt  DateTime @updatedAt
 
+  @@unique([userId, feature])
+}
 model Report {
   id Int @id @default(autoincrement())
 
@@ -664,7 +704,8 @@ model Step {
   stepProgress UserStepProgress[]
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
-  skills Json?
+  skills       Json?
+
   @@unique([roadmapId, order])
 }
 
@@ -687,7 +728,8 @@ model Lesson {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  skills Json?
+  skills    Json?
+
   @@unique([stepId, order])
 }
 
