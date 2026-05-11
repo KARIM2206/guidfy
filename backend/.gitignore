@@ -1,5 +1,22 @@
 node_modules
 # Keep environment variables out of version control
 .env
-
+.vscode/
+venv/
+uploads/
+*.sql
+*.code-workspace
+test-recommend.js
+.env
+node_modules
 /generated/prisma
+.vscode/
+# AI generated data
+ai_service/data/
+ai_service/models/
+*.jsonl
+*.parquet
+*.pkl
+*.txt
+# Prisma generated / seed noise
+prisma/seeds/
