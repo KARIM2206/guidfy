@@ -8,6 +8,7 @@ import { Loader2, Sparkles, CheckCircle, AlertTriangle, X, ExternalLink, Trendin
 import FilterBar from './FilterBar';
 import RecommendationPanel from './RecommendationPanel';
 import { getAlljobsToStudentByLearningPathId, getJobsFromN8N } from '@/services/admin/jobs';
+import MatchAnalysis from './Matchanalysis';
 
 const JobsSection = ({ learningPathId }) => {
   const [activeTab, setActiveTab] = useState('all');
@@ -130,8 +131,9 @@ const JobsSection = ({ learningPathId }) => {
   const renderMatchDetails = (job) => {
     if (!job) return null;
 
-    const scorePercent = Math.round((job.score || 0) * 100);
+    const scorePercent = Math.round((job.score || 0) );
     const gapPercent = job.skillGapPct || 0;
+console.log(scorePercent,'score percent');
 
     return (
       <div className="space-y-6">
@@ -160,7 +162,7 @@ const JobsSection = ({ learningPathId }) => {
                       style={{ width: `${Math.round((value || 0) * 100)}%` }}
                     />
                   </div>
-                  <span className="text-xs font-bold text-gray-700">{Math.round((value || 0) * 100)}%</span>
+                  <span className="text-xs font-bold text-gray-700">{Math.round((value || 0) )}</span>
                 </div>
               </div>
             ))}
@@ -341,7 +343,7 @@ const JobsSection = ({ learningPathId }) => {
         title={selectedJob ? `Match Analysis` : ''}
         maxWidth="2xl"
       >
-        {selectedJob && renderMatchDetails(selectedJob)}
+        {selectedJob && <MatchAnalysis job={selectedJob} userSkills={meta.userSkills || user?.skills || []} onClose={() => setSelectedJob(null)} />}
       </Modal>
     </div>
   );

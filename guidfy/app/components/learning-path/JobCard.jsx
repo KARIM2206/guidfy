@@ -77,7 +77,7 @@ const JobCard = ({ job, onViewDetails, showMatchScore }) => {
           <span className="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-500 
                          text-white text-xs font-bold rounded-full shadow-lg flex items-center gap-1">
             <Sparkles size={12} />
-            {Math.round(job.score * 100)}% match
+            {Math.round(job.score )}% match
           </span>
         </div>
       )}

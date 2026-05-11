@@ -49,6 +49,21 @@ export const getJobs = async () => {
         throw error.response?.data || error;
     }
 };
+export const getJobsFromN8N = async ({learningPathId, jobTitle, page =0 }) => {
+    try {
+        const response = await api.get("/jobs/fetch-from-n8n", {
+            params: {
+                learningPathId,
+                jobTitle,
+                page,
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching jobs:", error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
 export const getAllJobs = async () => {
     try {
         const response = await api.get("/jobs/all");
@@ -58,9 +73,12 @@ export const getAllJobs = async () => {
         throw error.response?.data || error;
     }
 };
-export const getAlljobsToStudentByLearningPathTitle = async (title) => {
+export const getAlljobsToStudentByLearningPathId = async ({learningPathId,page,limit}) => {
+    console.log("learningPathId", learningPathId);
+    console.log("page", page);
+    console.log("limit", limit);
     try {
-        const response = await api.get(`/jobs/all/student/learning-path/${title}`);
+        const response = await api.get(`/jobs/all/student/learning-path/${learningPathId}?page=${page}&limit=${limit}`);
         return response.data;
     } catch (error) {
         console.error("Error fetching jobs:", error.response?.data || error.message);

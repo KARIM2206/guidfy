@@ -35,3 +35,7 @@ temp/
 
 # Tests
 coverage/
+.vscode/
+node_modules
+.env
+.nex
