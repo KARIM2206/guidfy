@@ -256,11 +256,10 @@ export default function ProjectModal({ isOpen, setIsOpen, mode, project, onCreat
           disabled={isViewOnly}
         />
 
-        {/* Learning Path */}
         <Select
           name="learningPathId"
           label="Learning Path"
-          options={adminLearningPaths.map(lp => ({
+          options={(adminLearningPaths || []).map(lp => ({
             value: lp.id,
             label: lp.title
           }))}

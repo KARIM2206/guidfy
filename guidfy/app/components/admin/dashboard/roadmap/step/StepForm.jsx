@@ -1,4 +1,3 @@
-// components/steps/StepForm.jsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -9,16 +8,14 @@ import Textarea from '../../../../ui/Textarea';
 import { motion } from 'framer-motion';
 import { Type, AlignLeft, Hash, Save, X } from 'lucide-react';
 
+const StepForm = ({ isOpen, onClose, onSubmit, initialData = {}, loading = false }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    order: 0,
+  });
 
-const StepForm = ({ isOpen, onClose, onSubmit, initialData = {} }) => {
-  console.log(initialData, 'initial data in step form');
-
-  const [formData, setFormData] = useState({})
-  //   title: initialData?.title || '',
-  //   description: initialData.description || '',
-  //   order: initialData.order || 0,
-  // });
-  const [loading, setLoading] = useState(false);
+  // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
       setFormData({
@@ -28,22 +25,16 @@ const StepForm = ({ isOpen, onClose, onSubmit, initialData = {} }) => {
       });
     }
   }, [isOpen, initialData]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    console.log('Form data:', formData);
-
     try {
       await onSubmit(formData);
-      onClose();
     } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+      console.error('Form submit error:', error);
     }
   };
 
-  // Animation variants for form fields
   const fieldVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: (i) => ({
@@ -60,11 +51,7 @@ const StepForm = ({ isOpen, onClose, onSubmit, initialData = {} }) => {
       title={
         <div className="flex items-center gap-2">
           <div className="p-2 bg-blue-100 rounded-lg">
-            {initialData?.id ? (
-              <Type size={20} className="text-blue-600" />
-            ) : (
-              <Type size={20} className="text-blue-600" />
-            )}
+            <Type size={20} className="text-blue-600" />
           </div>
           <span className="text-xl font-bold">
             {initialData?.id ? 'Edit Step' : 'Add New Step'}
@@ -79,11 +66,10 @@ const StepForm = ({ isOpen, onClose, onSubmit, initialData = {} }) => {
         onSubmit={handleSubmit}
         className="space-y-4"
       >
-        {/* Title Field */}
         <motion.div custom={0} variants={fieldVariants} initial="hidden" animate="visible">
           <Input
             label="Title"
-            value={formData?.title}
+            value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             required
             placeholder="e.g., Introduction to React"
@@ -91,11 +77,10 @@ const StepForm = ({ isOpen, onClose, onSubmit, initialData = {} }) => {
           />
         </motion.div>
 
-        {/* Description Field */}
         <motion.div custom={1} variants={fieldVariants} initial="hidden" animate="visible">
           <Textarea
             label="Description"
-            value={formData?.description}
+            value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             rows={3}
             placeholder="Describe what this step covers..."
@@ -103,19 +88,17 @@ const StepForm = ({ isOpen, onClose, onSubmit, initialData = {} }) => {
           />
         </motion.div>
 
-        {/* Order Field */}
         <motion.div custom={2} variants={fieldVariants} initial="hidden" animate="visible">
           <Input
             label="Order"
             type="number"
-            value={formData?.order}
-            onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
+            value={formData.order}
+            onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
             placeholder="Display order"
             leftIcon={<Hash size={18} className="text-gray-400" />}
           />
         </motion.div>
 
-        {/* Action Buttons */}
         <motion.div
           custom={3}
           variants={fieldVariants}
@@ -128,8 +111,6 @@ const StepForm = ({ isOpen, onClose, onSubmit, initialData = {} }) => {
             variant="outline"
             onClick={onClose}
             className="gap-2"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             <X size={18} />
             Cancel
@@ -139,8 +120,6 @@ const StepForm = ({ isOpen, onClose, onSubmit, initialData = {} }) => {
             variant="primary"
             disabled={loading}
             className="gap-2"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             {loading ? (
               <motion.div

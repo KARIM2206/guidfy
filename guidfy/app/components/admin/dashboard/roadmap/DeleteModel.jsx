@@ -2,13 +2,10 @@
 import React from 'react'
 import Button  from '../../../ui/Button'
 import  Modal  from '../../../ui/Modal'
-import { useNotifications } from '@/app/CONTEXT/NotificationContext'
 
 
 const DeleteModel = ({isOpen,onClose,confirmDelete}) => {
-   const { cleanupSocket } = useNotifications();
   const handleDelete = () => {
-    cleanupSocket()
     confirmDelete()
     onClose()
   }

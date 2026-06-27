@@ -10,9 +10,17 @@ import {
 } from 'lucide-react';
 import Modal from '@/app/components/ui/Modal';
 import Button from '@/app/components/ui/Button';
-import Input from '@/app/components/ui/Input';
-import { useLessons } from '@/app/hooks/useLesson';
 import { toast } from 'react-toastify';
+
+// ✅ Hooks منفصلة
+import {
+  useQuizByLessonId,
+  useQuizById,
+  useEditQuizSettings,
+  useAddQuestion,
+  useUpdateQuestion,
+  useDeleteQuestion,
+} from '@/app/hooks/useQuiz';
 
 // ─── Option Row ────────────────────────────────────────
 const OptionRow = ({ option, index, onChange, onDelete, canDelete }) => (
@@ -27,7 +35,6 @@ const OptionRow = ({ option, index, onChange, onDelete, canDelete }) => (
         : 'border-gray-200 bg-white hover:border-gray-300'
     }`}
   >
-    {/* Correct toggle */}
     <button
       type="button"
       onClick={() => onChange(index, 'isCorrect', !option.isCorrect)}
@@ -39,7 +46,6 @@ const OptionRow = ({ option, index, onChange, onDelete, canDelete }) => (
       }
     </button>
 
-    {/* Text */}
     <input
       value={option.text}
       onChange={(e) => onChange(index, 'text', e.target.value)}
@@ -47,7 +53,6 @@ const OptionRow = ({ option, index, onChange, onDelete, canDelete }) => (
       className="flex-1 bg-transparent text-sm outline-none text-gray-700 placeholder-gray-400"
     />
 
-    {/* Delete */}
     {canDelete && (
       <button
         type="button"
@@ -63,7 +68,6 @@ const OptionRow = ({ option, index, onChange, onDelete, canDelete }) => (
 // ─── Question Card ─────────────────────────────────────
 const QuestionCard = ({ question, index, onEdit, onDelete, saving }) => {
   const [expanded, setExpanded] = useState(false);
-  const correctOption = question.options?.find((o) => o.isCorrect);
 
   return (
     <motion.div
@@ -137,7 +141,7 @@ const QuestionCard = ({ question, index, onEdit, onDelete, saving }) => {
   );
 };
 
-// ─── Question Form (Add / Edit) ────────────────────────
+// ─── Question Form ────────────────────────
 const QuestionForm = ({ initial, onSave, onCancel, saving }) => {
   const emptyOption = () => ({ text: '', isCorrect: false });
 
@@ -177,7 +181,6 @@ const QuestionForm = ({ initial, onSave, onCancel, saving }) => {
       animate={{ opacity: 1, y: 0 }}
       className="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-5 space-y-4"
     >
-      {/* Question Text */}
       <div>
         <label className="block text-xs font-semibold text-indigo-700 mb-1.5 uppercase tracking-wide">
           Question
@@ -191,7 +194,6 @@ const QuestionForm = ({ initial, onSave, onCancel, saving }) => {
         />
       </div>
 
-      {/* Options */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">
@@ -225,7 +227,6 @@ const QuestionForm = ({ initial, onSave, onCancel, saving }) => {
         </div>
       </div>
 
-      {/* Error */}
       {localError && (
         <div className="flex items-center gap-2 text-red-600 text-xs">
           <AlertCircle size={13} />
@@ -233,25 +234,11 @@ const QuestionForm = ({ initial, onSave, onCancel, saving }) => {
         </div>
       )}
 
-      {/* Actions */}
       <div className="flex gap-2 pt-1">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onCancel}
-          className="gap-1"
-        >
+        <Button type="button" variant="outline" size="sm" onClick={onCancel} className="gap-1">
           <X size={14} /> Cancel
         </Button>
-        <Button
-          type="button"
-          variant="primary"
-          size="sm"
-          onClick={handleSave}
-          disabled={saving}
-          className="gap-1"
-        >
+        <Button type="button" variant="primary" size="sm" onClick={handleSave} disabled={saving} className="gap-1">
           {saving
             ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             : <Check size={14} />
@@ -265,31 +252,38 @@ const QuestionForm = ({ initial, onSave, onCancel, saving }) => {
 
 // ─── Main QuizBuilder ──────────────────────────────────
 const QuizBuilder = ({ isOpen, onClose, lessonId, quizId: propQuizId }) => {
-  const {
-    currentQuiz,
-    quizLoading,
-    fetchQuizByLessonId,
-    fetchQuizById,
-    editQuizSettings,
-    addQuizQuestion,
-    editQuizQuestion,
-    removeQuizQuestion,
-  } = useLessons();
+  // ✅ TanStack Query Hooks
+  const { data: quizByLesson, isLoading: lessonQuizLoading } = useQuizByLessonId(
+    lessonId,
+    { enabled: isOpen && !!lessonId && !propQuizId }
+  );
+
+  const { data: quizById, isLoading: idQuizLoading } = useQuizById(
+    propQuizId,
+    { enabled: isOpen && !!propQuizId }
+  );
+
+  const editSettingsMutation = useEditQuizSettings();
+  const addQuestionMutation = useAddQuestion();
+  const updateQuestionMutation = useUpdateQuestion();
+  const deleteQuestionMutation = useDeleteQuestion();
 
   // Settings
-  const [settings, setSettings]     = useState({ title: '', timeLimit: '', passingScore: 60 });
+  const [settings, setSettings] = useState({ title: '', timeLimit: '', passingScore: 60 });
   const [settingsSaved, setSettingsSaved] = useState(false);
 
   // Question management
-  const [showAddForm,     setShowAddForm]     = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState(null); // question object
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState(null);
 
-  // Load quiz on open
-  useEffect(() => {
-    if (!isOpen) return;
-    if (lessonId) fetchQuizByLessonId(lessonId).catch(() => {});
-    else if (propQuizId) fetchQuizById(propQuizId).catch(() => {});
-  }, [isOpen, lessonId, propQuizId]);
+  // Derived data
+  const currentQuiz = quizByLesson?.data ?? quizByLesson ?? quizById?.data ?? quizById;
+  const isLoading = lessonQuizLoading || idQuizLoading;
+  const isMutating =
+    editSettingsMutation.isPending ||
+    addQuestionMutation.isPending ||
+    updateQuestionMutation.isPending ||
+    deleteQuestionMutation.isPending;
 
   // Sync settings from quiz
   useEffect(() => {
@@ -305,10 +299,13 @@ const QuizBuilder = ({ isOpen, onClose, lessonId, quizId: propQuizId }) => {
   const handleSaveSettings = async () => {
     if (!currentQuiz?.id) return;
     try {
-      await editQuizSettings(currentQuiz.id, {
-        title:        settings.title,
-        timeLimit:    settings.timeLimit ? Number(settings.timeLimit) : null,
-        passingScore: Number(settings.passingScore),
+      await editSettingsMutation.mutateAsync({
+        id: currentQuiz.id,
+        data: {
+          title:        settings.title,
+          timeLimit:    settings.timeLimit ? Number(settings.timeLimit) : null,
+          passingScore: Number(settings.passingScore),
+        },
       });
       setSettingsSaved(true);
       setTimeout(() => setSettingsSaved(false), 2000);
@@ -321,7 +318,10 @@ const QuizBuilder = ({ isOpen, onClose, lessonId, quizId: propQuizId }) => {
   const handleAddQuestion = async (data) => {
     if (!currentQuiz?.id) return;
     try {
-      await addQuizQuestion(currentQuiz.id, data);
+      await addQuestionMutation.mutateAsync({
+        quizId: currentQuiz.id,
+        data,
+      });
       setShowAddForm(false);
       toast.success('Question added!');
     } catch {
@@ -332,7 +332,10 @@ const QuizBuilder = ({ isOpen, onClose, lessonId, quizId: propQuizId }) => {
   const handleEditQuestion = async (data) => {
     if (!editingQuestion) return;
     try {
-      await editQuizQuestion(editingQuestion.id, data);
+      await updateQuestionMutation.mutateAsync({
+        questionId: editingQuestion.id,
+        data,
+      });
       setEditingQuestion(null);
       toast.success('Question updated!');
     } catch {
@@ -343,7 +346,7 @@ const QuizBuilder = ({ isOpen, onClose, lessonId, quizId: propQuizId }) => {
   const handleDeleteQuestion = async (questionId) => {
     if (!confirm('Delete this question?')) return;
     try {
-      await removeQuizQuestion(questionId);
+      await deleteQuestionMutation.mutateAsync(questionId);
       toast.success('Question deleted');
     } catch {
       toast.error('Failed to delete question');
@@ -375,13 +378,13 @@ const QuizBuilder = ({ isOpen, onClose, lessonId, quizId: propQuizId }) => {
       <div className="p-1 sm:p-2 space-y-5 max-h-[75vh] overflow-y-auto">
 
         {/* Loading */}
-        {quizLoading && questions.length === 0 && (
+        {isLoading && questions.length === 0 && (
           <div className="flex items-center justify-center py-12">
             <div className="w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
           </div>
         )}
 
-        {/* ── Settings ───────────────────────────────── */}
+        {/* Settings */}
         {currentQuiz && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -434,7 +437,7 @@ const QuizBuilder = ({ isOpen, onClose, lessonId, quizId: propQuizId }) => {
                 variant={settingsSaved ? 'success' : 'outline'}
                 size="sm"
                 onClick={handleSaveSettings}
-                disabled={quizLoading}
+                disabled={isMutating}
                 className="gap-1.5"
               >
                 {settingsSaved
@@ -446,7 +449,7 @@ const QuizBuilder = ({ isOpen, onClose, lessonId, quizId: propQuizId }) => {
           </motion.div>
         )}
 
-        {/* ── Questions List ──────────────────────────── */}
+        {/* Questions List */}
         {currentQuiz && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -471,18 +474,16 @@ const QuizBuilder = ({ isOpen, onClose, lessonId, quizId: propQuizId }) => {
               )}
             </div>
 
-            {/* Add Form */}
             <AnimatePresence>
               {showAddForm && (
                 <QuestionForm
                   onSave={handleAddQuestion}
                   onCancel={() => setShowAddForm(false)}
-                  saving={quizLoading}
+                  saving={addQuestionMutation.isPending}
                 />
               )}
             </AnimatePresence>
 
-            {/* Questions */}
             <AnimatePresence>
               {questions.map((q, i) => (
                 editingQuestion?.id === q.id
@@ -492,7 +493,7 @@ const QuizBuilder = ({ isOpen, onClose, lessonId, quizId: propQuizId }) => {
                       initial={q}
                       onSave={handleEditQuestion}
                       onCancel={() => setEditingQuestion(null)}
-                      saving={quizLoading}
+                      saving={updateQuestionMutation.isPending}
                     />
                   )
                   : (
@@ -502,13 +503,12 @@ const QuizBuilder = ({ isOpen, onClose, lessonId, quizId: propQuizId }) => {
                       index={i}
                       onEdit={setEditingQuestion}
                       onDelete={handleDeleteQuestion}
-                      saving={quizLoading}
+                      saving={deleteQuestionMutation.isPending}
                     />
                   )
               ))}
             </AnimatePresence>
 
-            {/* Empty */}
             {questions.length === 0 && !showAddForm && (
               <motion.div
                 initial={{ opacity: 0 }}

@@ -68,18 +68,19 @@ import Input from '../../../ui/Input';
 import Select from '../../../ui/Select';
 import Button from '../../../ui/Button';
 import { X } from 'lucide-react';
-import { LEVEL_OPTIONS, CATEGORY_OPTIONS } from '../../../../utils/constants';
+import { LEVEL_OPTIONS } from '../../../../utils/constants';
 
 const RoadmapFilters = ({ onFilterChange }) => {
   const [filters, setFilters] = useState({
     search: '',
     level: '',
-    category: '',
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
+    const newFilters = { ...filters, [name]: value };
+    setFilters(newFilters);
+    onFilterChange(newFilters);
   };
 
   const handleSubmit = (e) => {
@@ -88,7 +89,7 @@ const RoadmapFilters = ({ onFilterChange }) => {
   };
 
   const handleReset = () => {
-    const resetFilters = { search: '', level: '', category: '' };
+    const resetFilters = { search: '', level: '' };
     setFilters(resetFilters);
     onFilterChange(resetFilters);
   };
@@ -111,7 +112,7 @@ const RoadmapFilters = ({ onFilterChange }) => {
       onSubmit={handleSubmit}
       className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-gray-100 mb-8"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-end">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
         {/* Search Input */}
         <motion.div variants={itemVariants} className="space-y-1">
           <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
@@ -138,29 +139,10 @@ const RoadmapFilters = ({ onFilterChange }) => {
           />
         </motion.div>
 
-        {/* Category Select */}
-        <motion.div variants={itemVariants} className="space-y-1">
-          <label className="text-sm font-medium text-gray-700">Category</label>
-          <Select
-            name="category"
-            value={filters.category}
-            onChange={handleChange}
-            options={[{ value: '', label: 'All categories' }, ...CATEGORY_OPTIONS]}
-          />
-        </motion.div>
 
         {/* Action Buttons */}
         <motion.div variants={itemVariants} className="flex gap-2 pt-1">
-          <Button
-            type="submit"
-            variant="primary"
-            className="flex-1 gap-2"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <Filter size={18} />
-            Filter
-          </Button>
+
           <Button
             type="button"
             variant="outline"

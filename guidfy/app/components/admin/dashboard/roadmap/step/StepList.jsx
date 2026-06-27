@@ -1,18 +1,40 @@
-// StepList.jsx - امسح الـ fetch من جوه StepList
 'use client';
 
+import { useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Layers } from 'lucide-react';
 import Button from '@/app/components/ui/Button';
 import StepItem from './StepItem';
 import { useAuth } from '@/app/CONTEXT/AuthProvider';
-import { useSteps } from '@/app/hooks/useStep';
 
-const StepList = ({ roadmapId, onAddStep, onEditStep, onDeleteStep, setStepId, stepsLength }) => {
+const StepList = ({
+  steps = [],
+  loading = false,
+  roadmapId,
+  onAddStep,
+  onEditStep,
+  onDeleteStep,
+  setStepId,
+  stepsLength,
+}) => {
   const { user } = useAuth();
-  
-  // ✅ بس استخدم الـ steps من الـ context من غير ما تعمل fetch تاني
-  const { steps, loading: stepsLoading } = useSteps();
+
+  // ✅ useCallback يمنع إعادة إنشاء الدوال في كل render
+  // وبالتالي StepItem مش هيعمل re-render بسببها
+  const handleEditStep = useCallback(
+    (step) => onEditStep(step),
+    [onEditStep]
+  );
+
+  const handleDeleteStep = useCallback(
+    (id) => onDeleteStep(id),
+    [onDeleteStep]
+  );
+
+  const handleSetStepId = useCallback(
+    (id) => setStepId(id),
+    [setStepId]
+  );
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -27,8 +49,7 @@ const StepList = ({ roadmapId, onAddStep, onEditStep, onDeleteStep, setStepId, s
     visible: { opacity: 1, y: 0 },
   };
 
-  // ✅ لو لسه loading متعرضش حاجة
-  if (stepsLoading) {
+  if (loading) {
     return (
       <div className="mt-8 bg-white/50 rounded-2xl p-6 shadow-xl border border-gray-100 flex justify-center py-12">
         <p className="text-gray-400">Loading steps...</p>
@@ -52,10 +73,12 @@ const StepList = ({ roadmapId, onAddStep, onEditStep, onDeleteStep, setStepId, s
           <div>
             <h3 className="text-2xl font-bold text-gray-800">Learning Steps</h3>
             <p className="text-sm text-gray-500">
-              {stepsLength || 0} step{stepsLength !== 1 ? 's' : ''} • Organize your roadmap content
+              {stepsLength || steps.length || 0} step
+              {stepsLength !== 1 ? 's' : ''} • Organize your roadmap content
             </p>
           </div>
         </div>
+
         {user?.role === 'ADMIN' && (
           <Button
             variant="primary"
@@ -85,9 +108,9 @@ const StepList = ({ roadmapId, onAddStep, onEditStep, onDeleteStep, setStepId, s
               <StepItem
                 step={step}
                 index={index}
-                onEdit={onEditStep}
-                onDelete={onDeleteStep}
-                setStepId={setStepId}
+                onEdit={handleEditStep}
+                onDelete={handleDeleteStep}
+                setStepId={handleSetStepId}
               />
             </motion.div>
           ))}

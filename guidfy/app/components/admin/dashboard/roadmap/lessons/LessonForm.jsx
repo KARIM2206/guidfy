@@ -14,7 +14,7 @@ import Select   from '@/app/components/ui/Select';
 import Textarea from '@/app/components/ui/Textarea';
 import Button   from '@/app/components/ui/Button';
 import { LESSON_TYPE_OPTIONS } from '@/app/utils/constants';
-import { useLessons } from '@/app/hooks/useLesson';
+import { useCreateLesson, useUpdateLesson } from '@/app/hooks/useLesson';
 import { toast } from 'react-toastify';
 
 // ── QuizBuilder lazy import to avoid circular deps ──
@@ -177,7 +177,9 @@ const ArticleField = ({ isExternal, setIsExternal, content, setContent, external
 
 // ─── Main LessonForm ───────────────────────────────────
 const LessonForm = ({ isOpen, onClose, stepId, lesson = null }) => {
-  const { setRefreshTrigger, editLesson, createLesson } = useLessons();
+  // ✅ TanStack Query Mutations
+  const createMutation = useCreateLesson();
+  const updateMutation = useUpdateLesson();
 
   const [formData, setFormData] = useState({ title: '', description: '', type: 'VIDEO', order: 0 });
   const [content,          setContent]          = useState('');
@@ -187,11 +189,10 @@ const LessonForm = ({ isOpen, onClose, stepId, lesson = null }) => {
   const [externalLink,     setExternalLink]     = useState('');
   const [isExternal,       setIsExternal]       = useState(false);
   const [errors,           setErrors]           = useState({});
-  const [loading,          setLoading]          = useState(false);
 
   // ✅ Quiz builder state
   const [quizBuilderOpen,  setQuizBuilderOpen]  = useState(false);
-  const [createdLessonId,  setCreatedLessonId]  = useState(null); // lessonId بعد الإنشاء
+  const [createdLessonId,  setCreatedLessonId]  = useState(null);
 
   // Initialize form
   useEffect(() => {
@@ -239,7 +240,6 @@ const LessonForm = ({ isOpen, onClose, stepId, lesson = null }) => {
     const validationErrors = validate();
     if (Object.keys(validationErrors).length) { setErrors(validationErrors); return; }
 
-    setLoading(true);
     try {
       const payload = { ...formData };
       if (formData.type === 'VIDEO') {
@@ -252,21 +252,19 @@ const LessonForm = ({ isOpen, onClose, stepId, lesson = null }) => {
 
       let response;
       if (lesson?.id) {
-        response = await editLesson(lesson.id, payload);
+        response = await updateMutation.mutateAsync({ id: lesson.id, data: payload });
       } else {
-        response = await createLesson(stepId, payload);
+        response = await createMutation.mutateAsync({ stepId, data: payload });
       }
 
       if (response?.success) {
         toast.success(lesson?.id ? 'Lesson updated!' : 'Lesson created!');
-        setRefreshTrigger((prev) => !prev);
 
         // ✅ لو QUIZ → افتح QuizBuilder بدل إغلاق الـ modal
         if (formData.type === 'QUIZ' && !lesson?.id) {
           const newLessonId = response?.lesson?.id || response?.data?.id;
           setCreatedLessonId(newLessonId);
           setQuizBuilderOpen(true);
-          // مش بنقفل الـ LessonForm — هيتقفل بعد القيز
         } else {
           onClose();
         }
@@ -275,10 +273,10 @@ const LessonForm = ({ isOpen, onClose, stepId, lesson = null }) => {
       }
     } catch (err) {
       toast.error(err.message || 'Failed to save lesson');
-    } finally {
-      setLoading(false);
     }
   };
+
+  const isLoading = createMutation.isPending || updateMutation.isPending;
 
   const fieldVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300 } } };
 
@@ -379,9 +377,9 @@ const LessonForm = ({ isOpen, onClose, stepId, lesson = null }) => {
               <Button type="button" variant="outline" onClick={onClose} className="gap-2 w-full sm:w-auto">
                 <X size={18} /> Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={loading}
+              <Button type="submit" variant="primary" disabled={isLoading}
                 className="gap-2 w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
-                {loading
+                {isLoading
                   ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Saving...</>
                   : formData.type === 'QUIZ' && !lesson?.id
                     ? <><Save size={18} /> Save & Build Quiz <ArrowRight size={16} /></>
@@ -400,7 +398,7 @@ const LessonForm = ({ isOpen, onClose, stepId, lesson = null }) => {
           isOpen={quizBuilderOpen}
           onClose={() => {
             setQuizBuilderOpen(false);
-            onClose(); // إغلاق الـ LessonForm كمان
+            onClose();
           }}
           lessonId={createdLessonId}
         />

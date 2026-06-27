@@ -142,6 +142,10 @@ const handleClosePreviewModal = () => {
   isOpen={openPreviewModal}
   onClose={handleClosePreviewModal}
   lesson={lesson}
+  onOpenFullPreview={() => {
+    setOpenPreviewModal(false);
+    router.push(`steps/${lesson.stepId}/lesson/${lesson.id}`);
+  }}
 />
       </div>
     </motion.div>

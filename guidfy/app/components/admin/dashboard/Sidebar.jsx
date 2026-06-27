@@ -39,12 +39,7 @@ const navigationItems = [
     icon: Briefcase,
     active: false,
   },
-  {
-    id: "project",
-    label: "Projects",
-    icon: BookOpen,
-    active: false,
-  },
+ 
   {
     id: "chat",
     label: "Chat",

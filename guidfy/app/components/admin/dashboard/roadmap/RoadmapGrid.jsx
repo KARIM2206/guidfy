@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 
 const RoadmapTable = ({ roadmaps }) => {
   const router = useRouter();
-
+console.log('Roadmaps in RoadmapTable:', roadmaps); // Debugging log
   const handleView = (id) => {
     router.push(`roadmaps/${id}`);
   };

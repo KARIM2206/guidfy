@@ -50,7 +50,7 @@ const CopyButton = ({ text }) => {
   );
 };
 
-const LessonPreviewModal = ({ isOpen, onClose, lesson, isAdmin = false, onOpenQuizBuilder }) => {
+const LessonPreviewModal = ({ isOpen, onClose, lesson, isAdmin = false, onOpenQuizBuilder, onOpenFullPreview }) => {
   const router = useRouter();
   const {roadmapId} = useParams()
   const { user } = useAuth();                     // fallback if isAdmin not passed
@@ -144,7 +144,7 @@ const LessonPreviewModal = ({ isOpen, onClose, lesson, isAdmin = false, onOpenQu
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleOpenFull}
+                    onClick={onOpenFullPreview}
                     className="gap-1 hidden sm:flex"
                     leftIcon={<ExternalLink size={16} />}
                   >

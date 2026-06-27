@@ -6,7 +6,7 @@ import {
   HelpCircle, Clock, CheckCircle2, XCircle,
   ChevronRight, ChevronLeft, RotateCcw, Trophy,
 } from 'lucide-react';
-import { useLessons } from '@/app/hooks/useLesson';
+import { useSubmitQuiz } from '@/app/hooks/useQuiz';
 import { toast } from 'react-toastify';
 
 // ─── Timer ────────────────────────────────────────────
@@ -141,7 +141,7 @@ const ResultScreen = ({ result, onRetry, onClose }) => {
 
 // ─── Main QuizPlayer ───────────────────────────────────
 const QuizPlayer = ({ quiz, onClose, onPass }) => {
-  const { submitQuizAttempt, quizLoading, lastAttemptResult } = useLessons();
+  const submitQuizMutation = useSubmitQuiz();
 
   const [currentIdx, setCurrentIdx]   = useState(0);
   const [answers,    setAnswers]       = useState({}); // { questionId: optionId }
@@ -167,10 +167,12 @@ const QuizPlayer = ({ quiz, onClose, onPass }) => {
         questionId: Number(questionId),
         optionId:   Number(optionId),
       }));
-      const res = await submitQuizAttempt(quiz.id, formattedAnswers);
-      setResult(res.data);
+      const res = await submitQuizMutation.mutateAsync({ quizId: quiz.id, answers: formattedAnswers });
+      
+      const responseData = res.data ?? res;
+      setResult(responseData);
       setSubmitted(true);
-      if (res.data.passed && onPass) onPass();
+      if (responseData.passed && onPass) onPass();
     } catch {
       toast.error('Failed to submit quiz');
     }
@@ -293,10 +295,10 @@ const QuizPlayer = ({ quiz, onClose, onPass }) => {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={handleSubmit}
-            disabled={quizLoading}
+            disabled={submitQuizMutation.isPending}
             className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
           >
-            {quizLoading
+            {submitQuizMutation.isPending
               ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               : <>Submit Quiz <CheckCircle2 size={15} /></>
             }
