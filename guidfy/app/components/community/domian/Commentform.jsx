@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Loader2 } from "lucide-react";
-import { usePost } from "@/app/CONTEXT/Postcontext";
+import { useCreatePostComment } from "@/app/hooks/useCommunityQuery";
 import { useAuth } from "@/app/CONTEXT/AuthProvider";
 import Image from "next/image";
 
@@ -14,21 +14,28 @@ export default function CommentForm({
   placeholder = "Write a comment…",
   autoFocus = false,
 }) {
-  const { addComment, addingComment } = usePost();
+  const createCommentMutation = useCreatePostComment();
   const [body, setBody] = useState("");
   const [error, setError] = useState("");
- const {user}=useAuth()
+  const {user}=useAuth()
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!body.trim()) return setError("Comment can't be empty.");
     setError("");
-    try {
-      await addComment(postId, body.trim(), parentId);
-      setBody("");
-      onCancel?.();
-    } catch (err) {
-      setError(err.message || "Failed to add comment.");
-    }
+    
+    createCommentMutation.mutate(
+      { postId, data: { body: body.trim(), parentId } },
+      {
+        onSuccess: () => {
+          setBody("");
+          onCancel?.();
+        },
+        onError: (err) => {
+          setError(err.message || "Failed to add comment.");
+        }
+      }
+    );
   };
 
   return (
@@ -97,10 +104,10 @@ export default function CommentForm({
 
             <button
               type="submit"
-              disabled={addingComment || !body.trim()}
+              disabled={createCommentMutation.isPending || !body.trim()}
               className="flex items-center gap-1.5 bg-blue-500 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition"
             >
-              {addingComment ? (
+              {createCommentMutation.isPending ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
                 <Send className="w-3.5 h-3.5" />

@@ -8,8 +8,7 @@ export default function CommunityLayout({ children }) {
   return (
     <CommunityProvider>
       <div className="min-h-screen  bg-gray-50 dark:bg-gray-900">
-      
-
+      <TopNavbar />
       <div className="flex">
         {/* Sidebar */}
       

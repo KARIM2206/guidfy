@@ -1,95 +1,91 @@
-import api from '../apiCommunity';
+import apiClient from '@/lib/apiClient';
 
 // ═══════════════════════════════════════════════════
-// COMMUNITY MANAGEMENT
+//  SUPER ADMIN ONLY — /api/super-admin/...
 // ═══════════════════════════════════════════════════
 
+// Communities
 export const getAllCommunitiesSA = (params = {}) =>
-  api.get('/super-admin/communities', { params }).then(res => res.data);
+  apiClient.get('/super-admin/communities', { params });
 
 export const getCommunityDetailsSA = (communityId) =>
-  api.get(`/super-admin/community/${communityId}`).then(res => res.data);
+  apiClient.get(`/super-admin/community/${communityId}`);
 
 export const suspendCommunity = (communityId, reason = '') =>
-  api.post(`/super-admin/community/${communityId}/suspend`, { reason }).then(res => res.data);
+  apiClient.post(`/super-admin/community/${communityId}/suspend`, { reason });
 
 export const activateCommunity = (communityId) =>
-  api.post(`/super-admin/community/${communityId}/activate`, {}).then(res => res.data);
+  apiClient.post(`/super-admin/community/${communityId}/activate`);
 
 export const deleteCommunitySA = (communityId) =>
-  api.delete(`/super-admin/community/${communityId}`).then(res => res.data);
+  apiClient.delete(`/super-admin/community/${communityId}`);
 
-// ═══════════════════════════════════════════════════
-// ADMIN ASSIGNMENT
-// ═══════════════════════════════════════════════════
-
+// Admin Assignment
 export const assignAdminToCommunity = (communityId, userId) =>
-  api.post(`/super-admin/community/${communityId}/assign-admin`, { userId }).then(res => res.data);
+  apiClient.post(`/super-admin/community/${communityId}/assign-admin`, { userId });
 
 export const removeAdminFromCommunity = (communityId, userId) =>
-  api.post(`/super-admin/community/${communityId}/remove-admin`, { userId }).then(res => res.data);
+  apiClient.post(`/super-admin/community/${communityId}/remove-admin`, { userId });
 
 export const getCommunityAdminsSA = (params = {}) =>
-  api.get('/super-admin/admins', { params }).then(res => res.data);
+  apiClient.get('/super-admin/admins', { params });
 
-// ═══════════════════════════════════════════════════
-// MEMBERS
-// ═══════════════════════════════════════════════════
-
+// Members (Super Admin)
 export const getCommunityMembersSA = (communityId, params = {}) =>
-  api.get(`/super-admin/community/${communityId}/members`, { params }).then(res => res.data);
+  apiClient.get(`/super-admin/community/${communityId}/members`, { params });
 
 export const banMemberSA = (communityId, userId, reason = '') =>
-  api.post(`/super-admin/community/${communityId}/members/${userId}/ban`, { reason }).then(res => res.data);
+  apiClient.post(`/super-admin/community/${communityId}/members/${userId}/ban`, { reason });
 
 export const unbanMemberSA = (communityId, userId) =>
-  api.post(`/super-admin/community/${communityId}/members/${userId}/unban`, {}).then(res => res.data);
+  apiClient.post(`/super-admin/community/${communityId}/members/${userId}/unban`);
 
-// ═══════════════════════════════════════════════════
-// CONTENT
-// ═══════════════════════════════════════════════════
-
+// Content (Super Admin)
 export const getCommunityPostsSA = (communityId, params = {}) =>
-  api.get(`/super-admin/community/${communityId}/posts`, { params }).then(res => res.data);
+  apiClient.get(`/super-admin/community/${communityId}/posts`, { params });
 
 export const deletePostSA = (communityId, postId, reason = '') =>
-  api.delete(`/super-admin/community/${communityId}/posts/${postId}`, { data: { reason } }).then(res => res.data);
+  apiClient.delete(`/super-admin/community/${communityId}/posts/${postId}`, { data: { reason } });
 
 export const getCommunityQuestionsSA = (communityId, params = {}) =>
-  api.get(`/super-admin/community/${communityId}/questions`, { params }).then(res => res.data);
+  apiClient.get(`/super-admin/community/${communityId}/questions`, { params });
 
 export const deleteQuestionSA = (communityId, questionId, reason = '') =>
-  api.delete(`/super-admin/community/${communityId}/questions/${questionId}`, { data: { reason } }).then(res => res.data);
+  apiClient.delete(`/super-admin/community/${communityId}/questions/${questionId}`, { data: { reason } });
 
-// ═══════════════════════════════════════════════════
-// REPORTS
-// ═══════════════════════════════════════════════════
-
+// Reports (Super Admin)
 export const getAllReportsSA = (params = {}) =>
-  api.get('/super-admin/reports', { params }).then(res => res.data);
+  apiClient.get('/super-admin/reports', { params });
 
 export const getCommunityReportsSA = (communityId, params = {}) =>
-  api.get(`/super-admin/community/${communityId}/reports`, { params }).then(res => res.data);
+  apiClient.get(`/super-admin/community/${communityId}/reports`, { params });
 
 export const resolveReportSA = (reportId, notes = '') =>
-  api.post(`/super-admin/reports/${reportId}/resolve`, { notes }).then(res => res.data);
+  apiClient.post(`/super-admin/reports/${reportId}/resolve`, { notes });
 
-// ═══════════════════════════════════════════════════
-// ANALYTICS
-// ═══════════════════════════════════════════════════
+export const dismissReportSA = (reportId) =>
+  apiClient.post(`/super-admin/reports/${reportId}/dismiss`);
 
+// Analytics (Super Admin)
 export const getPlatformAnalytics = () =>
-  api.get('/super-admin/analytics').then(res => res.data);
+  apiClient.get('/super-admin/analytics');
 
 export const getCommunityAnalyticsSA = (communityId, params = {}) =>
-  api.get(`/super-admin/community/${communityId}/analytics`, { params }).then(res => res.data);
+  apiClient.get(`/super-admin/community/${communityId}/analytics`, { params });
 
 export const getCommunitiesAnalyticsSA = () =>
-  api.get('/super-admin/communities/analytics').then(res => res.data);
+  apiClient.get('/super-admin/communities/analytics');
 
-// ═══════════════════════════════════════════════════
-// LOGS
-// ═══════════════════════════════════════════════════
-
+// Logs (Super Admin)
 export const getCommunityLogsSA = (communityId, params = {}) =>
-  api.get(`/super-admin/community/${communityId}/logs`, { params }).then(res => res.data);
+  apiClient.get(`/super-admin/community/${communityId}/logs`, { params });
+
+export const createCommunity = (data) =>
+  apiClient.post('/super-admin/community', data);
+
+export const updateCommunity = (communityId, data) =>
+  apiClient.put(`/super-admin/community/${communityId}`, data);
+
+export const deleteCommunity = (communityId) =>
+  apiClient.delete(`/super-admin/community/${communityId}`);
+

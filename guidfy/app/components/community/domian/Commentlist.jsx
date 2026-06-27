@@ -3,10 +3,39 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, Loader2 } from "lucide-react";
 import CommentItem from "./Commentitem";
-import { usePost } from "@/app/CONTEXT/Postcontext";
+import { usePostComments } from "@/app/hooks/useCommunityQuery";
 
 export default function CommentList({ postId, currentUserId }) {
-  const { comments, commentsLoading } = usePost();
+  const { data: commentsRes, isLoading: commentsLoading } = usePostComments(postId);
+  
+  const rawComments = commentsRes?.data?.comments || commentsRes?.comments || commentsRes?.data || commentsRes || [];
+
+  // Build tree from flat comments
+  const buildTree = (comments) => {
+    const commentMap = {};
+    const roots = [];
+
+    // Initialize map
+    comments.forEach(comment => {
+      commentMap[comment.id || comment._id] = { ...comment, replies: [] };
+    });
+
+    // Populate replies or roots
+    comments.forEach(comment => {
+      const id = comment.id || comment._id;
+      if (comment.parentId) {
+        if (commentMap[comment.parentId]) {
+          commentMap[comment.parentId].replies.push(commentMap[id]);
+        }
+      } else {
+        roots.push(commentMap[id]);
+      }
+    });
+
+    return roots;
+  };
+
+  const comments = buildTree(rawComments);
 
   // 🔄 Loading State
   if (commentsLoading) {
@@ -55,12 +84,12 @@ export default function CommentList({ postId, currentUserId }) {
       <AnimatePresence>
         {comments.map((comment) => (
           <motion.div
-            key={comment.id}
+            key={comment.id || comment._id}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.25 }}
-            className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition"
+            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm hover:shadow-md transition"
           >
             <CommentItem
               comment={comment}

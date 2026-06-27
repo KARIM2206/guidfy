@@ -20,10 +20,13 @@ import {
   Trash2,
   User,
   RefreshCw,
+  Edit2,
 } from "lucide-react";
 import { useCommunity } from "@/app/CONTEXT/CommuntiyProvider";
 import { useAuth } from "@/app/CONTEXT/AuthProvider";
+import { useQuestionById, useDeleteQuestion, useUpdateQuestion, useEditAnswer, useDeleteAnswer } from "@/app/hooks/useCommunityQuery";
 import CodeBlock from "@/app/components/ui/CodeBlock";
+import AnswerModal from "@/app/components/community/feed/AnswerModal";
 import Image from "next/image";
 import DeleteModel from "@/app/components/admin/dashboard/roadmap/DeleteModel";
 import DeleteConfirmModal from "@/app/components/admin/dashboard/jobs/DeleteConfirmModal";
@@ -186,85 +189,7 @@ function VoteCol({ votes, userVote, onUp, onDown }) {
   );
 }
 
-// ─── Answer form ──────────────────────────────────
-function AnswerForm({ communityId, questionId, onSuccess }) {
-  const { addAnswer, loading, answers } = useCommunity();
-  const [body, setBody] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-  const ref = useRef(null);
 
-  useEffect(() => {
-    ref.current?.focus();
-  }, []);
-
-  const submit = async () => {
-    if (!body.trim() || body.trim().length < 10) {
-      setError("Write at least 10 characters");
-      return;
-    }
-    setError("");
-    const payload = { body: body.trim() };
-    try {
-      await addAnswer(communityId, questionId, payload);
-      setSuccess(true);
-      setBody("");
-      setTimeout(() => {
-        setSuccess(false);
-        onSuccess?.();
-      }, 900);
-    } catch (e) {
-      setError(e.message);
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white dark:bg-gray-800 rounded-xl border border-blue-200 dark:border-blue-800 p-5 shadow-sm"
-    >
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
-        <MessageSquare size={14} className="text-blue-500" /> Your Answer
-      </h3>
-      <textarea
-        ref={ref}
-        value={body}
-        onChange={(e) => {
-          setBody(e.target.value);
-          setError("");
-        }}
-        placeholder={
-          "Write your answer...\n\nTip: wrap code in ```language\ncode\n```"
-        }
-        rows={7}
-        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none leading-relaxed font-mono transition-all"
-      />
-      {error && (
-        <p className="mt-1.5 text-xs text-rose-500 flex items-center gap-1">
-          <AlertCircle size={11} />
-          {error}
-        </p>
-      )}
-      <div className="flex justify-end mt-3 gap-2">
-        <button
-          onClick={submit}
-          disabled={loading || success}
-          className="flex items-center gap-2 px-5 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition-all shadow-sm"
-        >
-          {loading ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : success ? (
-            <CheckCircle size={14} />
-          ) : (
-            <Send size={14} />
-          )}
-          {loading ? "Posting..." : success ? "Posted!" : "Post Answer"}
-        </button>
-      </div>
-    </motion.div>
-  );
-}
 
 // ─── Answer card ──────────────────────────────────
 function AnswerCard({
@@ -274,46 +199,42 @@ function AnswerCard({
   isQuestionAuthor,
   currentUserId,
 }) {
-  const { removeAnswer, acceptQuestionAnswer, loading,addVote,fetchVotes} = useCommunity();
+  const { addVote, fetchVotes } = useCommunity();
+  const editAnswerMutation = useEditAnswer();
+  const deleteAnswerMutation = useDeleteAnswer();
+
   const [localVotes, setLocalVotes] = useState(answer.votes ?? 0);
   const [isDeleting, setIsDeleting] = useState(false);
-  const[voteChange, setVoteChange] = useState(false);
-const [localUserVote, setLocalUserVote] = useState(0);
+  const [voteChange, setVoteChange] = useState(false);
+  const [localUserVote, setLocalUserVote] = useState(0);
   const isMyAnswer = answer.author?.id === currentUserId;
 
-useEffect(() => {
-  const fetch = async () => {
-    const res = await fetchVotes(answer.id, "ANSWER");
-    // res.data مش res لأن الـ context بترجع الـ response
-    setLocalVotes(res.data.totalVotes);
-    setLocalUserVote(res.data.userVote);
-  };
-  fetch();
-}, [answer.id, voteChange]);
-// AnswerCard
-const handleVote = async (value) => {
-  await addVote({
-    targetId: answer.id,
-    targetType: "ANSWER",
-    value,
-  });
-  setVoteChange(prev => !prev); // useEffect هيجيب الداتا
-};
-  const handleAccept = async () => {
-    try {
-      await acceptQuestionAnswer(communityId, questionId, answer.id);
-    } catch (e) {
-      console.error(e.message);
-    }
+  useEffect(() => {
+    const fetch = async () => {
+      const res = await fetchVotes(answer.id, "ANSWER");
+      setLocalVotes(res?.data?.totalVotes ?? 0);
+      setLocalUserVote(res?.data?.userVote ?? 0);
+    };
+    fetch();
+  }, [answer.id, voteChange]);
+
+  const handleVote = async (value) => {
+    await addVote({
+      targetId: answer.id,
+      targetType: "ANSWER",
+      value,
+    });
+    setVoteChange(prev => !prev);
   };
 
-  const handleDelete = async () => {
-    try {
-      await removeAnswer(communityId, questionId, answer.id);
-      setIsDeleting(false);
-    } catch (e) {
-      console.error(e.message);
-    }
+  const handleAccept = () => {
+    editAnswerMutation.mutate({ communityId, questionId, answerId: answer.id, data: { isAccepted: true } });
+  };
+
+  const handleDelete = () => {
+    deleteAnswerMutation.mutate({ communityId, questionId, answerId: answer.id }, {
+      onSuccess: () => setIsDeleting(false)
+    });
   };
 
   return (
@@ -379,7 +300,7 @@ const handleVote = async (value) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsDeleting(true)}
-                disabled={loading}
+                disabled={deleteAnswerMutation.isPending}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
               >
                 <Trash2 size={12} /> Delete
@@ -405,134 +326,117 @@ export default function QuestionDetailPage() {
   const { id: questionId } = useParams();
   const router = useRouter();
 
-  const {
-    currentQuestion,
-    fetchQuestionById,
-    castVoteOnQuestion,
-    removeQuestion,
-    loading,
-    error,
-    answers,
-    addVote,
-      fetchVotes,
-     fetchViews,
-    addView
-  } = useCommunity();
+  const { data: currentQuestionRes, isLoading: loading, error: queryError } = useQuestionById(questionId);
+  const currentQuestion = currentQuestionRes?.question || currentQuestionRes?.data?.question || currentQuestionRes?.data || currentQuestionRes;
+  const communityId = currentQuestion?.communityId;
 
+  const deleteQuestionMutation = useDeleteQuestion();
+
+  const { addVote, fetchVotes, fetchViews, addView } = useCommunity();
   const { user } = useAuth(); // { id, name, avatar, role }
-    const [localViews, setLocalViews] = useState(0);
-  const [showAnswerForm, setShowAnswerForm] = useState(false);
+  
+  const [localViews, setLocalViews] = useState(0);
+  const [showAnswerModal, setShowAnswerModal] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [localVotes, setLocalVotes] = useState(0);
   const [localUserVote, setLocalUserVote] = useState(0);
-  const [voteChange, setVoteChange] = useState(false);
-useEffect(() => {
-  let interval;
+  const [isDeletingQuestion, setIsDeletingQuestion] = useState(false);
+  const [isEditingQuestion, setIsEditingQuestion] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editBody, setEditBody] = useState("");
 
-  const fetchData = async () => {
-    const res = await fetchVotes(questionId, "QUESTION");
-    setLocalVotes(res.data.totalVotes);
-    setLocalUserVote(res.data.userVote);
-  };
+  const updateQuestionMutation = useUpdateQuestion();
 
-  // أول تحميل
-  fetchData();
-
-  // polling
-  interval = setInterval(fetchData, 5000);
-
-  return () => clearInterval(interval); // 🧹 مهم
-}, [questionId]);
-useEffect(() => {
-  const key = `viewed_question_${questionId}`;
-
-  const fetch = async () => {
-    try {
-      const res = await fetchViews(questionId, "QUESTION");
-      setLocalViews(res?.views);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const incrementView = async () => {
-    try {
-      const payload = { targetId: questionId, targetType: "QUESTION" };
-      const res = await addView(payload);
-
-      // تحديث العدد مباشرة من الباك
-      setLocalViews(res?.views);
-
-      // نحفظ إن المستخدم شاف السؤال
-      localStorage.setItem(key, Date.now());
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const init = async () => {
-    // 1. جيب الفيوز الأول
-    await fetch();
-
-    // 2. لو مش متسجل قبل كده → زوّد view
-    const alreadyViewed = localStorage.getItem(key);
-
-    if (!alreadyViewed) {
-      const timer = setTimeout(() => {
-        incrementView();
-      }, 300); // 30 ثانية
-
-      return () => clearTimeout(timer);
-    }
-  };
-
-  init();
-}, [questionId]);
-const handleVote = async (value) => {
-  const res = await addVote({
-    targetId: questionId,
-    targetType: "QUESTION",
-    value,
-  });
-
-  // 🔥 optimistic update
-  const change = res.change;
-
-  setLocalVotes(prev => prev + change);
-
-  setLocalUserVote(prev => {
-    if (prev === value) return 0; // cancel
-    if (prev === -value) return value; // switch
-    return value; // new vote
-  });
-};
-  // ── Fetch on mount ────────────────────────────
   useEffect(() => {
-    const fetch = async () => {
-      if (questionId) {
-        await fetchQuestionById(questionId);
-      }
+    let interval;
+    if (!questionId) return;
+
+    const fetchData = async () => {
+      const res = await fetchVotes(questionId, "QUESTION");
+      setLocalVotes(res?.data?.totalVotes ?? 0);
+      setLocalUserVote(res?.data?.userVote ?? 0);
     };
-    fetch();
+
+    fetchData();
+    interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
   }, [questionId]);
 
-
-  // ── Sync votes لما يتحمّل السؤال ─────────────
   useEffect(() => {
-    if (currentQuestion) setLocalVotes(currentQuestion.votes ?? 0);
-  }, [currentQuestion?.id]);
+    if (!questionId) return;
+    const key = `viewed_question_${questionId}`;
 
+    const fetch = async () => {
+      try {
+        const res = await fetchViews(questionId, "QUESTION");
+        setLocalViews(res?.views ?? 0);
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
+    const incrementView = async () => {
+      try {
+        const payload = { targetId: questionId, targetType: "QUESTION" };
+        const res = await addView(payload);
+        setLocalViews(res?.views ?? 0);
+        localStorage.setItem(key, Date.now());
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
-  // ── Delete question ───────────────────────────
-  const handleDeleteQuestion = async () => {
-    try {
-      await removeQuestion(communityId, questionId);
+    const init = async () => {
+      await fetch();
+      const alreadyViewed = localStorage.getItem(key);
+      if (!alreadyViewed) {
+        const timer = setTimeout(() => {
+          incrementView();
+        }, 300);
+        return () => clearTimeout(timer);
+      }
+    };
 
-      router.back();
-    } catch (e) {
-      console.error(e.message);
+    init();
+  }, [questionId]);
+
+  const handleVote = async (value) => {
+    const res = await addVote({
+      targetId: questionId,
+      targetType: "QUESTION",
+      value,
+    });
+    const change = res.change;
+    setLocalVotes(prev => prev + change);
+    setLocalUserVote(prev => {
+      if (prev === value) return 0;
+      if (prev === -value) return value;
+      return value;
+    });
+  };
+
+  useEffect(() => {
+    if (currentQuestion) {
+      setLocalVotes(currentQuestion.votes ?? 0);
+      setEditTitle(currentQuestion.title);
+      setEditBody(currentQuestion.body);
     }
+  }, [currentQuestion]);
+
+  const handleUpdateQuestion = () => {
+    updateQuestionMutation.mutate(
+      { communityId, questionId, data: { title: editTitle, body: editBody } },
+      { onSuccess: () => setIsEditingQuestion(false) }
+    );
+  };
+
+  const handleDeleteQuestion = () => {
+    if (!communityId || !questionId) return;
+    deleteQuestionMutation.mutate({ communityId, questionId }, {
+      onSuccess: () => {
+        router.back();
+      }
+    });
   };
 
   // ── Loading ───────────────────────────────────
@@ -550,14 +454,14 @@ const handleVote = async (value) => {
   }
 
   // ── Error ─────────────────────────────────────
-  if (error && !currentQuestion) {
+  if (queryError && !currentQuestion) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-4">
         <AlertCircle size={40} className="text-rose-400" />
-        <p className="text-gray-600 dark:text-gray-400">{error}</p>
+        <p className="text-gray-600 dark:text-gray-400">{queryError?.message || "An error occurred"}</p>
         <div className="flex gap-3">
           <button
-            onClick={() => fetchQuestionById(communityId, questionId)}
+            onClick={() => window.location.reload()}
             className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-xl text-sm"
           >
             <RefreshCw size={14} /> Try again
@@ -664,13 +568,31 @@ const handleVote = async (value) => {
                 {q.community?.name ?? `Community #${q.communityId}`}
               </span>
 
-              {/* Title */}
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-snug mb-4">
-                {q.title}
-              </h1>
-
-              {/* Body */}
-              <BodyRenderer body={q.body} />
+              {isEditingQuestion ? (
+                <div className="mb-4">
+                  <input
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full text-xl font-bold text-gray-900 dark:text-white mb-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-3 py-2"
+                  />
+                  <textarea
+                    value={editBody}
+                    onChange={(e) => setEditBody(e.target.value)}
+                    className="w-full text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 mb-2 min-h-[150px]"
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={handleUpdateQuestion} disabled={updateQuestionMutation.isPending} className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Save</button>
+                    <button onClick={() => setIsEditingQuestion(false)} className="px-4 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm hover:bg-gray-300">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-snug mb-4">
+                    {q.title}
+                  </h1>
+                  <BodyRenderer body={q.body} />
+                </>
+              )}
 
               {/* Tags */}
               {q.tags?.length > 0 && (
@@ -694,15 +616,24 @@ const handleVote = async (value) => {
                 />
                 {/* Delete — بس لصاحب السؤال */}
                 {isMyQuestion && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleDeleteQuestion}
-                    disabled={loading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
-                  >
-                    <Trash2 size={12} /> Delete
-                  </motion.button>
+                  <div className="flex items-center gap-2">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setIsEditingQuestion(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <Edit2 size={14} /> Edit
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setIsDeletingQuestion(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={14} /> Delete
+                    </motion.button>
+                  </div>
                 )}
               </div>
             </div>
@@ -710,35 +641,27 @@ const handleVote = async (value) => {
         </motion.div>
 
         {/* ── Answers ─────────────────────────────── */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold text-gray-900 dark:text-white">
-              {sortedAnswers.length}{" "}
-              {sortedAnswers.length === 1 ? "Answer" : "Answers"}
+          {/* Answer Action */}
+          <div className="flex items-center justify-between mt-8 mb-6">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <MessageSquare size={18} className="text-blue-500" />
+              {sortedAnswers.length} Answers
             </h2>
             <button
-              onClick={() => setShowAnswerForm((v) => !v)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
+              onClick={() => setShowAnswerModal(true)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
-              <Send size={13} />
-              {showAnswerForm ? "Cancel" : "Write Answer"}
+              Add Answer
             </button>
           </div>
 
-          {/* Answer form */}
-          <AnimatePresence>
-            {showAnswerForm && (
-              <div className="mb-5">
-                <AnswerForm
-                  communityId={currentQuestion.communityId}
-                  questionId={questionId}
-                  onSuccess={() => setShowAnswerForm(false)}
-                />
-              </div>
-            )}
-          </AnimatePresence>
+          <AnswerModal 
+            isOpen={showAnswerModal} 
+            onClose={() => setShowAnswerModal(false)} 
+            questionId={questionId} 
+            communityId={communityId} 
+          />
 
-          {/* Answers list */}
           {sortedAnswers.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-gray-400">
               <MessageSquare size={36} strokeWidth={1.5} />
@@ -758,7 +681,6 @@ const handleVote = async (value) => {
               ))}
             </div>
           )}
-        </div>
       </div>
     </div>
   );

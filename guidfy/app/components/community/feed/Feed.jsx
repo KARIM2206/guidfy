@@ -7,8 +7,9 @@ import ProjectCard from './ProjectCard';
 import { useState } from 'react';
 import CreateModal from './CreateModal';
 import { useCommunity } from '@/app/CONTEXT/CommuntiyProvider';
+import Pagination from '../../learning-path/Pagination';
 
-const Feed = ({ items = [], type='questions',onLoadMore, hasMore = false , isLoadingMore = false, communityId}) => {
+const Feed = ({ items = [], type='questions', onLoadMore, hasMore = false , isLoadingMore = false, communityId, pagination, onPageChange }) => {
   const{isCode}=useCommunity()
   if (items.length === 0) return null;
 
@@ -43,8 +44,10 @@ const[itemType, setItemType] = useState(null);
             id={item.id}
             title={item.title}
             excerpt={item.excerpt}
+            body={item.body}
             image={item.image}
             tags={item.tags}
+            communityId={communityId || item.communityId}
             author={item.author || item.author.name}
             likes={item.likes}
             comments={item.comments}
@@ -83,17 +86,18 @@ const[itemType, setItemType] = useState(null);
 
   return (
     <div className="space-y-6">
-           <div className="flex justify-end">
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() =>{ setIsModalOpen(true) 
-          }}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-        >
-          Create
-        </motion.button>
-      </div>
+      {type !== 'all' && (
+        <div className="flex justify-end">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+          >
+            Create
+          </motion.button>
+        </div>
+      )}
       <AnimatePresence>
         {items.map((item, index) => (
           <motion.div
@@ -108,7 +112,13 @@ const[itemType, setItemType] = useState(null);
         ))}
       </AnimatePresence>
 
-      {hasMore && (
+      {pagination && pagination.pages > 1 ? (
+        <Pagination
+          currentPage={pagination.page}
+          totalPages={pagination.pages}
+          onPageChange={onPageChange}
+        />
+      ) : hasMore && (
         <div className="flex justify-center pt-8">
           <motion.button
             whileHover={{ scale: 1.02 }}
@@ -116,7 +126,7 @@ const[itemType, setItemType] = useState(null);
             onClick={onLoadMore}
             className="px-6 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
           >
-            Load More
+            {isLoadingMore ? 'Loading...' : 'Load More'}
           </motion.button>
         </div>
       )}

@@ -42,13 +42,6 @@ const tabs = [
       icon: Users,
       count: '45.2k',
       color: 'from-indigo-500 to-blue-500'
-    },
-    {
-      id: 'leaderboard',
-      label: 'Leaderboard',
-      icon: Award,
-      count: null,
-      color: 'from-yellow-500 to-orange-500'
     }
   ];
   // 🔥 تحديث مكان الخط تحت التاب

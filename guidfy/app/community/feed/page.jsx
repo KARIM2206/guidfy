@@ -1,19 +1,29 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import Feed from '../../components/community/feed/Feed';
 import FeedFilters from '../../components/community/feed/FeedFilters';
 import FeedEmptyState from '../../components/community/feed/FeedEmptyState';
 import RightPanel from '../../components/community/RightPanel';
 import { useCommunity } from '@/app/CONTEXT/CommuntiyProvider';
 
+import { useSearchParams } from 'next/navigation';
 
-export default function CommunityFeedPage() {
+function CommunityFeedContent() {
   const { feed, feedPagination, fetchGlobalFeed, loading, error } = useCommunity();
+  const searchParams = useSearchParams();
 
   const [activeFilter,    setActiveFilter]    = useState('all');
   const [sortBy,          setSortBy]          = useState('latest');
-  const [search,          setSearch]          = useState('');
+  const [search,          setSearch]          = useState(searchParams.get('q') || '');
   const [activeQuickFilter, setActiveQuickFilter] = useState('');
+
+  // Sync state if URL query changes (e.g. clicking a tag while already on the feed page)
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q !== null && q !== search) {
+      setSearch(q);
+    }
+  }, [searchParams]);
 
   // ── Fetch عند أي تغيير ───────────────────────────
   useEffect(() => {
@@ -130,5 +140,17 @@ export default function CommunityFeedPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CommunityFeedPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+      </div>
+    }>
+      <CommunityFeedContent />
+    </Suspense>
   );
 }

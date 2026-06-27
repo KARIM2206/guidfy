@@ -11,11 +11,11 @@ import {
   Clock,
 } from 'lucide-react';
 
-const trendingQuestions = [
-  { id: 1, title: 'Next.js 14 Server Actions best practices?', votes: 245 },
-  { id: 2, title: 'How to optimize React re-renders in 2024?', votes: 189 },
-  { id: 3, title: 'Tailwind CSS vs Styled Components?', votes: 167 },
-];
+// const trendingQuestions = [
+//   { id: 1, title: 'Next.js 14 Server Actions best practices?', votes: 245 },
+//   { id: 2, title: 'How to optimize React re-renders in 2024?', votes: 189 },
+//   { id: 3, title: 'Tailwind CSS vs Styled Components?', votes: 167 },
+// ];
 
 const upcomingEvents = [
   { id: 1, title: 'React Conf 2024', date: 'Tomorrow', attendees: 320 },
@@ -29,7 +29,12 @@ const topContributors = [
   { id: 3, name: 'Mike Wilson', points: 8450, streak: 28 },
 ];
 
+import { useCommunityFeedQuery } from '@/app/hooks/useCommunityQuery';
+
 const RightPanel = () => {
+  const { data: feedData, isLoading } = useCommunityFeedQuery(undefined, 1, 3, true, 'trending');
+  const trendingFeed = feedData?.data || [];
+
   return (
     <div className="space-y-6">
       {/* Trending Questions */}
@@ -47,29 +52,45 @@ const RightPanel = () => {
           <Zap size={16} className="text-gray-400" />
         </div>
         <div className="space-y-4">
-          {trendingQuestions.map((question, index) => (
-            <motion.a
-              key={question.id}
-              href={`/question/${question.id}`}
-              whileHover={{ x: 4 }}
-              className="block p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-500 dark:group-hover:text-blue-400 mb-1 line-clamp-2">
-                    {question.title}
-                  </p>
-                  <div className="flex items-center space-x-3">
-                    <span className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                      <TrendingUp size={12} className="mr-1" />
-                      {question.votes} votes
-                    </span>
+          {isLoading ? (
+            <div className="flex justify-center p-4">
+              <span className="text-gray-500">Loading...</span>
+            </div>
+          ) : trendingFeed.length > 0 ? (
+            trendingFeed.map((item, index) => {
+              const isPost = item.type === 'post';
+              const communitySlug = item.community?.slug || 'frontend'; // Fallback
+              const href = `/${communitySlug}/${isPost ? 'post' : 'question'}/${item.id}`;
+              const title = item.title;
+              const votesOrLikes = isPost ? item.likes : item.votes;
+
+              return (
+                <motion.a
+                  key={`${item.type}-${item.id}`}
+                  href={href}
+                  whileHover={{ x: 4 }}
+                  className="block p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-500 dark:group-hover:text-blue-400 mb-1 line-clamp-2">
+                        {title}
+                      </p>
+                      <div className="flex items-center space-x-3">
+                        <span className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                          <TrendingUp size={12} className="mr-1" />
+                          {votesOrLikes} {isPost ? 'likes' : 'votes'}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-400 group-hover:text-blue-500 mt-1 flex-shrink-0" />
                   </div>
-                </div>
-                <ChevronRight size={16} className="text-gray-400 group-hover:text-blue-500 mt-1 flex-shrink-0" />
-              </div>
-            </motion.a>
-          ))}
+                </motion.a>
+              );
+            })
+          ) : (
+            <p className="text-sm text-gray-500 p-2">No trending items.</p>
+          )}
         </div>
         <motion.button
           whileHover={{ scale: 1.02 }}

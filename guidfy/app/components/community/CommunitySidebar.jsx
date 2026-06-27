@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useCommunity } from '@/app/CONTEXT/CommuntiyProvider';
 import { useAuth } from '@/app/CONTEXT/AuthProvider';
+import { useAllCommunitiesQuery, usePopularTagsQuery } from '@/app/hooks/useCommunityQuery';
 import CreateCommunityModal from './CreateCommunityModal';
 import Link from 'next/link';
 
@@ -51,17 +52,6 @@ function formatCount(num) {
   return String(num);
 }
 
-// ─── Popular Tags (static — يمكن تعملها API لاحقاً) ──
-const POPULAR_TAGS = [
-  { id: 1, name: 'react',      count: 1245 },
-  { id: 2, name: 'nextjs',     count: 890  },
-  { id: 3, name: 'tailwind',   count: 567  },
-  { id: 4, name: 'typescript', count: 1234 },
-  { id: 5, name: 'nodejs',     count: 978  },
-  { id: 6, name: 'python',     count: 1567 },
-  { id: 7, name: 'docker',     count: 845  },
-  { id: 8, name: 'kubernetes', count: 623  },
-];
 
 const QUICK_LINKS = [
   { icon: Users,      label: 'Top Contributors', path: '/community/contributors' },
@@ -78,35 +68,21 @@ function SidebarContent({ onClose ,isAdmin,setModalOpen }) {
   const pathname = usePathname();
 
   const {
-    communities,
-    loading,
-    error,
-    fetchAllCommunities,
-    join,
-    leave,
     openSidebar,
     setOpenSidebar,
   } = useCommunity();
 
-  // جلب الكميونتيز عند أول render
- // داخل SidebarContent
-const [sidebarLoading, setSidebarLoading] = useState(false);
-const [sidebarError, setSidebarError] = useState(null);
+  const {
+    data: communities = [],
+    isLoading: sidebarLoading,
+    error: queryError,
+    refetch: fetchAllCommunities,
+  } = useAllCommunitiesQuery();
 
-useEffect(() => {
-  const loadCommunities = async () => {
-    setSidebarLoading(true);
-    setSidebarError(null);
-    try {
-      await fetchAllCommunities();   // من الكونتكست
-    } catch (err) {
-      setSidebarError(err.message);
-    } finally {
-      setSidebarLoading(false);
-    }
-  };
-  loadCommunities();
-}, []);
+  const { data: popularTagsResponse } = usePopularTagsQuery();
+  const popularTags = popularTagsResponse?.data || [];
+
+  const sidebarError = queryError ? queryError.message : null;
 
   const handleCommunityClick = (community) => {
     router.push(`/community/${community.slug}`);
@@ -114,7 +90,7 @@ useEffect(() => {
   };
 
   const handleTagClick = (tagName) => {
-    router.push(`/community/search?q=${encodeURIComponent(tagName)}&type=tag`);
+    router.push(`/community/feed?q=${encodeURIComponent(tagName)}`);
     onClose?.();
   };
 
@@ -136,7 +112,7 @@ useEffect(() => {
             Communities
           </h3>
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            {communities.length > 0 ? `${communities.length} total` : ''}
+            {communities?.length > 0 ? `${communities?.length} total` : ''}
           </span>
         </div>
 
@@ -236,7 +212,7 @@ useEffect(() => {
             })}
 
             {/* Empty state */}
-            {!loading && communities.length === 0 && (
+            {!sidebarLoading && communities.length === 0 && (
               <li className="text-center py-6 text-gray-400 text-sm">
                 No communities yet
               </li>
@@ -257,9 +233,9 @@ useEffect(() => {
           <Star size={14} className="text-gray-400" />
         </div>
         <div className="flex flex-wrap gap-2">
-          {POPULAR_TAGS.map((tag) => (
+          {popularTags.map((tag) => (
             <motion.button
-              key={tag.id}
+              key={tag.name}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleTagClick(tag.name)}
@@ -273,6 +249,9 @@ useEffect(() => {
               </span>
             </motion.button>
           ))}
+          {popularTags.length === 0 && (
+            <span className="text-xs text-gray-400">No tags yet.</span>
+          )}
         </div>
       </div>
 

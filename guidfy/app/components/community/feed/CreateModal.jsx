@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Loader2, CheckCircle2, AlertCircle,
   MessageSquare, FileText, ChevronRight,
-  Eye, Edit3, Code, Plus, Trash2, GripVertical,
+  Eye, Edit3, Code, Plus, Trash2, GripVertical, ImagePlus, UploadCloud,
 } from 'lucide-react';
 import { useCommunity } from '@/app/CONTEXT/CommuntiyProvider';
 import CodeBlock from '@/app/components/ui/CodeBlock';
@@ -55,11 +56,18 @@ function TextBlock({ block, onChange, onDelete, onAddCode, isOnly, focusBorder, 
       {/* Hover actions */}
       <div className="absolute right-2 bottom-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
+          onClick={() => onChange(block.id, { type: 'code', code: block.content || '', language: 'javascript' })}
+          title="Convert to code block"
+          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-900 dark:bg-gray-700 text-white text-xs font-mono hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors mr-1"
+        >
+          <Code size={11} /> Convert
+        </button>
+        <button
           onClick={() => onAddCode(block.id)}
           title="Add code block below"
           className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-900 dark:bg-gray-700 text-white text-xs font-mono hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
         >
-          <Code size={11} /> &lt;/&gt;
+          <Plus size={11} /> &lt;/&gt;
         </button>
         {!isOnly && (
           <button onClick={() => onDelete(block.id)} className="p-1 rounded-lg bg-rose-50 dark:bg-rose-900/30 text-rose-400 hover:bg-rose-100 transition-colors">
@@ -95,6 +103,12 @@ function CodeBlockEditor({ block, onChange, onDelete }) {
         </select>
 
         <div className="ml-auto flex items-center gap-1">
+          <button
+            onClick={() => onChange(block.id, { type: 'text', content: block.code || '' })}
+            className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:border-gray-300 transition-colors"
+          >
+            <FileText size={11} /> To Text
+          </button>
           <button
             onClick={() => setEditing((v) => !v)}
             disabled={!block.code?.trim()} // مينفعش preview لو مفيش كود
@@ -141,20 +155,25 @@ function CodeBlockEditor({ block, onChange, onDelete }) {
   );
 }
 
+import { useCreatePost, useCreateQuestion, useUpdatePost, useUpdateQuestion } from '@/app/hooks/useCommunityQuery';
+
 // ═══════════════════════════════════════════════════
 //  MAIN
 // ═══════════════════════════════════════════════════
 export default function CreateModal({
-  isOpen, onClose, communityId, communityName = 'Community', isFeed,defaultType = 'questions', onSuccess,
+  isOpen, onClose, communityId, communityName = 'Community', isFeed, defaultType = 'questions', onSuccess, editData = null,
 }) {
-  const { addQuestion, addPost } = useCommunity();
+  const createPostMutation = useCreatePost();
+  const createQuestionMutation = useCreateQuestion();
+  const updatePostMutation = useUpdatePost();
+  const updateQuestionMutation = useUpdateQuestion();
 
-  const [activeType, setActiveType] = useState(defaultType);
+  const [activeType, setActiveType] = useState(editData ? editData.type : defaultType);
   const [title,      setTitle]      = useState('');
-  // ← يبدأ بـ code block بس، TextBlock يتضاف يدوياً
   const [blocks,     setBlocks]     = useState([{ id: uid(), type: 'code', code: '', language: 'javascript' }]);
   const [tagInput,   setTagInput]   = useState('');
   const [tags,       setTags]       = useState([]);
+  const [readTime,   setReadTime]   = useState('');
   const [preview,    setPreview]    = useState(false);
   const [status,     setStatus]     = useState('idle');
   const [errors,     setErrors]     = useState({});
@@ -162,17 +181,52 @@ export default function CreateModal({
 
   const titleRef  = useRef(null);
   const activeTab = TABS.find((t) => t.key == activeType )
-  console.log('active \n',activeType,activeTab,defaultType);
   
+  const parseBody = (text) => {
+    if (!text) return [{ id: uid(), type: 'text', content: '' }];
+    const parsedBlocks = [];
+    const regex = /```(\w*)\n([\s\S]*?)```/g;
+    let lastIndex = 0;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const textBefore = text.slice(lastIndex, match.index).trim();
+      if (textBefore) parsedBlocks.push({ id: uid(), type: 'text', content: textBefore });
+      parsedBlocks.push({ id: uid(), type: 'code', language: match[1] || 'javascript', code: match[2].trim() });
+      lastIndex = regex.lastIndex;
+    }
+    const textAfter = text.slice(lastIndex).trim();
+    if (textAfter) parsedBlocks.push({ id: uid(), type: 'text', content: textAfter });
+    if (parsedBlocks.length === 0) parsedBlocks.push({ id: uid(), type: 'text', content: text });
+    return parsedBlocks;
+  };
+
   const reset = () => {
-    setTitle('');
-    setBlocks([{ id: uid(), type: 'code', code: '', language: 'javascript' }]);
-    setTags([]); setTagInput(''); setStatus('idle');
+    if (editData) {
+      setTitle(editData.title || '');
+      setTags(editData.tags || []);
+      setReadTime(editData.readTime || '');
+      setBlocks(parseBody(editData.body));
+      setActiveType(editData.type || defaultType);
+    } else {
+      setTitle('');
+      setBlocks([{ id: uid(), type: 'code', code: '', language: 'javascript' }]);
+      setTags([]); 
+      setReadTime('');
+    }
+    setTagInput(''); setStatus('idle');
     setErrors({}); setErrMsg(''); setPreview(false);
   };
 
-  useEffect(() => { if (isOpen) { reset(); setTimeout(() => titleRef.current?.focus(), 80); } }, [isOpen]);
-  useEffect(() => { reset(); }, [activeType]);
+  useEffect(() => { 
+    if (isOpen) { 
+      reset(); 
+      setTimeout(() => titleRef.current?.focus(), 80); 
+    } 
+  }, [isOpen]);
+  
+  useEffect(() => { 
+    if (!editData) reset(); 
+  }, [activeType]);
   useEffect(() => {
     const h = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', h);
@@ -246,10 +300,23 @@ export default function CreateModal({
     setStatus('loading'); setErrMsg('');
     try {
       const payload = { title: title.trim(), body: buildBody(), tags };
-      if (activeType === 'questions') await addQuestion(communityId, payload);
-      else                           await addPost(communityId, payload);
+      if (activeType === 'posts') {
+        if (readTime.trim()) payload.readTime = readTime.trim();
+        
+        if (editData) {
+          await updatePostMutation.mutateAsync({ communityId: editData.communityId || communityId || 1, postId: editData.id, data: payload });
+        } else {
+          await createPostMutation.mutateAsync({ communityId, data: payload });
+        }
+      } else {
+        if (editData) {
+          await updateQuestionMutation.mutateAsync({ communityId: editData.communityId || communityId || 1, questionId: editData.id, data: payload });
+        } else {
+          await createQuestionMutation.mutateAsync({ communityId, data: payload });
+        }
+      }
       setStatus('success');
-      setTimeout(() => { onSuccess?.(); onClose(); }, 1200);
+      setTimeout(() => { onSuccess?.(payload); onClose(); }, 1200);
     } catch (err) {
       setErrMsg(err.message || 'Something went wrong.'); setStatus('error');
     }
@@ -280,15 +347,20 @@ export default function CreateModal({
       </div>
     </div>
   );
+  // ── Portal Mounting ──────────────────────────────
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+            className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 pointer-events-none">
             <motion.div
               initial={{ opacity: 0, scale: 0.94, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -353,6 +425,21 @@ export default function CreateModal({
                         </p>
                       )}
                     </div>
+
+                    {/* Post specific fields */}
+                    {activeType === 'posts' && (
+                      <div className="mb-4">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5 block">
+                          Read Time
+                        </label>
+                        <input
+                          value={readTime}
+                          onChange={(e) => setReadTime(e.target.value)}
+                          placeholder="e.g. 5 min read"
+                          className={`w-full px-4 py-2.5 rounded-xl border text-sm bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-all border-gray-200 dark:border-gray-700 ${activeTab.focusBorder} ${activeTab.ring}`}
+                        />
+                      </div>
+                    )}
 
                     {/* Blocks */}
                     <div>
@@ -458,6 +545,7 @@ export default function CreateModal({
           </div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

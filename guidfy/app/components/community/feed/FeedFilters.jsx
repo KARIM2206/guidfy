@@ -4,13 +4,7 @@ import { motion } from 'framer-motion';
 import { Filter, Clock, TrendingUp, Flame, Search, X } from 'lucide-react';
 import { useDebounce } from '@/app/hooks/useDebounce'; // هنعملها تحت
 
-const QUICK_FILTERS = [
-  { id: 'answered',   label: 'Answered',   onlyFor: ['questions', 'all'] },
-  { id: 'unanswered', label: 'Unanswered', onlyFor: ['questions', 'all'] },
-  
-  { id: 'featured',   label: 'Featured',   onlyFor: ['questions', 'all'] },
-  { id: 'recent',     label: 'Recent',     onlyFor: ['questions', 'all'] },
-];
+
 
 const SORT_OPTIONS = [
   { id: 'latest',   label: 'Latest',   icon: Clock },
@@ -51,16 +45,7 @@ const FeedFilters = ({
     onSearchChange?.('');
   };
 
-  const handleQuickFilter = (filterId) => {
-    // toggle — لو نفس الفلتر اضغط عليه تاني يشيله
-    const next = activeQuickFilter === filterId ? '' : filterId;
-    onQuickFilter?.(next);
-  };
 
-  // القفلاتر السريعة دي بتظهر بس مع questions أو all
-  const visibleQuickFilters = QUICK_FILTERS.filter(
-    (f) => f.onlyFor.includes(activeFilter)
-  );
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
@@ -144,31 +129,6 @@ const FeedFilters = ({
         </div>
       </div>
 
-      {/* Row 3: Quick Filters — بتظهر بس مع questions أو all */}
-      {visibleQuickFilters.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex flex-wrap gap-2">
-            {visibleQuickFilters.map((qf) => {
-              const isActive = activeQuickFilter === qf.id;
-              return (
-                <motion.button
-                  key={qf.id}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleQuickFilter(qf.id)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
-                    isActive
-                      ? 'bg-blue-500 text-white shadow-sm'
-                      : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
-                  }`}
-                >
-                  {qf.label}
-                </motion.button>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, CheckCircle2, AlertCircle, Hash, Type, FileText, Palette } from 'lucide-react';
-import { useCommunity } from '@/app/CONTEXT/CommuntiyProvider';
+// import { useCommunity } from '@/app/CONTEXT/CommuntiyProvider';
 import Modal from '../ui/Modal';
-import { updateAdminCommunity } from '@/services/community/adminCommonutiy.service';
+// import { updateAdminCommunity } from '@/services/community/adminCommonutiy.service';
 import { getCommunityBySlug } from '@/services/community/community';
+import { useCreateCommunity,useUpdateCommunity } from '@/app/hooks/useCommunitiesQueries';
 // ─── Emoji picker options ─────────────────────────
 const EMOJI_OPTIONS = [
   // Core Tech
@@ -96,7 +97,8 @@ function Field({ label, icon: Icon, error, children }) {
 //  MAIN MODAL
 // ═══════════════════════════════════════════════════
 export default function CreateCommunityModal({ isOpen,setRefresh,onClose,isEdit=false,data=null }) {
-  const { addCommunity } = useCommunity();
+  const { mutateAsync: addCommunity } = useCreateCommunity();
+  const { mutateAsync: updateAdminCommunity } = useUpdateCommunity();
 
   const [form, setForm]       = useState({ name: '', description: '', icon: '💻', color: 'blue' });
   const [errors, setErrors]   = useState({});
@@ -153,28 +155,10 @@ export default function CreateCommunityModal({ isOpen,setRefresh,onClose,isEdit=
 
     setStatus('loading');
     try {
-      if (isEdit && data) {
-      await updateAdminCommunity(data.slug, {
-        name:        form.name.trim(),
-        description: form.description.trim() || undefined,
-        icon:        form.icon,
-        color:       form.color,
-      });
-      setRefresh(prev=>!prev);
-    //   setTimeout(() => {
-    //     const fetch =async()=>{
-    //       const data = await getCommunityBySlug(data.slug);
-    //     }
-    //  fetch()
-
-    //   }, 2000);
-    } else {
-      await addCommunity({
-        name:        form.name.trim(),
-        description: form.description.trim() || undefined,
-        icon:        form.icon,
-        color:       form.color,
-      });
+      if (isEdit) {
+        await updateAdminCommunity({ id: data.id, data: form });
+      } else {
+        await addCommunity(form);
       }
       setStatus('success');
       setTimeout(() => { onClose(); setStatus('idle'); }, 1400);
