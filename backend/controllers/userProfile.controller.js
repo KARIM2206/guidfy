@@ -264,45 +264,89 @@ exports.getUserTracks = async (req, res, next) => {
 exports.getNotifications = async (req, res, next) => {
   try {
     const userId = req.user?.id;
-    if (!userId) return next(errorHandler(401, 'Unauthorized'));
-
-    const notifications = await prisma.notification.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-    });
-
+    const page   = Math.max(1, Number(req.query.page)  || 1);
+    const limit  = Math.min(100, Number(req.query.limit) || 20);
+    const skip   = (page - 1) * limit;
+ 
+    const [notifications, total] = await Promise.all([
+      prisma.notification.findMany({
+        where:   { userId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take:    limit,
+      }),
+      prisma.notification.count({ where: { userId } }),
+    ]);
+ 
+    // ✅ `read` is the correct schema field — NOT `isRead`
     const formatted = notifications.map((n) => ({
-      id: n.id,
-      type: n.type,
-      message: n.message,
-      time: n.createdAt,
-      unread: !n.isRead,
+      id:        n.id,
+      message:   n.message,
+      type:      n.type,
+      metadata:  n.metadata,
+      createdAt: n.createdAt,
+      unread:    !n.read,   // ← was !n.isRead (WRONG)
     }));
-
-    res.json({ success: true, data: formatted });
+ 
+    res.json({
+      success: true,
+      data:    formatted,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
-    console.error('Get notifications error:', error);
-    return next(errorHandler(500, 'Failed to fetch notifications', error.message));
+    console.error('Get notifications error:', error.message);
+    return next(errorHandler('Failed to fetch notifications', 500));
+  }
+};
+ 
+// ── PUT /api/users/notifications/read ────────────────────────
+// Mark all unread notifications as read
+// ✅ `read` is the correct schema field — NOT `isRead`
+exports.markNotificationsRead = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+ 
+    await prisma.notification.updateMany({
+      where: { userId, read: false },
+      data:  { read: true },
+    });
+ 
+    res.json({ success: true, message: 'All notifications marked as read' });
+  } catch (error) {
+    console.error('Mark notifications read error:', error.message);
+    return next(errorHandler('Failed to update notifications', 500));
   }
 };
 
 // ============================================================
-// PUT /api/users/notifications/read  →  تعليم كل النوتيفيكيشنز كـ مقروءة
+// GET /api/users/:id/info  →  جلب بيانات عامة (name, avatar) بالـ ID
 // ============================================================
-exports.markAllNotificationsRead = async (req, res, next) => {
+exports.getUserById = async (req, res, next) => {
   try {
-    const userId = req.user?.id;
-    if (!userId) return next(errorHandler(401, 'Unauthorized'));
+    const userId = parseInt(req.params.id);
+    if (isNaN(userId)) return next(errorHandler(400, 'Invalid user ID'));
 
-    await prisma.notification.updateMany({
-      where: { userId, isRead: false },
-      data: { isRead: true },
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        avatar: true,
+        title: true,
+        role: true,
+      },
     });
 
-    res.json({ success: true, message: 'All notifications marked as read' });
+    if (!user) return next(errorHandler(404, 'User not found'));
+
+    res.json({ success: true, data: user });
   } catch (error) {
-    console.error('Mark notifications read error:', error);
-    return next(errorHandler(500, 'Failed to update notifications', error.message));
+    console.error('getUserById error:', error.message);
+    return next(errorHandler(500, 'Failed to fetch user', error.message));
   }
 };

@@ -1,4 +1,4 @@
-// controllers/admin.controller.js
+// controllers/community/admin.controller.js
 const prisma = require('../../prismaClient');
 
 // ═══════════════════════════════════════════════════
@@ -6,626 +6,846 @@ const prisma = require('../../prismaClient');
 // ═══════════════════════════════════════════════════
 
 const logAction = async (adminId, action, targetType, targetId, metadata = {}) => {
-    return prisma.adminActionLog.create({
-        data: {
-            adminId,
-            action,
-            targetType,
-            targetId: String(targetId),
-            metadata,
-        },
+  return prisma.adminActionLog.create({
+    data: {
+      adminId,
+      action,
+      targetType,
+      targetId: String(targetId),
+      metadata,
+    },
+  });
+};
+
+const getCommunityBySlug = async (slug, adminId, role) => {
+  if (role === 'SUPER_ADMIN') {
+    return prisma.community.findUnique({
+      where: { slug },
+      include: {
+        createdBy: { select: { id: true, name: true, email: true } },
+        admin: { select: { id: true, name: true, email: true } },
+        _count: { select: { members: true, posts: true, questions: true } },
+      },
     });
-};
-
-const verifyCommunityOwnership = async (slug, userId) => {
-    const community = await prisma.community.findUnique({ where: { slug } });
-    if (!community) return { error: 'Community not found', status: 404 };
-    if (community.createdById !== userId && userId !== null) {
-        return { error: 'You can only manage communities you created', status: 403 };
-    }
-    return { community };
+  }
+  return prisma.community.findFirst({
+    where: { slug, adminId },
+    include: {
+      createdBy: { select: { id: true, name: true, email: true } },
+      admin: { select: { id: true, name: true, email: true } },
+      _count: { select: { members: true, posts: true, questions: true } },
+    },
+  });
 };
 
 // ═══════════════════════════════════════════════════
-//  COMMUNITY MANAGEMENT
+//  MY COMMUNITIES
 // ═══════════════════════════════════════════════════
 
-const getAdminCommunity = async (req, res) => {
-    try {
-        const { slug } = req.params;
-        const userId = req.user.id;
-        const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
+const getMyCommunities = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const page  = Number(req.query.page)  || 1;
+    const limit = Number(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const skip = (page - 1) * limit;
 
-        const community = await prisma.community.findUnique({
-            where: { slug },
-            include: {
-                createdBy: { select: { id: true, name: true, avatar: true, email: true } },
-                _count: { select: { members: true, questions: true, posts: true } },
-            },
-        });
-
-        if (!community) return res.status(404).json({ message: 'Community not found' });
-
-        if (!isSuperAdmin && community.createdById !== userId) {
-            return res.status(403).json({ message: 'Access denied' });
+    // ── Build search filter ──────────────────────────────────────────
+    const searchFilter = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { slug: { contains: search, mode: 'insensitive' } },
+          ],
         }
+      : {};
 
-        return res.json({
-            ...community,
-            stats: {
-                members: community._count.members,
-                questions: community._count.questions,
-                posts: community._count.posts,
-            },
-            _count: undefined,
-        });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
-    }
+    // ── Build where clause ───────────────────────────────────────────
+    const where =
+      userRole === 'SUPER_ADMIN'
+        ? searchFilter                           // Super Admin → ALL
+        : { adminId: userId, ...searchFilter };  // Admin → only assigned
+
+    // ── Query ────────────────────────────────────────────────────────
+    const [communities, total] = await Promise.all([
+      prisma.community.findMany({
+        where,
+        include: {
+          createdBy: { select: { id: true, name: true, avatar: true } },
+          admin:     { select: { id: true, name: true, avatar: true } },
+          _count:    { select: { members: true, posts: true, questions: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.community.count({ where }), // ✅ where فقط بدون select
+    ]);
+
+    return res.json({
+      success: true,
+      communities: communities.map((c) => ({
+        id:          c.id,
+        name:        c.name,
+        slug:        c.slug,
+        description: c.description,
+        icon:        c.icon,
+        color:       c.color,
+        status:      c.status,
+        createdBy:   c.createdBy,
+        admin:       c.admin,
+        stats: {
+          members:   c._count.members,
+          posts:     c._count.posts,
+          questions: c._count.questions,
+        },
+        createdAt: c.createdAt,
+      })),
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
 };
 
-const updateAdminCommunity = async (req, res) => {
-    try {
-        const { slug } = req.params;
-        const userId = req.user.id;
-        const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
+const getMyCommunity = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const community = req.community || await getCommunityBySlug(slug, req.user.id, req.user.role);
 
-        const community = await prisma.community.findUnique({ where: { slug } });
-        if (!community) return res.status(404).json({ message: 'Community not found' });
-
-        if (!isSuperAdmin && community.createdById !== userId) {
-            return res.status(403).json({ message: 'Access denied' });
-        }
-
-        const { name, description, icon, color } = req.body;
-
-        const updated = await prisma.community.update({
-            where: { slug },
-            data: {
-                ...(name && { name }),
-                ...(description !== undefined && { description }),
-                ...(icon !== undefined && { icon }),
-                ...(color !== undefined && { color }),
-            },
-        });
-
-        await logAction(userId, 'UPDATE_COMMUNITY', 'COMMUNITY', community.id, {
-            slug,
-            changes: req.body,
-        });
-
-        return res.json({ message: 'Community updated', community: updated });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
+    if (!community) {
+      return res.status(404).json({ success: false, message: 'Community not found' });
     }
+
+    return res.json({
+      success: true,
+      community: {
+        id: community.id,
+        name: community.name,
+        slug: community.slug,
+        description: community.description,
+        icon: community.icon,
+        color: community.color,
+        status: community.status,
+        createdBy: community.createdBy,
+        admin: community.admin,
+        stats: {
+          members: community._count.members,
+          posts: community._count.posts,
+          questions: community._count.questions,
+        },
+        createdAt: community.createdAt,
+        updatedAt: community.updatedAt,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+const updateMyCommunity = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const adminId = req.user.id;
+    const { name, description, icon, color } = req.body;
+
+    const community = req.community || await getCommunityBySlug(slug, adminId, req.user.role);
+    if (!community) {
+      return res.status(404).json({ success: false, message: 'Community not found' });
+    }
+
+    const updated = await prisma.community.update({
+      where: { id: community.id },
+      data: {
+        ...(name && { name }),
+        ...(description !== undefined && { description }),
+        ...(icon && { icon }),
+        ...(color && { color }),
+      },
+    });
+
+    await logAction(adminId, 'UPDATE_COMMUNITY', 'COMMUNITY', community.id, {
+      slug,
+      changes: { name, description, icon, color },
+    });
+
+    return res.json({
+      success: true,
+      message: 'Community updated successfully',
+      community: updated,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
 };
 
 // ═══════════════════════════════════════════════════
-//  MEMBER MANAGEMENT
+//  MEMBERS
 // ═══════════════════════════════════════════════════
 
-const getAdminMembers = async (req, res) => {
-    try {
-        const { slug } = req.params;
-        const userId = req.user.id;
-        const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
-        const page = Number(req.query.page) || 1;
-        const limit = Number(req.query.limit) || 10;
-        const search = req.query.search || '';
-        const skip = (page - 1) * limit;
+const getMyMembers = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const page  = Number(req.query.page)  || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip  = (page - 1) * limit;
 
-        const community = await prisma.community.findUnique({ where: { slug } });
-        if (!community) return res.status(404).json({ message: 'Community not found' });
+    const community = req.community ||
+      await getCommunityBySlug(slug, req.user.id, req.user.role);
+    if (!community)
+      return res.status(404).json({ success: false, message: 'Community not found' });
 
-        if (!isSuperAdmin && community.createdById !== userId) {
-            return res.status(403).json({ message: 'Access denied' });
-        }
-
-        const memberWhere = search
-            ? { OR: [{ name: { contains: search } }, { email: { contains: search } }] }
-            : {};
-
-        const fullCommunity = await prisma.community.findUnique({
-            where: { slug },
-            include: {
-                members: {
-                    where: memberWhere,
-                    select: { id: true, name: true, email: true, avatar: true, role: true, createdAt: true },
-                    skip,
-                    take: limit,
-                    orderBy: { createdAt: 'desc' },
-                },
-                _count: { select: { members: true } },
+    const [members, total] = await Promise.all([
+      prisma.user.findMany({
+        where: {
+          communitiesJoined: { some: { id: community.id } },  // ✅ الاسم الصح
+        },
+        select: {
+          id: true, name: true, email: true, avatar: true, createdAt: true,
+          bannedMemberships: {                                 // ✅ الاسم الصح
+            where: {
+              communityId: community.id,
+              unbannedAt:  null,
             },
-        });
-
-        return res.json({
-            data: fullCommunity.members,
-            pagination: {
-                page,
-                limit,
-                total: fullCommunity._count.members,
-                pages: Math.ceil(fullCommunity._count.members / limit),
+            select: {
+              reason:   true,
+              bannedAt: true,
+              bannedBy: { select: { id: true, name: true, avatar: true } },
             },
-        });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
+            take: 1,
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.user.count({
+        where: {
+          communitiesJoined: { some: { id: community.id } },  // ✅ الاسم الصح
+        },
+      }),
+    ]);
+
+    const formatted = members.map(m => {
+      const ban = m.bannedMemberships?.[0] ?? null;
+      return {
+        id:        m.id,
+        name:      m.name,
+        email:     m.email,
+        avatar:    m.avatar,
+        createdAt: m.createdAt,
+        isBanned:  !!ban,
+        banReason: ban?.reason   ?? null,
+        bannedAt:  ban?.bannedAt ?? null,
+        bannedBy:  ban?.bannedBy ?? null,
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: formatted,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+// ─────────────────────────────────────────────────────────────────────────
+
+const getMyAnalytics = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    const community = req.community ||
+      await getCommunityBySlug(slug, req.user.id, req.user.role);
+    if (!community) {
+      return res.status(404).json({ success: false, message: 'Community not found' });
     }
+
+    // Weekly activity — last 7 days
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const start = new Date();
+      start.setDate(start.getDate() - (6 - i));
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setHours(23, 59, 59, 999);
+      return {
+        start,
+        end,
+        label: start.toLocaleDateString('en-US', { weekday: 'short' }),
+      };
+    });
+
+    const weeklyActivity = await Promise.all(
+      days.map(async ({ start, end, label }) => {
+        const [questions, posts] = await Promise.all([
+          prisma.communityQuestion.count({
+            where: { communityId: community.id, createdAt: { gte: start, lte: end } },
+          }),
+          prisma.post.count({
+            where: { communityId: community.id, createdAt: { gte: start, lte: end } },
+          }),
+        ]);
+        return { day: label, questions, posts };
+      })
+    );
+
+    // Stats
+    const [communityWithCount, questionsCount, postsCount, reportsCount, bannedCount] =
+      await Promise.all([
+        prisma.community.findUnique({
+          where: { id: community.id },
+          include: { _count: { select: { members: true } } },
+        }),
+        prisma.communityQuestion.count({ where: { communityId: community.id } }),
+        prisma.post.count({ where: { communityId: community.id } }),
+        prisma.communityReport.count({
+          where: { communityId: community.id, status: 'PENDING' },
+        }),
+        prisma.bannedMember.count({   // ✅ بعد ما عملنا الـ table
+          where: { communityId: community.id, unbannedAt: null },
+        }),
+      ]);
+
+    return res.json({
+      success: true,
+      weeklyActivity,
+      stats: {
+        members:        communityWithCount?._count.members ?? 0,
+        posts:          postsCount,
+        questions:      questionsCount,
+        pendingReports: reportsCount,
+        bannedMembers:  bannedCount,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false, message: 'Server error', error: error.message,
+    });
+  }
 };
 
 const banMember = async (req, res) => {
-    try {
-        const { slug } = req.params;
-        const userId = Number(req.params.userId);
-        const adminId = req.user.id;
-        const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
-        const { reason } = req.body;
+  try {
+    const { slug, userId } = req.params;
+    const adminId = req.user.id;
+    const { reason } = req.body;
 
-        const community = await prisma.community.findUnique({ where: { slug } });
-        if (!community) return res.status(404).json({ message: 'Community not found' });
-
-        if (!isSuperAdmin && community.createdById !== adminId) {
-            return res.status(403).json({ message: 'Access denied' });
-        }
-
-        await prisma.community.update({
-            where: { slug },
-            data: { members: { disconnect: { id: userId } } },
-        });
-
-        await logAction(adminId, 'BAN_MEMBER', 'USER', userId, {
-            communitySlug: slug,
-            reason,
-        });
-
-        return res.json({ message: 'Member banned' });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
+    const community = req.community ||
+      await getCommunityBySlug(slug, adminId, req.user.role);
+    if (!community) {
+      return res.status(404).json({ success: false, message: 'Community not found' });
     }
+
+    const targetUserId = Number(userId);
+
+    // تأكد إن اليوزر عضو في الـ community
+    const isMember = await prisma.community.findFirst({
+      where: {
+        id: community.id,
+        members: { some: { id: targetUserId } },
+      },
+    });
+    if (!isMember) {
+      return res.status(404).json({ success: false, message: 'User is not a member' });
+    }
+
+    // تأكد مش محظور بالفعل
+    const existing = await prisma.bannedMember.findUnique({
+      where: {
+        communityId_userId: {
+          communityId: community.id,
+          userId: targetUserId,
+        },
+      },
+    });
+
+    if (existing && !existing.unbannedAt) {
+      return res.status(400).json({ success: false, message: 'User is already banned' });
+    }
+
+    // لو كان محظور قبل كده وانفك الحظر → حدّث السجل القديم
+    if (existing && existing.unbannedAt) {
+      await prisma.bannedMember.update({
+        where: { id: existing.id },
+        data: {
+          reason:     reason || null,
+          bannedAt:   new Date(),
+          unbannedAt: null,
+          bannedById: adminId,
+        },
+      });
+    } else {
+      // أنشئ سجل جديد
+      await prisma.bannedMember.create({
+        data: {
+          communityId: community.id,
+          userId:      targetUserId,
+          reason:      reason || null,
+          bannedById:  adminId,
+        },
+      });
+    }
+
+    // شيل من الـ members
+    await prisma.community.update({
+      where: { id: community.id },
+      data:  { members: { disconnect: { id: targetUserId } } },
+    });
+
+    await logAction(adminId, 'BAN_MEMBER', 'USER', String(userId), {
+      communityId: community.id,
+      reason: reason || null,
+    });
+
+    // جيب بيانات اليوزر للـ response
+    const bannedUser = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true, name: true, email: true, avatar: true },
+    });
+
+    return res.json({
+      success: true,
+      message: 'Member banned successfully',
+      data: {
+        user:      bannedUser,
+        reason:    reason || null,
+        bannedAt:  new Date(),
+        communityId: community.id,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false, message: 'Server error', error: error.message,
+    });
+  }
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 const unbanMember = async (req, res) => {
-    try {
-        const { slug } = req.params;
-        const userId = Number(req.params.userId);
-        const adminId = req.user.id;
-        const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
+  try {
+    const { slug, userId } = req.params;
+    const adminId = req.user.id;
 
-        const community = await prisma.community.findUnique({ where: { slug } });
-        if (!community) return res.status(404).json({ message: 'Community not found' });
-
-        if (!isSuperAdmin && community.createdById !== adminId) {
-            return res.status(403).json({ message: 'Access denied' });
-        }
-
-        await prisma.community.update({
-            where: { slug },
-            data: { members: { connect: { id: userId } } },
-        });
-
-        await logAction(adminId, 'UNBAN_MEMBER', 'USER', userId, { communitySlug: slug });
-
-        return res.json({ message: 'Member unbanned' });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
+    const community = req.community ||
+      await getCommunityBySlug(slug, adminId, req.user.role);
+    if (!community) {
+      return res.status(404).json({ success: false, message: 'Community not found' });
     }
+
+    const targetUserId = Number(userId);
+
+    // جيب سجل الحظر
+    const bannedRecord = await prisma.bannedMember.findUnique({
+      where: {
+        communityId_userId: {
+          communityId: community.id,
+          userId: targetUserId,
+        },
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true, avatar: true } },
+      },
+    });
+
+    if (!bannedRecord || bannedRecord.unbannedAt) {
+      return res.status(404).json({ success: false, message: 'User is not banned' });
+    }
+
+    // فك الحظر
+    await prisma.bannedMember.update({
+      where: { id: bannedRecord.id },
+      data:  { unbannedAt: new Date() },
+    });
+
+    // رجّع للـ members
+    await prisma.community.update({
+      where: { id: community.id },
+      data:  { members: { connect: { id: targetUserId } } },
+    });
+
+    await logAction(adminId, 'UNBAN_MEMBER', 'USER', String(userId), {
+      communityId: community.id,
+    });
+
+    return res.json({
+      success: true,
+      message: 'Member unbanned successfully',
+      data: {
+        user:        bannedRecord.user,
+        unbannedAt:  new Date(),
+        communityId: community.id,
+        // بيانات الحظر الأصلي للـ audit
+        originalBan: {
+          reason:   bannedRecord.reason,
+          bannedAt: bannedRecord.bannedAt,
+        },
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false, message: 'Server error', error: error.message,
+    });
+  }
 };
 
-const removeMemberByAdmin = async (req, res) => {
-    try {
-        const { slug } = req.params;
-        const userId = Number(req.params.userId);
-        const adminId = req.user.id;
-        const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
+const removeMember = async (req, res) => {
+  try {
+    const { slug, userId } = req.params;
+    const adminId = req.user.id;
 
-        const community = await prisma.community.findUnique({ where: { slug } });
-        if (!community) return res.status(404).json({ message: 'Community not found' });
+    const community = req.community || await getCommunityBySlug(slug, adminId, req.user.role);
+    if (!community) return res.status(404).json({ success: false, message: 'Community not found' });
 
-        if (!isSuperAdmin && community.createdById !== adminId) {
-            return res.status(403).json({ message: 'Access denied' });
-        }
+    await prisma.community.update({
+      where: { id: community.id },
+      data: { members: { disconnect: { id: Number(userId) } } },
+    });
 
-        await prisma.community.update({
-            where: { slug },
-            data: { members: { disconnect: { id: userId } } },
-        });
+    await logAction(adminId, 'REMOVE_MEMBER', 'USER', userId, { communityId: community.id });
 
-        await logAction(adminId, 'REMOVE_MEMBER', 'USER', userId, { communitySlug: slug });
-
-        return res.json({ message: 'Member removed' });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
-    }
+    return res.json({ success: true, message: 'Member removed successfully' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
 };
+const getAdminBannedMembers = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const page  = Number(req.query.page)  || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip  = (page - 1) * limit;
 
-// ═══════════════════════════════════════════════════
-//  POST MANAGEMENT
-// ═══════════════════════════════════════════════════
+    const community = req.community ||
+      await getCommunityBySlug(slug, req.user.id, req.user.role);
+    if (!community)
+      return res.status(404).json({ success: false, message: 'Community not found' });
 
-const getAdminPosts = async (req, res) => {
-    try {
-        const { slug } = req.params;
-        const userId = req.user.id;
-        const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
-        const page = Number(req.query.page) || 1;
-        const limit = Number(req.query.limit) || 10;
-        const skip = (page - 1) * limit;
+    const [banned, total] = await Promise.all([
+      prisma.bannedMember.findMany({
+        where: {
+          communityId: community.id,
+          unbannedAt:  null,           // active bans فقط
+        },
+        include: {
+          user:     { select: { id: true, name: true, email: true, avatar: true } },
+          bannedBy: { select: { id: true, name: true, avatar: true } },
+        },
+        orderBy: { bannedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.bannedMember.count({
+        where: { communityId: community.id, unbannedAt: null },
+      }),
+    ]);
 
-        const community = await prisma.community.findUnique({ where: { slug } });
-        if (!community) return res.status(404).json({ message: 'Community not found' });
+    const formatted = banned.map(b => ({
+      id:       b.user.id,
+      name:     b.user.name,
+      email:    b.user.email,
+      avatar:   b.user.avatar,
+      bannedAt: b.bannedAt,
+      reason:   b.reason,
+      bannedBy: b.bannedBy,
+    }));
 
-        if (!isSuperAdmin && community.createdById !== userId) {
-            return res.status(403).json({ message: 'Access denied' });
-        }
-
-        const [posts, total] = await Promise.all([
-            prisma.post.findMany({
-                where: { communityId: community.id },
-                include: { author: { select: { id: true, name: true, avatar: true } } },
-                orderBy: { createdAt: 'desc' },
-                skip,
-                take: limit,
-            }),
-            prisma.post.count({ where: { communityId: community.id } }),
-        ]);
-
-        return res.json({
-            data: posts,
-            pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-        });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
-    }
-};
-
-const deletePostByAdmin = async (req, res) => {
-    try {
-        const { slug } = req.params;
-        const postId = Number(req.params.postId);
-        const adminId = req.user.id;
-        const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
-        const { reason } = req.body;
-
-        const community = await prisma.community.findUnique({ where: { slug } });
-        if (!community) return res.status(404).json({ message: 'Community not found' });
-
-        if (!isSuperAdmin && community.createdById !== adminId) {
-            return res.status(403).json({ message: 'Access denied' });
-        }
-
-        const post = await prisma.post.findUnique({ where: { id: postId } });
-        if (!post || post.communityId !== community.id) {
-            return res.status(404).json({ message: 'Post not found' });
-        }
-
-        await prisma.post.delete({ where: { id: postId } });
-
-        await logAction(adminId, 'DELETE_POST', 'POST', postId, {
-            communitySlug: slug,
-            reason,
-        });
-
-        return res.json({ message: 'Post deleted' });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
-    }
-};
-
-// ═══════════════════════════════════════════════════
-//  QUESTION MANAGEMENT
-// ═══════════════════════════════════════════════════
-
-const getAdminQuestions = async (req, res) => {
-    try {
-        const { slug } = req.params;
-        const userId = req.user.id;
-        const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
-        const page = Number(req.query.page) || 1;
-        const limit = Number(req.query.limit) || 10;
-        const skip = (page - 1) * limit;
-
-        const community = await prisma.community.findUnique({ where: { slug } });
-        if (!community) return res.status(404).json({ message: 'Community not found' });
-
-        if (!isSuperAdmin && community.createdById !== userId) {
-            return res.status(403).json({ message: 'Access denied' });
-        }
-
-        const [questions, total] = await Promise.all([
-            prisma.communityQuestion.findMany({
-                where: { communityId: community.id },
-                include: {
-                    author: { select: { id: true, name: true, avatar: true } },
-                    _count: { select: { answers: true } },
-                },
-                orderBy: { createdAt: 'desc' },
-                skip,
-                take: limit,
-            }),
-            prisma.communityQuestion.count({ where: { communityId: community.id } }),
-        ]);
-
-        return res.json({
-            data: questions.map((q) => ({ ...q, answersCount: q._count.answers, _count: undefined })),
-            pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-        });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
-    }
-};
-
-const deleteQuestionByAdmin = async (req, res) => {
-    try {
-        const { slug } = req.params;
-        const questionId = Number(req.params.questionId);
-        const adminId = req.user.id;
-        const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
-        const { reason } = req.body;
-
-        const community = await prisma.community.findUnique({ where: { slug } });
-        if (!community) return res.status(404).json({ message: 'Community not found' });
-
-        if (!isSuperAdmin && community.createdById !== adminId) {
-            return res.status(403).json({ message: 'Access denied' });
-        }
-
-        const question = await prisma.communityQuestion.findUnique({ where: { id: questionId } });
-        if (!question || question.communityId !== community.id) {
-            return res.status(404).json({ message: 'Question not found' });
-        }
-
-        await prisma.communityQuestion.delete({ where: { id: questionId } });
-
-        await logAction(adminId, 'DELETE_QUESTION', 'QUESTION', questionId, {
-            communitySlug: slug,
-            reason,
-        });
-
-        return res.json({ message: 'Question deleted' });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
-    }
+    return res.json({
+      success: true,
+      data: formatted,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
 };
 
 // ═══════════════════════════════════════════════════
-//  REPORT MANAGEMENT
+//  POSTS
 // ═══════════════════════════════════════════════════
 
-const getAdminReports = async (req, res) => {
-    try {
-        const { slug } = req.params;
-        const userId = req.user.id;
-        const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
-        const page = Number(req.query.page) || 1;
-        const limit = Number(req.query.limit) || 10;
-        const status = req.query.status || undefined;
-        const skip = (page - 1) * limit;
+const getMyPosts = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-        const community = await prisma.community.findUnique({ where: { slug } });
-        if (!community) return res.status(404).json({ message: 'Community not found' });
+    const community = req.community || await getCommunityBySlug(slug, req.user.id, req.user.role);
+    if (!community) return res.status(404).json({ success: false, message: 'Community not found' });
 
-        if (!isSuperAdmin && community.createdById !== userId) {
-            return res.status(403).json({ message: 'Access denied' });
-        }
+    const [posts, total] = await Promise.all([
+      prisma.post.findMany({
+        where: { communityId: community.id },
+        include: {
+          author: { select: { id: true, name: true, avatar: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.post.count({ where: { communityId: community.id } }),
+    ]);
 
-        const where = {
-            communityId: community.id,
-            ...(status && { status }),
-        };
-
-        const [reports, total] = await Promise.all([
-            prisma.communityReport.findMany({
-                where,
-                include: { reporter: { select: { id: true, name: true, avatar: true } } },
-                orderBy: { createdAt: 'desc' },
-                skip,
-                take: limit,
-            }),
-            prisma.communityReport.count({ where }),
-        ]);
-
-        return res.json({
-            data: reports,
-            pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-        });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
-    }
+    return res.json({
+      success: true,
+      posts,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
 };
 
-const resolveReportByAdmin = async (req, res) => {
-    try {
-        const reportId = Number(req.params.reportId);
-        const adminId = req.user.id;
-        const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
-        const { notes } = req.body;
+const deleteMyPost = async (req, res) => {
+  try {
+    const { slug, postId } = req.params;
+    const adminId = req.user.id;
+    const { reason } = req.body;
 
-        const report = await prisma.communityReport.findUnique({
-            where: { id: reportId },
-            include: { community: true },
-        });
-        if (!report) return res.status(404).json({ message: 'Report not found' });
+    const community = req.community || await getCommunityBySlug(slug, adminId, req.user.role);
+    if (!community) return res.status(404).json({ success: false, message: 'Community not found' });
 
-        if (!isSuperAdmin && report.community.createdById !== adminId) {
-            return res.status(403).json({ message: 'Access denied' });
-        }
+    const post = await prisma.post.findFirst({
+      where: { id: Number(postId), communityId: community.id },
+    });
 
-        const updated = await prisma.communityReport.update({
-            where: { id: reportId },
-            data: { status: 'RESOLVED', resolvedById: adminId, resolvedAt: new Date(), notes },
-        });
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
 
-        await logAction(adminId, 'RESOLVE_REPORT', 'REPORT', reportId, { notes });
+    await prisma.post.delete({ where: { id: Number(postId) } });
 
-        return res.json({ message: 'Report resolved', report: updated });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
-    }
-};
+    await logAction(adminId, 'DELETE_POST', 'POST', postId, { communityId: community.id, reason });
 
-const dismissReportByAdmin = async (req, res) => {
-    try {
-        const reportId = Number(req.params.reportId);
-        const adminId = req.user.id;
-        const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
-
-        const report = await prisma.communityReport.findUnique({
-            where: { id: reportId },
-            include: { community: true },
-        });
-        if (!report) return res.status(404).json({ message: 'Report not found' });
-
-        if (!isSuperAdmin && report.community.createdById !== adminId) {
-            return res.status(403).json({ message: 'Access denied' });
-        }
-
-        const updated = await prisma.communityReport.update({
-            where: { id: reportId },
-            data: { status: 'DISMISSED', resolvedById: adminId, resolvedAt: new Date() },
-        });
-
-        await logAction(adminId, 'DISMISS_REPORT', 'REPORT', reportId, {});
-
-        return res.json({ message: 'Report dismissed', report: updated });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
-    }
+    return res.json({ success: true, message: 'Post deleted successfully' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
 };
 
 // ═══════════════════════════════════════════════════
-//  ANALYTICS
+//  QUESTIONS
 // ═══════════════════════════════════════════════════
 
-const getAdminAnalytics = async (req, res) => {
-    try {
-        const { slug } = req.params;
-        const userId = req.user.id;
-        const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
+const getMyQuestions = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-        const community = await prisma.community.findUnique({ where: { slug } });
-        if (!community) return res.status(404).json({ message: 'Community not found' });
+    const community = req.community || await getCommunityBySlug(slug, req.user.id, req.user.role);
+    if (!community) return res.status(404).json({ success: false, message: 'Community not found' });
 
-        if (!isSuperAdmin && community.createdById !== userId) {
-            return res.status(403).json({ message: 'Access denied' });
-        }
+    const [questions, total] = await Promise.all([
+      prisma.communityQuestion.findMany({
+        where: { communityId: community.id },
+        include: {
+          author: { select: { id: true, name: true, avatar: true } },
+          _count: { select: { answers: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.communityQuestion.count({ where: { communityId: community.id } }),
+    ]);
 
-        const communityId = community.id;
+    return res.json({
+      success: true,
+      questions: questions.map((q) => ({
+        ...q,
+        answersCount: q._count.answers,
+      })),
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
 
-        const days = Array.from({ length: 7 }, (_, i) => {
-            const start = new Date();
-            start.setDate(start.getDate() - (6 - i));
-            start.setHours(0, 0, 0, 0);
-            const end = new Date(start);
-            end.setHours(23, 59, 59, 999);
-            return { start, end, label: start.toLocaleDateString('en-US', { weekday: 'short' }) };
-        });
+const deleteMyQuestion = async (req, res) => {
+  try {
+    const { slug, questionId } = req.params;
+    const adminId = req.user.id;
+    const { reason } = req.body;
 
-        const weeklyActivity = await Promise.all(
-            days.map(async ({ start, end, label }) => {
-                const [questions, posts] = await Promise.all([
-                    prisma.communityQuestion.count({ where: { communityId, createdAt: { gte: start, lte: end } } }),
-                    prisma.post.count({ where: { communityId, createdAt: { gte: start, lte: end } } }),
-                ]);
-                return { day: label, questions, posts };
-            })
-        );
+    const community = req.community || await getCommunityBySlug(slug, adminId, req.user.role);
+    if (!community) return res.status(404).json({ success: false, message: 'Community not found' });
 
-        const months = Array.from({ length: 6 }, (_, i) => {
-            const d = new Date();
-            d.setDate(1);
-            d.setMonth(d.getMonth() - (5 - i));
-            d.setHours(0, 0, 0, 0);
-            const end = new Date(d);
-            end.setMonth(end.getMonth() + 1);
-            end.setDate(0);
-            end.setHours(23, 59, 59, 999);
-            return { start: d, end, label: d.toLocaleDateString('en-US', { month: 'short' }) };
-        });
+    const question = await prisma.communityQuestion.findFirst({
+      where: { id: Number(questionId), communityId: community.id },
+    });
 
-        const monthlyGrowth = await Promise.all(
-            months.map(async ({ start, end, label }) => {
-                const count = await prisma.user.count({
-                    where: {
-                        communitiesJoined: { some: { id: communityId } },
-                        createdAt: { gte: start, lte: end },
-                    },
-                });
-                return { month: label, growth: count };
-            })
-        );
+    if (!question) return res.status(404).json({ success: false, message: 'Question not found' });
 
-        const [totalQuestions, totalPosts, totalComments, totalMembers] = await Promise.all([
-            prisma.communityQuestion.count({ where: { communityId } }),
-            prisma.post.count({ where: { communityId } }),
-            prisma.postComment.count({ where: { post: { communityId } } }),
-            prisma.community.findUnique({
-                where: { id: communityId },
-                include: { _count: { select: { members: true } } },
-            }),
-        ]);
+    await prisma.communityQuestion.delete({ where: { id: Number(questionId) } });
 
-        const totalEngagement = totalQuestions + totalPosts + totalComments || 1;
+    await logAction(adminId, 'DELETE_QUESTION', 'QUESTION', questionId, {
+      communityId: community.id,
+      reason,
+    });
 
-        return res.json({
-            weeklyActivity,
-            monthlyGrowth,
-            overview: {
-                totalMembers: totalMembers?._count.members ?? 0,
-                totalQuestions,
-                totalPosts,
-                totalComments,
-            },
-            engagement: [
-                { name: 'Questions', value: Math.round((totalQuestions / totalEngagement) * 100), color: '#3b82f6', count: totalQuestions },
-                { name: 'Posts', value: Math.round((totalPosts / totalEngagement) * 100), color: '#8b5cf6', count: totalPosts },
-                { name: 'Comments', value: Math.round((totalComments / totalEngagement) * 100), color: '#10b981', count: totalComments },
-            ],
-        });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
-    }
+    return res.json({ success: true, message: 'Question deleted successfully' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
 };
 
 // ═══════════════════════════════════════════════════
-//  ACTION LOGS
+//  REPORTS
 // ═══════════════════════════════════════════════════
 
-const getAdminActionLogs = async (req, res) => {
-    try {
-        const { slug } = req.params;
-        const userId = req.user.id;
-        const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
-        const page = Number(req.query.page) || 1;
-        const limit = Number(req.query.limit) || 20;
-        const skip = (page - 1) * limit;
+const getMyReports = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const status = req.query.status || undefined;
+    const skip = (page - 1) * limit;
 
-        const community = await prisma.community.findUnique({ where: { slug } });
-        if (!community) return res.status(404).json({ message: 'Community not found' });
+    const community = req.community || await getCommunityBySlug(slug, req.user.id, req.user.role);
+    if (!community) return res.status(404).json({ success: false, message: 'Community not found' });
 
-        if (!isSuperAdmin && community.createdById !== userId) {
-            return res.status(403).json({ message: 'Access denied' });
-        }
+    const where = {
+      communityId: community.id,
+      ...(status && { status }),
+    };
 
-        const [logs, total] = await Promise.all([
-            prisma.adminActionLog.findMany({
-                where: { targetId: String(community.id), targetType: 'COMMUNITY' },
-                include: { admin: { select: { id: true, name: true, avatar: true } } },
-                orderBy: { createdAt: 'desc' },
-                skip,
-                take: limit,
-            }),
-            prisma.adminActionLog.count({
-                where: { targetId: String(community.id), targetType: 'COMMUNITY' },
-            }),
-        ]);
+    const [reports, total] = await Promise.all([
+      prisma.communityReport.findMany({
+        where,
+        include: {
+          reporter: { select: { id: true, name: true, avatar: true } },
+          resolvedBy: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.communityReport.count({ where }),
+    ]);
 
-        return res.json({
-            data: logs,
-            pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-        });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
-    }
+    return res.json({
+      success: true,
+      reports,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+const resolveMyReport = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const adminId = req.user.id;
+    const { notes } = req.body;
+
+    const report = await prisma.communityReport.findUnique({
+      where: { id: Number(reportId) },
+    });
+
+    if (!report) return res.status(404).json({ success: false, message: 'Report not found' });
+
+    const updated = await prisma.communityReport.update({
+      where: { id: Number(reportId) },
+      data: {
+        status: 'RESOLVED',
+        resolvedById: adminId,
+        resolvedAt: new Date(),
+        notes,
+      },
+    });
+
+    await logAction(adminId, 'RESOLVE_REPORT', 'REPORT', reportId, { notes });
+
+    return res.json({ success: true, message: 'Report resolved', report: updated });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+const dismissMyReport = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const adminId = req.user.id;
+
+    const report = await prisma.communityReport.findUnique({
+      where: { id: Number(reportId) },
+    });
+
+    if (!report) return res.status(404).json({ success: false, message: 'Report not found' });
+
+    const updated = await prisma.communityReport.update({
+      where: { id: Number(reportId) },
+      data: {
+        status: 'DISMISSED',
+        resolvedById: adminId,
+        resolvedAt: new Date(),
+      },
+    });
+
+    await logAction(adminId, 'DISMISS_REPORT', 'REPORT', reportId, {});
+
+    return res.json({ success: true, message: 'Report dismissed', report: updated });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+// ═══════════════════════════════════════════════════
+//  ANALYTICS & LOGS
+// ═══════════════════════════════════════════════════
+
+
+const getMyLogs = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const community = req.community || await getCommunityBySlug(slug, req.user.id, req.user.role);
+    if (!community) return res.status(404).json({ success: false, message: 'Community not found' });
+
+  const [logs, total] = await Promise.all([
+  prisma.adminActionLog.findMany({
+    where: {
+      OR: [
+        { targetId: String(community.id), targetType: 'COMMUNITY' },
+        { metadata: { path: '$.communityId', equals: community.id } },  // ✅
+      ],
+    },
+    include: {
+      admin: { select: { id: true, name: true, avatar: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+    skip,
+    take: limit,
+  }),
+  prisma.adminActionLog.count({
+    where: {
+      OR: [
+        { targetId: String(community.id), targetType: 'COMMUNITY' },
+        { metadata: { path: '$.communityId', equals: community.id } },  // ✅
+      ],
+    },
+  }),
+]);
+    return res.json({
+      success: true,
+      data: logs,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
 };
 
 // ═══════════════════════════════════════════════════
@@ -633,19 +853,21 @@ const getAdminActionLogs = async (req, res) => {
 // ═══════════════════════════════════════════════════
 
 module.exports = {
-    getAdminCommunity,
-    updateAdminCommunity,
-    getAdminMembers,
-    banMember,
-    unbanMember,
-    removeMemberByAdmin,
-    getAdminPosts,
-    deletePostByAdmin,
-    getAdminQuestions,
-    deleteQuestionByAdmin,
-    getAdminReports,
-    resolveReportByAdmin,
-    dismissReportByAdmin,
-    getAdminAnalytics,
-    getAdminActionLogs,
+  getMyCommunities,
+  getMyCommunity,
+  updateMyCommunity,
+  getMyMembers,
+  banMember,
+  unbanMember,
+  removeMember,
+  getAdminBannedMembers,
+  getMyPosts,
+  deleteMyPost,
+  getMyQuestions,
+  deleteMyQuestion,
+  getMyReports,
+  resolveMyReport,
+  dismissMyReport,
+  getMyAnalytics,
+  getMyLogs,
 };

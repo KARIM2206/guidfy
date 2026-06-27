@@ -1,21 +1,23 @@
 // routes/admin.routes.js
 const router = require('express').Router();
 const {
-  getAdminCommunity,
-  updateAdminCommunity,
-  getAdminMembers,
+  getMyCommunities: getAdminCommunities,
+  getMyCommunity: getAdminCommunity,
+  updateMyCommunity: updateAdminCommunity,
+  getMyMembers: getAdminMembers,
   banMember,
   unbanMember,
-  removeMemberByAdmin,
-  getAdminPosts,
-  deletePostByAdmin,
-  getAdminQuestions,
-  deleteQuestionByAdmin,
-  getAdminReports,
-  resolveReportByAdmin,
-  dismissReportByAdmin,
-  getAdminAnalytics,
-  getAdminActionLogs,
+  removeMember: removeMemberByAdmin,
+  getMyPosts: getAdminPosts,
+  deleteMyPost: deletePostByAdmin,
+  getMyQuestions: getAdminQuestions,
+  deleteMyQuestion: deleteQuestionByAdmin,
+  getMyReports: getAdminReports,
+  resolveMyReport: resolveReportByAdmin,
+  dismissMyReport: dismissReportByAdmin,
+  getMyAnalytics: getAdminAnalytics,
+  getMyLogs: getAdminActionLogs,
+  getAdminBannedMembers: getAdminBannedMembers,
 } = require('../../controllers/community/admin.controller');
 
 const { protect }   = require('../../middleware/authMiddleware');
@@ -28,8 +30,9 @@ router.use(checkUser);
 router.use(allowedTo('ADMIN'));
 
 // ─── Community ────────────────────────────────────
-router.get('/community/:slug',     getAdminCommunity);
-router.put('/community/:slug',     updateAdminCommunity);
+router.get('/communities',            getAdminCommunities);
+router.get('/community/:slug',        getAdminCommunity);
+router.put('/community/:slug',        updateAdminCommunity);
 
 // ─── Members ──────────────────────────────────────
 router.get('/community/:slug/members',                   getAdminMembers);
@@ -53,5 +56,6 @@ router.put('/reports/:reportId/dismiss',                dismissReportByAdmin);
 // ─── Analytics & Logs ─────────────────────────────
 router.get('/community/:slug/analytics', getAdminAnalytics);
 router.get('/community/:slug/logs',      getAdminActionLogs);
+router.get('/community/:slug/banned-members' , getAdminBannedMembers);
 
 module.exports = router;

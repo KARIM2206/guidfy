@@ -1,19 +1,42 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+// middleware/checkUser.js
+'use strict';
+
+const prisma = require('../prismaClient'); // ✅ Singleton — no new PrismaClient()
+
+/**
+ * Verifies the authenticated user still exists in DB and refreshes req.user
+ * with DB-sourced data. Used after `protect` middleware.
+ */
 const checkUser = async (req, res, next) => {
   try {
-    const userId = req.user.id; // Assuming you have user authentication and the user ID is available in req.user.id
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      select: {
+        id:        true,
+        email:     true,
+        name:      true,
+        role:      true,
+        avatar:    true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
+
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
+
     req.user = user;
     next();
   } catch (error) {
-    console.error('Error checking user:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('checkUser error:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 

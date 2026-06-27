@@ -1,4 +1,3 @@
-// services/recommendation.service.js
 const axios = require('axios');
 
 const aiClient = axios.create({
@@ -29,16 +28,22 @@ function parseSkills(raw) {
 }
 
 function normalizeScore(rawScore) {
-  const MIN = -15, MAX = 5;
-  const clamped = Math.max(MIN, Math.min(MAX, rawScore ?? MIN));
-  return Math.round(((clamped - MIN) / (MAX - MIN)) * 100);
+  // Absolute mapping من [-1, 1] إلى [0, 100]
+  // Calibrated لـ compute_score() output
+  const r = rawScore ?? -1;
+  if (r < -0.2) return Math.round(Math.max(0, 35 + (r + 0.2) / 0.8 * 35));
+  if (r < 0.0)  return Math.round(35 + (r + 0.2) / 0.2 * 15);
+  if (r < 0.1)  return Math.round(50 + (r / 0.1) * 10);
+  if (r < 0.2)  return Math.round(60 + ((r - 0.1) / 0.1) * 12);
+  if (r < 0.4)  return Math.round(72 + ((r - 0.2) / 0.2) * 13);
+  return Math.round(Math.min(95, 85 + ((r - 0.4) / 0.6) * 10));
 }
 
 function buildExplanation({ matchedSkills, missingSkills, matchDetails }) {
   const lines = [];
   const md = matchDetails || {};
 
-  if (matchedSkills.length > 0) {
+  if (matchedSkills && matchedSkills.length > 0) {
     const preview = matchedSkills.slice(0, 3).join(', ');
     const more    = matchedSkills.length > 3 ? '…' : '';
     lines.push(
@@ -46,7 +51,7 @@ function buildExplanation({ matchedSkills, missingSkills, matchDetails }) {
     );
   }
 
-  if (missingSkills.length > 0) {
+  if (missingSkills && missingSkills.length > 0) {
     lines.push(
       `Learning ${missingSkills.slice(0, 3).join(', ')} will make you a strong candidate`
     );
@@ -63,12 +68,12 @@ function buildExplanation({ matchedSkills, missingSkills, matchDetails }) {
   return lines;
 }
 
-// ── FIX: يأخد skills من matchDetails لو jobsMap فاضية (SerpAPI jobs) ──
+// ── إصلاح: استخراج المهارات القياسية القادمة مباشرة من الـ AI Service ──
 function resolveJobSkills(job, md) {
   const fromDb = parseSkills(job?.skills);
   if (fromDb.length > 0) return fromDb;
 
-  // fallback: دمج matched + missing من matchDetails
+  // Fallback ذكي: الاعتماد المباشر على ما استخرجه الـ AI Extractor في الـ matchDetails
   const matched = md.matchedSkills ?? [];
   const missing = md.missingSkills ?? [];
   return [...new Set([...matched, ...missing])];
@@ -78,34 +83,44 @@ function enrichRecommendation(rec, jobsMap, userSkillSet) {
   const job = jobsMap.get(rec.jobId);
   const md  = rec.matchDetails || {};
 
-  // ── FIX: Skills صح من أي مصدر ────────────────────────────────────────
-  const jobSkills     = resolveJobSkills(job, md);
-  const matchedSkills = jobSkills.filter(s => userSkillSet.has(s));
-  const missingSkills = jobSkills.filter(s => !userSkillSet.has(s));
-  const skillGapPct   = jobSkills.length > 0
+  // ── إصلاح: حماية تدفق المهارات لمنع المصفوفات الفارغة ──────────────────
+  const jobSkills = resolveJobSkills(job, md);
+  
+  // إذا كان الـ AI أرسل الـ Matched والـ Missing جاهزين، نستخدمهم مباشرة كـ الحق الفعلي للمطابقة
+  const matchedSkills = md.matchedSkills && md.matchedSkills.length > 0 
+    ? md.matchedSkills 
+    : jobSkills.filter(s => userSkillSet.has(s.toLowerCase().trim()));
+
+  const missingSkills = md.missingSkills && md.missingSkills.length > 0
+    ? md.missingSkills
+    : jobSkills.filter(s => !userSkillSet.has(s.toLowerCase().trim()));
+
+  const skillGapPct = rec.skillGapPct ?? (jobSkills.length > 0
     ? Math.round((missingSkills.length / jobSkills.length) * 100)
-    : 0;
+    : 0);
 
   return {
     ...rec,
     score:    normalizeScore(rec.rawScore ?? rec.score),
     rawScore: rec.rawScore ?? rec.score,
 
-    // ── Skills واضحة في الـ top-level ──────────────────────────────────
-    jobSkills,        // كل skills الوظيفة
-    matchedSkills,    // اللي اليوزر عارفها ✅
-    missingSkills,    // اللي محتاج يتعلمها 📚
+    // ── حقول المهارات المحدثة في الـ Top-Level ──────────────────────────
+    jobSkills,        
+    matchedSkills,    
+    missingSkills,    
     skillGapPct,
 
     features: {
-      skillOverlap: md.skillOverlap ?? 0,
-      freshness:    md.freshness    ?? 0,
-      lpAlignment:  md.lpAlignment  ?? 0,
-      careerFit:    md.careerFit    ?? 0,
-      readiness:    Math.max(0, 1 - (md.learningGap ?? 0)),
+      skillOverlap: md.skillOverlap ?? rec.features?.skillOverlap ?? 0,
+      freshness:    md.freshness    ?? rec.features?.freshness    ?? 0,
+      lpAlignment:  md.lpAlignment  ?? rec.features?.lpAlignment  ?? 0,
+      careerFit:    md.careerFit    ?? rec.features?.careerFit    ?? 0,
+      readiness:    md.readiness    ?? Math.max(0, 1 - (md.learningGap ?? 0)),
     },
 
-    explanation: buildExplanation({ matchedSkills, missingSkills, matchDetails: md }),
+    explanation: md.explanation && md.explanation.length > 0 
+      ? md.explanation 
+      : buildExplanation({ matchedSkills, missingSkills, matchDetails: md }),
 
     title:           job?.title           ?? rec.title,
     company:         job?.company         ?? rec.company,
@@ -125,34 +140,32 @@ function enrichRecommendation(rec, jobsMap, userSkillSet) {
 async function getUserSkillsFromProgress(userId, prisma) {
   const acquired = new Set();
 
-  // المصدر 2: Steps المكتملة
- 
+  // المصدر 1: Steps المكتملة
   const completedStepProgress = await prisma.userStepProgress.findMany({
     where:  { userId, completed: true },
     select: { step: { select: { skills: true } } },
   });
-  console.log('completed steps : ', completedStepProgress);
   
-  for (const { step } of completedStepProgress)
+  for (const { step } of completedStepProgress) {
     parseSkills(step?.skills).forEach(s => acquired.add(s));
+  }
 
-  // المصدر 3: Lessons المكتملة
+  // المصدر 2: Lessons المكتملة
   const completedLessonProgress = await prisma.userLessonProgress.findMany({
     where:  { userId, completed: true },
     select: { lesson: { select: { skills: true } } },
   });
   
-  for (const { lesson } of completedLessonProgress)
+  for (const { lesson } of completedLessonProgress) {
     parseSkills(lesson?.skills).forEach(s => acquired.add(s));
+  }
 
-  console.log('user skills : ', acquired);
-  
-
+  console.log(`[Backend] Total unique skills resolved for user ${userId}:`, acquired.size);
   return [...acquired];
 }
 
 // ══════════════════════════════════════════════════════
-// MAIN
+// MAIN RECOMMENDATION ROUTINE
 // ══════════════════════════════════════════════════════
 
 async function getRecommendations(userId, prisma) {
@@ -178,7 +191,7 @@ async function getRecommendations(userId, prisma) {
     }),
   ]);
 
-  const userSkillSet = new Set(realSkills);
+  const userSkillSet = new Set(realSkills.map(s => s.toLowerCase().trim()));
 
   // 3. Progress %
   const [completedCount, totalSteps] = await Promise.all([
@@ -192,10 +205,9 @@ async function getRecommendations(userId, prisma) {
     (completedCount / Math.max(totalSteps, 1)) * 100
   );
 
-  // 4. Jobs
+  // 4. Jobs Query (تأمين جلب الوظائف النشطة)
   const jobs = await prisma.job.findMany({
     where: {
-      status: 'PUBLISHED',
       OR: [{ deadline: null }, { deadline: { gte: new Date() } }],
     },
     select: {
@@ -214,33 +226,33 @@ async function getRecommendations(userId, prisma) {
 
   const jobsMap = new Map(jobs.map(j => [j.id, j]));
 
-  // 5. إرسال للـ AI service
+  // 5. بناء الـ Payload مع الحفاظ على الحقول المطلوبة للـ Feature Builder
   const aiPayload = {
     user: {
       userId,
-      title:             userProfile?.title            || '',
+      title:             userProfile?.title             || 'Developer',
       learningPathTitle: bestEnrollment.learningPath.title,
       progressPercent:   progressPct,
       skills:            realSkills,
-      declaredSkills:    [],
+      declaredSkills:    [], // يمكن ربطه لاحقاً بحقل المهارات المعلنة في جدول المستخدم
       experienceYears:   userProfile?.experienceYears ?? 0,
     },
     jobs: jobs.map(j => ({
-      id:                j.id,
-      title:             j.title,
-      description:       j.description,
-      skills:            parseSkills(j.skills),
-      company:           j.company,
-      location:          j.location        || null,
-      jobType:           j.jobType,
-      learningPathId:    j.learningPathId,
+      id:                 j.id,
+      title:              j.title,
+      description:        j.description || '',
+      skills:             parseSkills(j.skills), 
+      company:            j.company     || 'Unknown',
+      location:           j.location    || null,
+      jobType:            j.jobType     || 'FULL_TIME',
+      learningPathId:     j.learningPathId,
       learningPathTitle: j.learningPath?.title || '',
       experienceLevel:   j.experienceLevel  || null,
-      applyLink:         j.applyLink        || null,
-      postedAt:          j.postedAt?.toISOString() ?? null,
-      source:            j.source           || null,
+      applyLink:          j.applyLink        || null,
+      postedAt:           j.postedAt?.toISOString() ?? null,
+      source:             j.source           || 'scraped',
     })),
-    topN: 5,
+    topN: jobs.length,
   };
 
   let aiData;
@@ -250,25 +262,24 @@ async function getRecommendations(userId, prisma) {
   } catch (err) {
     const code = err.code || err.response?.status;
     throw Object.assign(
-      new Error(`AI service error: ${err.message}`),
+      new Error(`AI service connection failure: ${err.message}`),
       { code }
     );
   }
 
-  // 6. Enrich
+  // 6. Enrich النتائج
   const enriched = (aiData.recommendations ?? []).map(rec =>
     enrichRecommendation(rec, jobsMap, userSkillSet)
   );
 
-  // 7. Meta
+  // 7. Meta Analytics للحسابات الإحصائية بلوحة التحكم
   const avgScore = enriched.length
     ? Math.round(enriched.reduce((s, r) => s + r.score, 0) / enriched.length)
     : 0;
 
   const avgSkillMatch = enriched.length
     ? Math.round(
-        enriched.reduce((s, r) => s + (r.features.skillOverlap ?? 0), 0)
-        / enriched.length * 100
+        (enriched.reduce((s, r) => s + (r.features.skillOverlap ?? 0), 0) / enriched.length) * 100
       )
     : 0;
 
@@ -288,7 +299,7 @@ async function getRecommendations(userId, prisma) {
 }
 
 // ══════════════════════════════════════════════════════
-// BATCH EXTRACT
+// BATCH EXTRACT LAYER
 // ══════════════════════════════════════════════════════
 
 async function batchExtractSkills(jobs) {

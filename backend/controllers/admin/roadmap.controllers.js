@@ -417,6 +417,147 @@ const toggleRoadmapPublish = async (req, res) => {
     console.error("Error toggling publish:", error);
     res.status(500).json({ success: false, message: "Failed to toggle publish status" });
   }
+
+};
+
+// ==========================
+// Assign Admin to Roadmap
+// ==========================
+const assignAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminId, adminIds } = req.body;
+    const currentUser = req.user;
+
+    checkSuperAdmin(currentUser);
+
+    // Normalize IDs to an array
+    let idsToAssign = [];
+    if (adminIds && Array.isArray(adminIds)) {
+      idsToAssign = adminIds.map(Number).filter(n => !isNaN(n));
+    } else if (adminId) {
+      if (Array.isArray(adminId)) {
+        idsToAssign = adminId.map(Number).filter(n => !isNaN(n));
+      } else {
+        idsToAssign = [Number(adminId)].filter(n => !isNaN(n));
+      }
+    }
+
+    if (idsToAssign.length === 0) {
+      return res.status(400).json({ success: false, message: "No valid admin ID provided" });
+    }
+
+    // Check if admins exist and are ADMIN
+    const admins = await prisma.user.findMany({
+      where: { id: { in: idsToAssign } },
+    });
+
+    if (admins.length !== idsToAssign.length || admins.some(a => a.role !== "ADMIN")) {
+      return res.status(400).json({ success: false, message: "One or more invalid admin users" });
+    }
+
+    // Check if roadmap exists
+    const roadmap = await prisma.roadmap.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!roadmap) {
+      return res.status(404).json({ success: false, message: "Roadmap not found" });
+    }
+
+    // Create assignments
+    const assignments = idsToAssign.map(aId => ({
+      roadmapId: Number(id),
+      adminId: aId,
+    }));
+
+    await prisma.roadmapAssignment.createMany({
+      data: assignments,
+      skipDuplicates: true,
+    });
+
+    // Update status if it was DRAFT
+    if (roadmap.status === "DRAFT") {
+      await prisma.roadmap.update({
+        where: { id: Number(id) },
+        data: { status: "ASSIGNED" },
+      });
+    }
+
+    // Return updated roadmap with assignments
+    const updatedRoadmap = await prisma.roadmap.findUnique({
+      where: { id: Number(id) },
+      include: {
+        assignments: { include: { admin: true } },
+        steps: { include: { lessons: true } },
+        createdBy: true,
+        enrollments: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Admin assigned successfully",
+      data: updatedRoadmap,
+    });
+  } catch (error) {
+    console.error("Error assigning admin:", error);
+    res.status(500).json({ success: false, message: "Failed to assign admin" });
+  }
+};
+
+// ==========================
+// Remove Admin from Roadmap
+// ==========================
+const removeAdmin = async (req, res) => {
+  try {
+    const { id, adminId } = req.params;
+    const currentUser = req.user;
+
+    checkSuperAdmin(currentUser);
+
+    // Delete assignment
+    await prisma.roadmapAssignment.delete({
+      where: {
+        roadmapId_adminId: {
+          roadmapId: Number(id),
+          adminId: Number(adminId),
+        },
+      },
+    });
+
+    // Check if no admins left → revert to DRAFT
+    const remainingAssignments = await prisma.roadmapAssignment.count({
+      where: { roadmapId: Number(id) },
+    });
+
+    if (remainingAssignments === 0) {
+      await prisma.roadmap.update({
+        where: { id: Number(id) },
+        data: { status: "DRAFT" },
+      });
+    }
+
+    // Return updated roadmap
+    const updatedRoadmap = await prisma.roadmap.findUnique({
+      where: { id: Number(id) },
+      include: {
+        assignments: { include: { admin: true } },
+        steps: { include: { lessons: true } },
+        createdBy: true,
+        enrollments: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Admin removed successfully",
+      data: updatedRoadmap,
+    });
+  } catch (error) {
+    console.error("Error removing admin:", error);
+    res.status(500).json({ success: false, message: "Failed to remove admin" });
+  }
 };
 
 module.exports = {
@@ -426,6 +567,7 @@ module.exports = {
   updateRoadmap,
   deleteRoadmap,
   toggleRoadmapPublish,
-    getMyAssignedRoadmaps,
-
+  getMyAssignedRoadmaps,
+  assignAdmin,
+  removeAdmin
 };

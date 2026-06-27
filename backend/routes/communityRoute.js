@@ -1,47 +1,40 @@
 const router = require("express").Router();
 const {
-  createCommunity, updateCommunity, deleteCommunity,
   getAllCommunities, getCommunityBySlug, joinCommunity, leaveCommunity,
-  getCommunityQuestions, createQuestion, deleteQuestion,
-  getCommunityPosts, createPost, deletePost, getCommunityAnalytics,
+  getCommunityQuestions, createQuestion, updateQuestion, deleteQuestion,
+  getCommunityPosts, createPost, updatePost, deletePost, getPopularTags, getCommunityAnalytics,
   getQuestion, addAnswer, editAnswer, deleteAnswer,
-  getAnswers, getMyAnswers, vote, getVotes, getView,
-  incrementView, getGlobalFeed
+  getAnswers, getMyAnswers, vote, getGlobalFeed, getVotes, incrementView, getView,
+  createCommunity, updateCommunity, deleteCommunity, getCommunityMembers
 } = require("../controllers/community.controller");
 
 const { protect } = require("../middleware/authMiddleware");
-const checkUser = require("../middleware/checkUser");
 const allowedTo = require("../utils/allowedTo");
 
 router.use(protect);
-router.use(checkUser);
 
 // ══════════════════════════════════════════════════
-//  STATIC ROUTES FIRST (قبل أي dynamic route)
+//  STATIC ROUTES (قبل أي dynamic route)
 // ══════════════════════════════════════════════════
 
-// Feed
 router.get("/feed", getGlobalFeed);
-
-// Votes & Views (static paths)
+router.get("/tags/popular", getPopularTags);
 router.post("/vote", vote);
-router.post("/views", incrementView);
-
-// Single question by ID (static prefix "question")
-router.get("/question/:questionId", getQuestion);
-
-// Votes & Views GET
 router.get("/votes/target/:targetId/type/:targetType", getVotes);
+router.post("/views", incrementView);
 router.get("/views/target/:targetId/type/:targetType", getView);
 
+router.get("/question/:questionId", getQuestion);
+
 // ══════════════════════════════════════════════════
-//  COMMUNITY CRUD
+//  COMMUNITY CRUD (Public + Admin)
 // ══════════════════════════════════════════════════
 
 router.get("/", getAllCommunities);
 router.post("/", allowedTo("ADMIN", "SUPER_ADMIN"), createCommunity);
 router.put("/:communityId", allowedTo("ADMIN", "SUPER_ADMIN"), updateCommunity);
 router.delete("/:communityId", allowedTo("ADMIN", "SUPER_ADMIN"), deleteCommunity);
+
 router.get("/:communityId/analytics", getCommunityAnalytics);
 
 // ══════════════════════════════════════════════════
@@ -50,6 +43,7 @@ router.get("/:communityId/analytics", getCommunityAnalytics);
 
 router.post("/:communityId/join", joinCommunity);
 router.post("/:communityId/leave", leaveCommunity);
+router.get("/:communityId/members", getCommunityMembers);
 
 // ══════════════════════════════════════════════════
 //  QUESTIONS
@@ -57,6 +51,7 @@ router.post("/:communityId/leave", leaveCommunity);
 
 router.get("/:communityId/questions", getCommunityQuestions);
 router.post("/:communityId/questions", createQuestion);
+router.put("/:communityId/questions/:questionId", updateQuestion);
 router.delete("/:communityId/questions/:questionId", deleteQuestion);
 
 // ══════════════════════════════════════════════════
@@ -66,10 +61,8 @@ router.delete("/:communityId/questions/:questionId", deleteQuestion);
 router.post("/:communityId/questions/:questionId/answers", addAnswer);
 router.put("/:communityId/questions/:questionId/answers/:answerId", editAnswer);
 router.delete("/:communityId/questions/:questionId/answers/:answerId", deleteAnswer);
-
-// ✅ مسارين مختلفين للـ answers
 router.get("/:communityId/questions/:questionId/answers", getAnswers);
-router.get("/:communityId/questions/:questionId/my-answers", getMyAnswers); // ← غيرنا المسار
+router.get("/:communityId/questions/:questionId/my-answers", getMyAnswers);
 
 // ══════════════════════════════════════════════════
 //  POSTS
@@ -77,10 +70,11 @@ router.get("/:communityId/questions/:questionId/my-answers", getMyAnswers); // �
 
 router.get("/:communityId/posts", getCommunityPosts);
 router.post("/:communityId/posts", createPost);
+router.put("/:communityId/posts/:postId", updatePost);
 router.delete("/:communityId/posts/:postId", deletePost);
 
 // ══════════════════════════════════════════════════
-//  SLUG — دايمًا الأخير لأنه يلتقط أي string
+//  SLUG — دايمًا الأخير
 // ══════════════════════════════════════════════════
 
 router.get("/:slug", getCommunityBySlug);

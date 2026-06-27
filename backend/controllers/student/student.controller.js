@@ -1,56 +1,78 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+
+const prisma = require('../../prismaClient');
 const errorHandler = require("../../utils/errorHandler");
+console.log(Object.keys(prisma));
+// ═══════════════════════════════════════════════════════════════════════
+// Helper: يتعامل مع Prisma progress Array (one-to-many relation)
+// ═══════════════════════════════════════════════════════════════════════
+const getProgressFromArray = (progressArray) => {
+  if (!progressArray || !Array.isArray(progressArray) || progressArray.length === 0) {
+    return { completed: false, progressPercentage: 0, completedAt: null };
+  }
+  const p = progressArray[0];
+  return {
+    completed: p?.completed ?? false,
+    progressPercentage: p?.progressPercentage ?? 0,
+    completedAt: p?.completedAt ?? null,
+  };
+};
 
+// ═══════════════════════════════════════════════════════════════════════
+// Helper: يحسب Step Progress من Lessons
+// ═══════════════════════════════════════════════════════════════════════
+const calculateStepProgress = (lessons) => {
+  const total = lessons.length;
+  if (total === 0) {
+    return { totalLessons: 0, completedLessons: 0, progressPercentage: 0, completed: false };
+  }
+  const completed = lessons.filter((l) => l._progress?.completed ?? l.completed ?? false).length;
+  const percentage = Math.round((completed / total) * 100);
+  return {
+    totalLessons: total,
+    completedLessons: completed,
+    progressPercentage: percentage,
+    completed: percentage === 100,
+  };
+};
 
-// controllers/student/student.controller.js
+// ═══════════════════════════════════════════════════════════════════════
+// Helper: يحسب Roadmap Progress من Steps
+// ═══════════════════════════════════════════════════════════════════════
+const calculateRoadmapProgress = (steps) => {
+  const total = steps.length;
+  if (total === 0) {
+    return { totalSteps: 0, completedSteps: 0, progressPercentage: 0, completed: false };
+  }
+  const completed = steps.filter((s) => s.progress?.completed ?? false).length;
+  const totalPercentage = steps.reduce((sum, s) => sum + (s.progress?.progressPercentage ?? 0), 0);
+  const percentage = Math.round(totalPercentage / total);
+  return {
+    totalSteps: total,
+    completedSteps: completed,
+    progressPercentage: percentage,
+    completed: percentage === 100,
+  };
+};
 
+// ═══════════════════════════════════════════════════════════════════════
+// POST /api/student/enroll
+// ═══════════════════════════════════════════════════════════════════════
 const enrollStudentInLearningPath = async (req, res) => {
   try {
     const userId = req.user?.id;
     const { learningPathId } = req.body;
-  
-    // ==========================
-    // Validation
-    // ==========================
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-    }
 
+    if (!userId) return res.status(401).json({ success: false, message: "Unauthorized" });
     if (!learningPathId || isNaN(Number(learningPathId))) {
-      return res.status(400).json({
-        success: false,
-        message: "Valid learningPathId is required",
-      });
+      return res.status(400).json({ success: false, message: "Valid learningPathId is required" });
     }
 
-    const parsedLearningPathId = Number(learningPathId);
+    const parsedId = Number(learningPathId);
+    const learningPath = await prisma.learningPath.findUnique({ where: { id: parsedId } });
+    if (!learningPath) return res.status(404).json({ success: false, message: "Learning path not found" });
 
-    // ==========================
-    // Check if learning path exists
-    // ==========================
-    const learningPath = await prisma.learningPath.findUnique({
-      where: { id: parsedLearningPathId },
-    });
-
-    if (!learningPath) {
-      return res.status(404).json({
-        success: false,
-        message: "Learning path not found",
-      });
-    }
-
-    // ==========================
-    // Create Enrollment safely
-    // ==========================
     const enrollment = await prisma.userLearningPath.create({
-      data: {
-        userId,
-        learningPathId: parsedLearningPathId,
-      },
+      data: { userId, learningPathId: parsedId },
     });
 
     return res.status(201).json({
@@ -58,84 +80,59 @@ const enrollStudentInLearningPath = async (req, res) => {
       message: "Student enrolled successfully",
       data: enrollment,
     });
-
   } catch (error) {
-
-    // Handle unique constraint (already enrolled)
     if (error.code === "P2002") {
-      return res.status(400).json({
-        success: false,
-        message: "Student is already enrolled in this learning path",
-      });
+      return res.status(400).json({ success: false, message: "Already enrolled" });
     }
-
     console.error("Enrollment Error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to enroll student",
-      details: error.message,
-    });
+    return res.status(500).json({ success: false, message: "Failed to enroll", details: error.message });
   }
 };
 
+// ═══════════════════════════════════════════════════════════════════════
+// GET /api/student/roadmaps/title/:title
+// ═══════════════════════════════════════════════════════════════════════
 const getStudentRoadmaps = async (req, res) => {
   try {
-    const userId   = req.user?.id;
+    const userId = req.user?.id;
     const userRole = req.user?.role;
     const { title } = req.params;
 
-    // ── Validation ────────────────────────────────────────
-    if (!userId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-    if (!title) {
-      return res.status(400).json({ success: false, message: "title is required" });
-    }
+    if (!userId) return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!title) return res.status(400).json({ success: false, message: "title is required" });
 
     const isSuperAdmin = userRole === "SUPER_ADMIN";
 
-    // ── Fetch Learning Path ───────────────────────────────
+    // ── Fetch Learning Path مع كل Relations ─────────────────────────
     const learningPath = await prisma.learningPath.findFirst({
       where: {
         title,
+        isPublished: true, // ✅ لا تعرض مسار غير منشور أبداً لأي شخص
         enrollments: isSuperAdmin ? {} : { some: { userId } },
       },
       include: {
-        enrollments: {
-          where: isSuperAdmin ? {} : { userId },
-        },
-        createdBy: {
-          select: { id: true, name: true, avatar: true },
-        },
+        enrollments: { where: isSuperAdmin ? {} : { userId } },
+        createdBy: { select: { id: true, name: true, avatar: true } },
         roadmaps: {
-          where: {
-            roadmap: {
-              isPublished: isSuperAdmin ? undefined : true,
-            },
-          },
-          orderBy: { order: "asc" }, // ← الترتيب هنا مهم جداً
+          where: { roadmap: { isPublished: isSuperAdmin ? undefined : true } },
+          orderBy: { order: "asc" },
           include: {
             roadmap: {
               include: {
-                // جيب progress بتاع الـ roadmap بتاع اليوزر
-                roadmapProgress: {
-                  where: { userId },
-                },
+                // ✅ take: 1 عشان Array مترجعش فاضية
+                roadmapProgress: { where: { userId }, take: 1 },
                 steps: {
                   orderBy: { order: "asc" },
                   include: {
                     lessons: {
                       orderBy: { order: "asc" },
                       include: {
-                        progress: { where: { userId } },
-                          video: true,  
-                          article: true,
-                          quiz: {
-                            include: {
-                            attempts: { select: { score: true } },}
-                          }
-                          },
+                        // ✅ take: 1 عشان Array مترجعش فاضية
+                        progress: { where: { userId }, take: 1 },
+                        video: true,
+                        article: true,
+                        quiz: { include: { attempts: { where: { userId }, select: { score: true } } } },
+                      },
                     },
                   },
                 },
@@ -149,62 +146,33 @@ const getStudentRoadmaps = async (req, res) => {
     if (!learningPath) {
       return res.status(isSuperAdmin ? 404 : 403).json({
         success: false,
-        message: isSuperAdmin
-          ? "Learning path not found"
-          : "You are not enrolled in this learning path",
+        message: isSuperAdmin ? "Learning path not found" : "You are not enrolled in this learning path",
       });
     }
 
-    // ── Format Roadmaps مع Locking Logic ─────────────────
-    // القاعدة:
-    // - الـ roadmap الأولى (order=1) دايمًا مفتوحة
-    // - كل roadmap بعدها محتاجة الـ roadmap اللي قبلها تكون completed 100%
-    // - SuperAdmin: كل حاجة مفتوحة
-
-    let previousRoadmapCompleted = true; // الأولى دايمًا مفتوحة
+    // ── Format Roadmaps مع Locking + Progress ────────────────────────
+    let previousRoadmapCompleted = true;
 
     const formattedRoadmaps = learningPath.roadmaps.map((item) => {
       const roadmap = item.roadmap;
 
-      // ── هل الـ roadmap دي completed؟ ───────────────────
-      // بنحسبها من الـ steps بتاعتها
+      // ✅ جيب Roadmap Progress من الـ Array
+      const roadmapProg = getProgressFromArray(roadmap.roadmapProgress);
       let stepUnlockedFound = false;
 
       const formattedSteps = roadmap.steps.map((step) => {
-        const totalLessons     = step.lessons.length;
-        const completedLessons = step.lessons.filter(
-          (l) => l.progress?.[0]?.completed
-        ).length;
+        const totalLessons = step.lessons.length;
 
-        const stepProgressPercentage = totalLessons === 0
-          ? 0
-          : Math.round((completedLessons / totalLessons) * 100);
-
-        const isStepCompleted = stepProgressPercentage === 100;
-
-        // Step locking — بس لو الـ roadmap نفسها مفتوحة
-        let stepLocked = false;
-        if (!isSuperAdmin) {
-          // لو الـ roadmap نفسها locked → كل steps فيها locked
-          if (!previousRoadmapCompleted) {
-            stepLocked = true;
-          } else {
-            stepLocked = true;
-            if (!stepUnlockedFound) {
-              stepLocked = false;
-              if (!isStepCompleted) stepUnlockedFound = true;
-            }
-          }
-        }
-
-        // Lesson locking
+        // ✅ Format Lessons مع Progress صحيح
         let lessonUnlockedFound = false;
         const formattedLessons = step.lessons.map((lesson) => {
-          const isLessonCompleted = lesson.progress?.[0]?.completed ?? false;
+          // ✅ الـ progress هنا Array بسبب Prisma relation
+          const lessonProg = getProgressFromArray(lesson.progress);
+          const isLessonCompleted = lessonProg.completed;
 
           let lessonLocked = false;
           if (!isSuperAdmin) {
-            if (!previousRoadmapCompleted || stepLocked) {
+            if (!previousRoadmapCompleted) {
               lessonLocked = true;
             } else {
               lessonLocked = true;
@@ -217,47 +185,48 @@ const getStudentRoadmaps = async (req, res) => {
 
           return {
             ...lesson,
-            completed: isLessonCompleted,
-            locked   : lessonLocked,
-            progress : lesson.progress,
+            completed: isLessonCompleted, // ✅ ده اللي الـ Frontend بيشوفه
+            locked: lessonLocked,
+            progress: lesson.progress, // ✅ Array الأصلية للـ Debug
+            _progress: lessonProg, // ✅ Object normalized
           };
         });
 
+        // ✅ احسب Step Progress من الـ Lessons المُformaّتة
+        const stepProg = calculateStepProgress(formattedLessons);
+        const isStepCompleted = stepProg.completed;
+
+        // Step Locking
+        let stepLocked = false;
+        if (!isSuperAdmin) {
+          if (!previousRoadmapCompleted) {
+            stepLocked = true;
+          } else {
+            stepLocked = true;
+            if (!stepUnlockedFound) {
+              stepLocked = false;
+              if (!isStepCompleted) stepUnlockedFound = true;
+            }
+          }
+        }
+
         return {
           ...step,
-          lessons : formattedLessons,
-          locked  : stepLocked,
-          progress: {
-            totalLessons,
-            completedLessons,
-            progressPercentage: stepProgressPercentage,
-            completed         : isStepCompleted,
-          },
+          lessons: formattedLessons,
+          locked: stepLocked,
+          progress: stepProg, // ✅ Progress محسوب من الـ Backend
         };
       });
 
-      // ── حساب الـ roadmap progress ──────────────────────
-      const totalSteps     = formattedSteps.length;
-      const completedSteps = formattedSteps.filter(
-        (s) => s.progress.completed
-      ).length;
+      // ✅ احسب Roadmap Progress من الـ Steps
+      const roadmapProgress = calculateRoadmapProgress(formattedSteps);
+      const isRoadmapCompleted = roadmapProgress.completed;
 
-      const roadmapProgressPercentage = totalSteps === 0
-        ? 0
-        : Math.round((completedSteps / totalSteps) * 100);
-
-      const isRoadmapCompleted = roadmapProgressPercentage === 100;
-
-      // ── Roadmap Locking ────────────────────────────────
-      // الـ roadmap locked لو الـ roadmap اللي قبلها مش completed
+      // Roadmap Locking
       const roadmapLocked = isSuperAdmin ? false : !previousRoadmapCompleted;
-
-      // ── جهز الـ previous flag للـ roadmap الجاية ───────
-      // بس لو الـ roadmap الحالية مفتوحة
       if (!roadmapLocked) {
         previousRoadmapCompleted = isRoadmapCompleted;
       }
-      // لو locked → فضل false عشان كل اللي بعدها locked كمان
 
       return {
         ...item,
@@ -265,12 +234,8 @@ const getStudentRoadmaps = async (req, res) => {
         roadmap: {
           ...roadmap,
           steps: formattedSteps,
-          progress: {
-            totalSteps,
-            completedSteps,
-            progressPercentage: roadmapProgressPercentage,
-            completed         : isRoadmapCompleted,
-          },
+          progress: roadmapProgress, // ✅ Progress محسوب من الـ Backend
+          _roadmapProgress: roadmapProg, // ✅ من الـ DB مباشرة (للـ Debug)
         },
       };
     });
@@ -282,7 +247,6 @@ const getStudentRoadmaps = async (req, res) => {
         roadmaps: formattedRoadmaps,
       },
     });
-
   } catch (error) {
     console.error("[getStudentRoadmaps]", error);
     return res.status(500).json({
@@ -292,8 +256,10 @@ const getStudentRoadmaps = async (req, res) => {
     });
   }
 };
-// controllers/student/student.controller.js
+
+// ═══════════════════════════════════════════════════════════════════════
 // GET /api/student/roadmap/:roadmapId/steps
+// ═══════════════════════════════════════════════════════════════════════
 const getStudentRoadmapStepsById = async (req, res, next) => {
   const { roadmapId } = req.params;
   const userId = req.user.id;
@@ -305,54 +271,44 @@ const getStudentRoadmapStepsById = async (req, res, next) => {
       include: {
         lessons: {
           orderBy: { order: "asc" },
-          select: {
-            id: true,
-            type: true,
-            stepId: true,
-            progress: {
-              where: { userId },
-              select: { completed: true },
-            },
+          include: {
+            // ✅ include كامل عشان نحسب Progress
+            progress: { where: { userId }, take: 1 },
           },
         },
       },
     });
 
-    // ======================================
-    // 🔢 Calculate Progress + Unlock Logic
-    // ======================================
-
     let stepUnlockedFound = false;
 
     const formattedSteps = steps.map((step) => {
-      const totalLessons = step.lessons.length;
+      // ✅ Format Lessons مع Progress
+      const formattedLessons = step.lessons.map((lesson) => {
+        const prog = getProgressFromArray(lesson.progress);
+        return {
+          ...lesson,
+          completed: prog.completed,
+          _progress: prog,
+        };
+      });
 
-      const completedLessonsCount = step.lessons.filter(
-        (lesson) => lesson.progress?.[0]?.completed
-      ).length;
-
-      const progressPercentage =
-        totalLessons === 0
-          ? 0
-          : Math.round((completedLessonsCount / totalLessons) * 100);
-
+      const totalLessons = formattedLessons.length;
+      const completedLessons = formattedLessons.filter((l) => l.completed).length;
+      const progressPercentage = totalLessons === 0 ? 0 : Math.round((completedLessons / totalLessons) * 100);
       const isStepCompleted = progressPercentage === 100;
 
-      // 🔓 Step Lock Logic
       let stepLocked = true;
-
       if (!stepUnlockedFound) {
         stepLocked = false;
-        if (!isStepCompleted) {
-          stepUnlockedFound = true;
-        }
+        if (!isStepCompleted) stepUnlockedFound = true;
       }
 
       return {
         ...step,
+        lessons: formattedLessons,
         progress: {
           totalLessons,
-          completedLessons: completedLessonsCount,
+          completedLessons,
           progressPercentage,
           completed: isStepCompleted,
         },
@@ -363,79 +319,52 @@ const getStudentRoadmapStepsById = async (req, res, next) => {
     res.json({
       success: true,
       data: formattedSteps,
-      message: "Steps fetched successfully with calculated progress",
+      message: "Steps fetched successfully",
     });
   } catch (error) {
-    return next(
-      errorHandler(
-        error.message || "Failed to fetch student roadmap steps",
-        500
-      )
-    );
+    return next(errorHandler(error.message || "Failed to fetch steps", 500));
   }
 };
 
-// Helper: Unlock lessons sequentially
-const unlockLessonsSequentially = (lessons) => {
-  let lessonUnlockedFound = false;
-
-  return lessons.map((lesson) => {
-    const isLessonCompleted = lesson.progress?.[0]?.completed || false;
-
-    let lessonLocked = true;
-    if (!lessonUnlockedFound) {
-      lessonLocked = false; // أول lesson مفتوح
-      if (!isLessonCompleted) lessonUnlockedFound = true; // بعد أول lesson غير مكتمل الباقي يقفل
-    }
-
-    return {
-      id: lesson.id,
-      title: lesson.title,
-      description: lesson.description,
-      duration: lesson.duration,
-      externalLink: lesson.externalLink,
-      thumbnail: lesson.thumbnail,
-      timeLimit: lesson.timeLimit,
-      passingScore: lesson.passingScore,
-      video: lesson.video,
-      article: lesson.article,
-      quiz: lesson.quiz,
-      type: lesson.type,
-      completed: isLessonCompleted,
-      locked: lessonLocked,
-     progress: lesson.progress
-    };
-  });
-};
-
-// GET /api/lesson/:lessonId
+// ═══════════════════════════════════════════════════════════════════════
+// GET /api/student/lessons/step/:stepId
+// ═══════════════════════════════════════════════════════════════════════
 const getStudentLessonsByStepId = async (req, res, next) => {
   const { stepId } = req.params;
+  const userId = req.user.id;
 
   try {
     const lessons = await prisma.lesson.findMany({
       where: { stepId: Number(stepId) },
       include: {
-        progress: {
-          where: { userId: req.user.id }, // عشان unlock logic
-        },
+        progress: { where: { userId }, take: 1 },
         video: true,
         article: true,
-        quiz: {
-          include:{
-            attempts : {
-              where: { userId: req.user.id },
-            }
-          }
-        },
+        quiz: { include: { attempts: { where: { userId } } } },
       },
       orderBy: { order: "asc" },
     });
 
-    // if (!lessons || lessons.length === 0)
-    //   return next(errorHandler("Lessons not found", 404));
+    let lessonUnlockedFound = false;
 
-    const formattedLessons = unlockLessonsSequentially(lessons);
+    const formattedLessons = lessons.map((lesson) => {
+      const prog = getProgressFromArray(lesson.progress);
+      const isLessonCompleted = prog.completed;
+
+      let lessonLocked = true;
+      if (!lessonUnlockedFound) {
+        lessonLocked = false;
+        if (!isLessonCompleted) lessonUnlockedFound = true;
+      }
+
+      return {
+        ...lesson,
+        completed: isLessonCompleted,
+        locked: lessonLocked,
+        progress: lesson.progress,
+        _progress: prog,
+      };
+    });
 
     res.json({
       success: true,
@@ -446,9 +375,121 @@ const getStudentLessonsByStepId = async (req, res, next) => {
     next(error);
   }
 };
-// ==========================
-// Student: Update Step Progress
-// ==========================
+
+// ═══════════════════════════════════════════════════════════════════════
+// PUT /api/student/lessons/progress — بيحدث Lesson + Step + Roadmap
+// ═══════════════════════════════════════════════════════════════════════
+const updateLessonProgress = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { lessonId, completed } = req.body;
+
+    if (!userId) return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!lessonId || typeof completed !== "boolean") {
+      return res.status(400).json({ success: false, message: "lessonId and completed (boolean) required" });
+    }
+
+    const parsedLessonId = Number(lessonId);
+    if (isNaN(parsedLessonId)) return res.status(400).json({ success: false, message: "Invalid lessonId" });
+
+    // ── جيب Lesson + Step + Roadmap IDs ─────────────────────────────
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: parsedLessonId },
+      select: { stepId: true },
+    });
+    if (!lesson) return res.status(404).json({ success: false, message: "Lesson not found" });
+
+    const { stepId } = lesson;
+    const step = await prisma.step.findUnique({
+      where: { id: stepId },
+      select: { roadmapId: true },
+    });
+    if (!step) return res.status(404).json({ success: false, message: "Step not found" });
+
+    const { roadmapId } = step;
+
+    // ── جيب كل IDs محتاجينها ────────────────────────────────────────
+    const [stepLessons, roadmapSteps] = await Promise.all([
+      prisma.lesson.findMany({ where: { stepId }, select: { id: true } }),
+      prisma.step.findMany({ where: { roadmapId }, select: { id: true } }),
+    ]);
+
+    const stepLessonIds = stepLessons.map((l) => l.id);
+    const roadmapStepIds = roadmapSteps.map((s) => s.id);
+
+    // ── Transaction: كل الـ Updates في عملية واحدة ──────────────────
+    const result = await prisma.$transaction(async (tx) => {
+      // 1️⃣ Update Lesson Progress
+      const lessonProgress = await tx.userLessonProgress.upsert({
+        where: { userId_lessonId: { userId, lessonId: parsedLessonId } },
+        update: { completed, completedAt: completed ? new Date() : null },
+        create: { userId, lessonId: parsedLessonId, completed, completedAt: completed ? new Date() : null },
+      });
+
+      // 2️⃣ Calculate Step Progress
+      const lessonsProgress = await tx.userLessonProgress.findMany({
+        where: { userId, lessonId: { in: stepLessonIds }, completed: true },
+        select: { id: true },
+      });
+
+      const completedLessons = lessonsProgress.length;
+      const stepProgressPercentage = stepLessons.length === 0 ? 0 : Math.round((completedLessons / stepLessons.length) * 100);
+      const stepCompleted = stepProgressPercentage === 100;
+
+      // 3️⃣ Update Step Progress
+      const stepProgress = await tx.userStepProgress.upsert({
+        where: { userId_stepId: { userId, stepId } },
+        update: { completed: stepCompleted, progressPercentage: stepProgressPercentage },
+        create: { userId, stepId, completed: stepCompleted, progressPercentage: stepProgressPercentage },
+      });
+
+      // 4️⃣ Calculate Roadmap Progress
+      const stepsProgress = await tx.userStepProgress.findMany({
+        where: { userId, stepId: { in: roadmapStepIds } },
+        select: { id: true, progressPercentage: true, completed: true },
+      });
+
+      const completedSteps = stepsProgress.filter(s => s.completed).length;
+      let totalPercentage = 0;
+      stepsProgress.forEach(s => {
+        totalPercentage += s.progressPercentage || 0;
+      });
+      const roadmapProgressPercentage = roadmapSteps.length === 0 ? 0 : Math.round(totalPercentage / roadmapSteps.length);
+      const roadmapCompleted = roadmapProgressPercentage === 100;
+
+      // 5️⃣ Update Roadmap Progress
+      const roadmapProgress = await tx.userRoadmapProgress.upsert({
+        where: { userId_roadmapId: { userId, roadmapId } },
+        update: { completed: roadmapCompleted, progressPercentage: roadmapProgressPercentage },
+        create: { userId, roadmapId, completed: roadmapCompleted, progressPercentage: roadmapProgressPercentage },
+      });
+
+      return { lessonProgress, stepProgress, roadmapProgress };
+    });
+
+    // ── Response مع كل الـ Progress المحدث ──────────────────────────
+    return res.json({
+      success: true,
+      message: "Progress updated successfully",
+      data: {
+        lessonProgress: result.lessonProgress,
+        stepProgress: result.stepProgress,
+        roadmapProgress: result.roadmapProgress,
+      },
+    });
+  } catch (error) {
+    console.error("[updateLessonProgress]", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update progress",
+      details: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// PUT /api/student/steps/progress
+// ═══════════════════════════════════════════════════════════════════════
 const updateStepProgress = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -467,349 +508,150 @@ const updateStepProgress = async (req, res) => {
   }
 };
 
-// ==========================
-// Student: Update Lesson Progress
-// ==========================
-const updateLessonProgress = async (req, res) => {
-  try {
-    const userId   = req.user?.id;
-    const { lessonId, completed } = req.body;
-
-    // ── Validation ────────────────────────────────────────
-    if (!userId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-
-    if (!lessonId || typeof completed !== "boolean") {
-      return res.status(400).json({
-        success: false,
-        message: "lessonId and completed (boolean) are required",
-      });
-    }
-
-    const parsedLessonId = Number(lessonId);
-    if (isNaN(parsedLessonId)) {
-      return res.status(400).json({ success: false, message: "Invalid lessonId" });
-    }
-
-    // ── تأكد إن الـ lesson موجودة ────────────────────────
-    const lesson = await prisma.lesson.findUnique({
-      where : { id: parsedLessonId },
-      select: { stepId: true },
-    });
-
-    if (!lesson) {
-      return res.status(404).json({ success: false, message: "Lesson not found" });
-    }
-
-    const { stepId } = lesson;
-
-    // ── تأكد إن الـ step موجودة ──────────────────────────
-    const step = await prisma.step.findUnique({
-      where : { id: stepId },
-      select: { roadmapId: true },
-    });
-
-    if (!step) {
-      return res.status(404).json({ success: false, message: "Step not found" });
-    }
-
-    const { roadmapId } = step;
-
-    // ── جيب كل IDs محتاجينها مرة واحدة ──────────────────
-    const [stepLessons, roadmapSteps] = await Promise.all([
-      prisma.lesson.findMany({
-        where : { stepId },
-        select: { id: true },
-      }),
-      prisma.step.findMany({
-        where : { roadmapId },
-        select: { id: true },
-      }),
-    ]);
-
-    const stepLessonIds  = stepLessons.map((l) => l.id);
-    const roadmapStepIds = roadmapSteps.map((s) => s.id);
-
-    // ── Transaction: كل الـ updates في عملية واحدة ───────
-    const lessonProgress = await prisma.$transaction(async (tx) => {
-
-      // 1️⃣ Update Lesson Progress
-      const updatedLessonProgress = await tx.userLessonProgress.upsert({
-        where: {
-          userId_lessonId: { userId, lessonId: parsedLessonId },
-        },
-        update: {
-          completed,
-          completedAt: completed ? new Date() : null,
-        },
-        create: {
-          userId,
-          lessonId   : parsedLessonId,
-          completed,
-          completedAt: completed ? new Date() : null,
-        },
-      });
-
-      // 2️⃣ Calculate Step Progress
-      const lessonsProgress = await tx.userLessonProgress.findMany({
-        where: {
-          userId,
-          lessonId : { in: stepLessonIds },
-          completed: true,
-        },
-        select: { id: true },
-      });
-
-      const completedLessonsCount  = lessonsProgress.length;
-      const stepProgressPercentage = stepLessons.length === 0
-        ? 0
-        : Math.round((completedLessonsCount / stepLessons.length) * 100);
-      const stepCompleted = stepProgressPercentage === 100;
-
-      // 3️⃣ Update Step Progress
-      await tx.userStepProgress.upsert({
-        where : { userId_stepId: { userId, stepId } },
-        update: { completed: stepCompleted, progressPercentage: stepProgressPercentage },
-        create: { userId, stepId, completed: stepCompleted, progressPercentage: stepProgressPercentage },
-      });
-
-      // 4️⃣ Calculate Roadmap Progress
-      const stepsProgress = await tx.userStepProgress.findMany({
-        where: {
-          userId,
-          stepId   : { in: roadmapStepIds },
-          completed: true,
-        },
-        select: { id: true },
-      });
-
-      const completedStepsCount      = stepsProgress.length;
-      const roadmapProgressPercentage = roadmapSteps.length === 0
-        ? 0
-        : Math.round((completedStepsCount / roadmapSteps.length) * 100);
-      const roadmapCompleted = roadmapProgressPercentage === 100;
-
-      // 5️⃣ Update Roadmap Progress
-      await tx.userRoadmapProgress.upsert({
-        where : { userId_roadmapId: { userId, roadmapId } },
-        update: { completed: roadmapCompleted, progressPercentage: roadmapProgressPercentage },
-        create: { userId, roadmapId, completed: roadmapCompleted, progressPercentage: roadmapProgressPercentage },
-      });
-
-      return updatedLessonProgress;
-    });
-
-    // ── Response ──────────────────────────────────────────
-    return res.json({
-      success: true,
-      message: "Progress updated successfully",
-      data   : lessonProgress,
-    });
-
-  } catch (error) {
-    console.error("[updateLessonProgress]", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to update progress",
-      details: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-};
+// ═══════════════════════════════════════════════════════════════════════
+// GET /api/student/steps/:stepId/progress
+// ═══════════════════════════════════════════════════════════════════════
 const getStepProgress = async (req, res) => {
   try {
     const userId = req.user.id;
     const stepId = Number(req.params.stepId);
 
-    // كل دروس الستيب
     const stepLessons = await prisma.lesson.findMany({
       where: { stepId },
       select: { id: true },
     });
 
     if (!stepLessons.length) {
-      return res.status(404).json({
-        success: false,
-        message: "Step has no lessons",
-      });
+      return res.status(404).json({ success: false, message: "Step has no lessons" });
     }
 
-    // بروجرس الدروس
     const lessonsProgress = await prisma.userLessonProgress.findMany({
-      where: {
-        userId,
-        lessonId: { in: stepLessons.map(l => l.id) },
-      },
+      where: { userId, lessonId: { in: stepLessons.map((l) => l.id) } },
     });
 
-    const completedLessonsCount = lessonsProgress.filter(
-      l => l.completed
-    ).length;
-
+    const completedLessons = lessonsProgress.filter((l) => l.completed).length;
     const totalLessons = stepLessons.length;
-
-    const progressPercentage = Math.round(
-      (completedLessonsCount / totalLessons) * 100
-    );
-
-    const completed = progressPercentage === 100;
+    const progressPercentage = Math.round((completedLessons / totalLessons) * 100);
 
     res.json({
       success: true,
       data: {
         stepId,
-        completedLessons: completedLessonsCount,
+        completedLessons,
         totalLessons,
         progressPercentage,
-        completed,
+        completed: progressPercentage === 100,
       },
     });
-
   } catch (error) {
     console.error("Error getting step progress:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch step progress",
-      details: error.message,
-    });
+    res.status(500).json({ success: false, message: "Failed to fetch step progress", details: error.message });
   }
 };
+
+// ═══════════════════════════════════════════════════════════════════════
+// GET /api/student/roadmaps/:roadmapId/progress
+// ═══════════════════════════════════════════════════════════════════════
 const getRoadmapProgress = async (req, res) => {
   try {
     const userId = req.user.id;
     const roadmapId = Number(req.params.roadmapId);
 
-    // كل الستيبس بتاعت الرودماب
     const roadmapSteps = await prisma.step.findMany({
       where: { roadmapId },
       select: { id: true },
     });
 
     if (!roadmapSteps.length) {
-      return res.status(404).json({
-        success: false,
-        message: "Roadmap has no steps",
-      });
+      return res.status(404).json({ success: false, message: "Roadmap has no steps" });
     }
 
-    const stepIds = roadmapSteps.map(s => s.id);
-
-    // كل دروس الرودماب
-    const roadmapLessons = await prisma.lesson.findMany({
-      where: { stepId: { in: stepIds } },
-      select: { id: true },
+    const stepIds = roadmapSteps.map((s) => s.id);
+    const stepsProgress = await prisma.userStepProgress.findMany({
+      where: { userId, stepId: { in: stepIds } },
     });
 
-    const totalLessons = roadmapLessons.length;
-
-    const lessonsProgress = await prisma.userLessonProgress.findMany({
-      where: {
-        userId,
-        lessonId: { in: roadmapLessons.map(l => l.id) },
-      },
+    const completedSteps = stepsProgress.filter((s) => s.completed).length;
+    let totalPercentage = 0;
+    stepsProgress.forEach((s) => {
+      totalPercentage += s.progressPercentage || 0;
     });
 
-    const completedLessonsCount = lessonsProgress.filter(
-      l => l.completed
-    ).length;
-
-    const progressPercentage = totalLessons === 0
-      ? 0
-      : Math.round((completedLessonsCount / totalLessons) * 100);
-
-    const completed = progressPercentage === 100;
+    const progressPercentage = roadmapSteps.length === 0 ? 0 : Math.round(totalPercentage / roadmapSteps.length);
 
     res.json({
       success: true,
       data: {
         roadmapId,
-        completedLessons: completedLessonsCount,
+        completedLessons,
         totalLessons,
         progressPercentage,
-        completed,
+        completed: progressPercentage === 100,
       },
     });
-
   } catch (error) {
     console.error("Error getting roadmap progress:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch roadmap progress",
-      details: error.message,
-    });
+    res.status(500).json({ success: false, message: "Failed to fetch roadmap progress", details: error.message });
   }
 };
+
+// ═══════════════════════════════════════════════════════════════════════
+// GET /api/student/user-content
+// ═══════════════════════════════════════════════════════════════════════
 const getUserContent = async (req, res) => {
   try {
     const userId = Number(req.user.id);
     const { targetType } = req.query;
-console.log('user id \n', userId);
-
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
-
     const skip = (page - 1) * limit;
 
-    let model;
-    let where = {};
-   let include={}
+    let model, where = {}, include = {};
+
     switch (targetType) {
       case "QUESTION":
         model = prisma.communityQuestion;
         where = { authorId: userId };
-        include = { author: { select: { id: true, name: true, avatar: true } },
-         answers: { select: { id: true } } };
+        include = { author: { select: { id: true, name: true, avatar: true } }, answers: { select: { id: true } } };
         break;
-
       case "ANSWER":
         model = prisma.communityAnswer;
         where = { authorId: userId };
-        include = { author: { select: { id: true, name: true, avatar: true } },
-         question: { select: { id: true, title: true } } };
+        include = { author: { select: { id: true, name: true, avatar: true } }, question: { select: { id: true, title: true } } };
         break;
-
       case "POST":
         model = prisma.post;
         where = { authorId: userId };
         include = { author: { select: { id: true, name: true, avatar: true } } };
         break;
-
       default:
         return res.status(400).json({ message: "Invalid type" });
     }
 
     const [data, total] = await Promise.all([
-      model.findMany({
-        where,
-       include,
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-
-      model.count({
-        where,
-      }),
+      model.findMany({ where, include, orderBy: { createdAt: "desc" }, skip, take: limit }),
+      model.count({ where }),
     ]);
 
     return res.json({
       success: true,
       data,
-      pagination: {
-        page,
-        limit,
-        total,
-        hasMore: skip + data.length < total,
-      },
+      pagination: { page, limit, total, hasMore: skip + data.length < total },
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({
-      success: false,
-      message: error.message || "Something went wrong",
-    });
+    return res.status(500).json({ success: false, message: error.message || "Something went wrong" });
   }
 };
-module.exports = { getStudentRoadmaps,enrollStudentInLearningPath,
-   updateStepProgress, updateLessonProgress , getStudentRoadmapStepsById, 
-   getStudentLessonsByStepId, getStepProgress, getRoadmapProgress,enrollStudentInLearningPath,getUserContent };
+
+module.exports = {
+  getStudentRoadmaps,
+  enrollStudentInLearningPath,
+  updateStepProgress,
+  updateLessonProgress,
+  getStudentRoadmapStepsById,
+  getStudentLessonsByStepId,
+  getStepProgress,
+  getRoadmapProgress,
+  getUserContent,
+};

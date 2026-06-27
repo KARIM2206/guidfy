@@ -5,6 +5,7 @@ const {
   getSingleLesson,
   updateLesson,
   deleteLesson,
+  reorderLesson,
 } = require("../../controllers/admin/lesson.controller");
 const allowedTo = require("../../utils/allowedTo");
 const { protect } = require("../../middleware/authMiddleware");
@@ -18,7 +19,7 @@ router.post(
   "/step/:stepId",
   protect,
   checkUser,
-  allowedTo("ADMIN"),
+  allowedTo("ADMIN","SUPER_ADMIN"),
   uploadLessonVideo.single("video"), // اختياري للفيديو
   addLessonToStep
 );
@@ -40,7 +41,7 @@ router.put(
   "/:id",
   protect,
   checkUser,
-  allowedTo("ADMIN"),
+  allowedTo("ADMIN","SUPER_ADMIN"),
   uploadLessonVideo.single("video"), // اختياري للفيديو
   updateLesson
 );
@@ -56,4 +57,8 @@ router.delete(
   deleteLesson
 );
 
+// ==========================
+// Reorder Lessons
+// ==========================
+router.put("/reorder", protect, checkUser, allowedTo("ADMIN"), reorderLesson);
 module.exports = router;

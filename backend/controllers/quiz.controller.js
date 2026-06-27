@@ -9,7 +9,7 @@ const getQuizByLessonId = async (req, res) => {
   try {
     const { lessonId } = req.params;
 
-    const quiz = await prisma.quiz.findUnique({
+    let quiz = await prisma.quiz.findUnique({
       where: { lessonId: Number(lessonId) },
       include: {
         questions: {
@@ -19,7 +19,35 @@ const getQuizByLessonId = async (req, res) => {
       },
     });
 
-    if (!quiz) return res.status(404).json({ success: false, message: "Quiz not found" });
+    if (!quiz) {
+      // إذا لم يكن هناك كويز، تأكد من أن الدرس موجود وأنه من نوع QUIZ
+      const lesson = await prisma.lesson.findUnique({ where: { id: Number(lessonId) } });
+      
+      if (lesson && lesson.type === "QUIZ") {
+        // إنشاء الكويز تلقائياً
+        await prisma.quiz.create({
+          data: {
+            lessonId: lesson.id,
+            title: `${lesson.title} Quiz`,
+            timeLimit: 15,
+            passingScore: 60,
+          },
+        });
+        
+        // إعادة جلبه مع العلاقات (الأسئلة والخيارات التي ستكون فارغة مبدئياً)
+        quiz = await prisma.quiz.findUnique({
+          where: { lessonId: Number(lessonId) },
+          include: {
+            questions: {
+              include: { options: true },
+              orderBy: { createdAt: "asc" },
+            },
+          },
+        });
+      } else {
+        return res.status(404).json({ success: false, message: "Quiz not found or lesson is not a QUIZ type" });
+      }
+    }
 
     res.json({ success: true, data: quiz });
   } catch (error) {

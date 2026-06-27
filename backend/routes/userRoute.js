@@ -9,7 +9,7 @@ const allowedTo = require('../utils/allowedTo');
 const checkUser = require('../middleware/checkUser');
 const { protect } = require('../middleware/authMiddleware');
 const { getCurrentUser } = require('../controllers/auth.controller');
-const { getUserProfile, updateUserProfile, uploadAvatar, uploadCover, getUserStats, getUserBadges, getUserTracks, getNotifications, markAllNotificationsRead, assignBadge } = require('../controllers/userProfile.controller');
+const { getUserProfile, updateUserProfile, uploadAvatar, uploadCover, getUserStats, getUserBadges, getUserTracks, getNotifications, markAllNotificationsRead, assignBadge, getUserById } = require('../controllers/userProfile.controller');
 
 // ─── Profile Routes ─────────────────────────────────────────
 
@@ -25,6 +25,7 @@ router.post('/cover', protect, uploadProfile.single('cover'), uploadCover);     
 router.get('/:id/stats', getUserStats);    // GET /api/users/:id/stats
 router.get('/:id/badges', getUserBadges);  // GET /api/users/:id/badges
 router.get('/:id/tracks', getUserTracks);  // GET /api/users/:id/tracks
+router.get('/:id/info', protect, getUserById); // GET /api/users/:id/info
 
       // PUT /api/users/notifications/read
 

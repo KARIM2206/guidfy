@@ -1,4 +1,13 @@
-// backend/services/feedbackService.js
+// backend/services/feedbackService.js  (v4.1)
+// ────────────────────────────────────────────────────────────────────────────
+// Sends ALL 9 unified features to the AI service for retraining.
+// No synthetic defaults — sends null when data is genuinely missing.
+//
+// v4.1 changes:
+//   - expMatch: always null (schema changed Boolean → Float, not applicable for LP learners)
+//   - userSkillDensity: always null (feature_builder.py computes it with overlap_boost)
+//   - jobSkillDifficulty: always null (feature_builder.py computes it consistently)
+// ────────────────────────────────────────────────────────────────────────────
 
 const axios  = require('axios');
 const prisma = require('../prismaClient');
@@ -6,15 +15,15 @@ const prisma = require('../prismaClient');
 const aiClient = axios.create({
   baseURL: process.env.AI_SERVICE_URL || 'http://localhost:4000',
   headers: { 'x-internal-token': process.env.INTERNAL_API_TOKEN || '' },
-  timeout: 5_000,
+  timeout: 90_000,
 });
 
 const LABEL_MAP = {
-  apply:      3,
-  save:       2,
-  click:      1,
-  impression: 0,
-  dismiss:   -1,
+  dismiss:    0,
+  impression: 1,
+  click:      2,
+  save:       3,
+  apply:      4,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -27,34 +36,80 @@ const LABEL_MAP = {
  * @param {'apply'|'save'|'click'|'dismiss'|'impression'} params.action
  * @param {Object} params.matchDetails
  * @param {number|null} params.score
+ * @param {number|null} params.retrievalScore  // FAISS similarity from AI service
  */
-async function recordFeedback({ userId, jobId, action, matchDetails = {}, score = null }) {
+async function recordFeedback({
+  userId,
+  jobId,
+  action,
+  matchDetails = {},
+  score = null,
+  retrievalScore = null,
+}) {
+  // ── Features from matchDetails only — no local computation ────────────────
+  const skillOverlap  = matchDetails.skillOverlap  ?? null;
+  const freshness     = matchDetails.freshness     ?? null;
+  const careerFit     = matchDetails.careerFit     ?? null;
+  const learningGap   = matchDetails.learningGap   ?? null;
+  const lpAlignment   = matchDetails.lpAlignment   ?? null;
 
-  // ── 1. حفظ في DB ──────────────────────────────────────────────────────────
+  // expMatch: always null — not applicable for LP-based learners
+  // (schema changed from Boolean → Float to support null properly)
+  const expMatch = null;
+
+  // userSkillDensity / jobSkillDifficulty: always null here
+  // feature_builder.py computes these with overlap_boost for consistency
+  const userSkillDensity   = null;
+  const jobSkillDifficulty = null;
+
+  // ── 1. Save to DB ────────────────────────────────────────────────────────
   const record = await prisma.jobRecommendationFeedback.create({
     data: {
       userId,
       jobId,
       action,
       score,
-      skillOverlap: matchDetails.skillOverlap ?? null,
-      expMatch:     matchDetails.expMatch     ?? null,
-      freshness:    matchDetails.freshness    ?? null,
-      careerFit:    matchDetails.careerFit    ?? null,
-      learningGap:  matchDetails.learningGap  ?? null,
-      lpAlignment:  matchDetails.lpAlignment  ?? null,
+      skillOverlap,
+      expMatch,           // null — Float? field in schema
+      freshness,
+      careerFit,
+      learningGap,
+      lpAlignment,
     },
   });
 
-  // ── 2. notify AI service (fire & forget) ──────────────────────────────────
-  aiClient.post('/feedback', {
+  // ── 2. Notify AI service (fire & forget) ────────────────────────────────
+  const payload = {
     userId,
     jobId,
     action,
-    label: LABEL_MAP[action] ?? 0,
+    label: LABEL_MAP[action] ?? null,
     score,
-    matchDetails,
-  }).catch(err => {
+    // Flat columns — unified feature contract
+    retrieval_score:      retrievalScore,
+    skill_overlap:        skillOverlap,
+    exp_match:            null,
+    freshness:            freshness,
+    career_alignment:     careerFit,
+    learning_gap_score:   learningGap,
+    lp_alignment:         lpAlignment,
+    user_skill_density:   null,
+    job_skill_difficulty: null,
+    // Legacy nested (for backwards compatibility)
+    matchDetails: {
+      skillOverlap,
+      expMatch:           null,
+      freshness,
+      careerFit,
+      learningGap,
+      lpAlignment,
+      userSkillDensity:   null,
+      jobSkillDifficulty: null,
+      retrievalScore,
+    },
+  };
+
+  aiClient.post('/feedback', payload).catch(err => {
     console.error('[Feedback] AI service notify failed:', err.message);
   });
 
@@ -65,7 +120,7 @@ async function recordFeedback({ userId, jobId, action, matchDetails = {}, score 
 // getUserFeedbackStats
 // ─────────────────────────────────────────────────────────────────────────────
 async function getUserFeedbackStats(userId) {
-  const stats = await prisma.jobRecommendationFeedback.groupBy({
+  const stats = await prisma.jobRecommendationfeedback.groupBy({
     by:    ['action'],
     where: { userId },
     _count: { action: true },
@@ -74,10 +129,10 @@ async function getUserFeedbackStats(userId) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// getTotalFeedbackCount  — بيستخدمه الـ retrain trigger
+// getTotalFeedbackCount
 // ─────────────────────────────────────────────────────────────────────────────
 async function getTotalFeedbackCount() {
-  return prisma.jobRecommendationFeedback.count();
+  return prisma.jobRecommendationfeedback.count();
 }
 
 module.exports = { recordFeedback, getUserFeedbackStats, getTotalFeedbackCount };

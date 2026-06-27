@@ -35,7 +35,10 @@ def preprocess_input(data: dict):
         if kw in education: ed = val; break
 
     # 3. Weighted skill vector  ← KEY FIX
-    raw_skills   = [s.lower().strip() for s in data.get("skills",[])]
+    raw_skills_val = data.get("skills")
+    if not isinstance(raw_skills_val, list):
+        raw_skills_val = []
+    raw_skills   = [str(s).lower().strip() for s in raw_skills_val if s]
     user_skills  = {ALIASES.get(s,s) for s in raw_skills}
     skill_vec    = [get_skill_weight(sk) if sk.lower() in user_skills else 0.0
                     for sk in ALL_SKILLS]

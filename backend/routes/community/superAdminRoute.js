@@ -9,12 +9,12 @@ const {
   removeAdminFromCommunity,
   getCommunityAdmins,
   getCommunityMembers,
-  banMember,
-  unbanMember,
+  banMemberSA,
+  unbanMemberSA,
   getCommunityPosts,
-  deletePost,
+  deletePostSA,
   getCommunityQuestions,
-  deleteQuestion,
+  deleteQuestionSA,
   getAllReports,
   getCommunityReports,
   resolveReport,
@@ -23,55 +23,65 @@ const {
   getCommunitiesAnalytics,
   getCommunityLogs,
 } = require('../../controllers/community/superAdmin.controller');
+const {createCommunity,updateCommunity,deleteCommunity} = require('../../controllers/community.controller');
 
 const { protect } = require('../../middleware/authMiddleware');
 const checkUser = require('../../middleware/checkUser');
 const allowedTo = require('../../utils/allowedTo');
 
-// All routes require Super Admin
+// ═══════════════════════════════════
+// MIDDLEWARE — Super Admin Only
+// ═══════════════════════════════════
+
 router.use(protect);
 router.use(checkUser);
 router.use(allowedTo('SUPER_ADMIN'));
 
 // ═══════════════════════════════════
-// Static routes (محددة قبل الديناميكية)
+// STATIC ROUTES (قبل الديناميكية)
 // ═══════════════════════════════════
 
-// Analytics
+// Platform Analytics
 router.get('/analytics', getPlatformAnalytics);
 router.get('/communities/analytics', getCommunitiesAnalytics);
 
-// Admins
+// Admin Management
 router.get('/admins', getCommunityAdmins);
 
-// Reports
+// Reports (all platform)
 router.get('/reports', getAllReports);
 router.post('/reports/:reportId/resolve', resolveReport);
 
-// Communities list (ثابت)
+// Communities List
 router.get('/communities', getAllCommunities);
 
 // ═══════════════════════════════════
-// Dynamic community routes
+// COMMUNITY MANAGEMENT
 // ═══════════════════════════════════
-
+router.post('/community', createCommunity);
+router.put('/community/:communityId', updateCommunity);
+router.delete('/community/:communityId', deleteCommunity);
 router.get('/community/:communityId', getCommunityDetails);
 router.post('/community/:communityId/suspend', suspendCommunity);
 router.post('/community/:communityId/activate', activateCommunity);
 router.delete('/community/:communityId', deleteCommunitySA);
 
+// Admin Assignment
 router.post('/community/:communityId/assign-admin', assignAdminToCommunity);
 router.post('/community/:communityId/remove-admin', removeAdminFromCommunity);
 
+// Members
 router.get('/community/:communityId/members', getCommunityMembers);
-router.post('/community/:communityId/members/:userId/ban', banMember);
-router.post('/community/:communityId/members/:userId/unban', unbanMember);
+router.post('/community/:communityId/members/:userId/ban', banMemberSA);
+router.post('/community/:communityId/members/:userId/unban', unbanMemberSA);
 
+// Content
 router.get('/community/:communityId/posts', getCommunityPosts);
-router.delete('/community/:communityId/posts/:postId', deletePost);
+router.delete('/community/:communityId/posts/:postId', deletePostSA);
 router.get('/community/:communityId/questions', getCommunityQuestions);
-router.delete('/community/:communityId/questions/:questionId', deleteQuestion);
+router.delete('/community/:communityId/questions/:questionId', deleteQuestionSA);
 
+// Reports & Analytics per community
 router.get('/community/:communityId/reports', getCommunityReports);
 router.get('/community/:communityId/analytics', getCommunityAnalytics);
 router.get('/community/:communityId/logs', getCommunityLogs);

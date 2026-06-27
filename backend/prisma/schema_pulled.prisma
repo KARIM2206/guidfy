@@ -1,0 +1,862 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    Int                          @id @default(autoincrement())
+  createdAt             DateTime                     @default(now())
+  email                 String                       @unique(map: "User_email_key")
+  name                  String?
+  password              String
+  role                  Role                         @default(STUDENT)
+  updatedAt             DateTime                     @updatedAt
+  resetToken            String?
+  resetTokenExpiry      DateTime?
+  avatar                String?
+  bio                   String?
+  cover                 String?
+  title                 String?
+  experienceYears       Int?
+  receivedMessages      ChatMessage[]                @relation("ReceivedMessages")
+  sentMessages          ChatMessage[]                @relation("SentMessages")
+  communityAnswers      CommunityAnswer[]            @relation("UserCommunityAnswers")
+  communityQuestions    CommunityQuestion[]          @relation("UserCommunityQuestions")
+  submittedReports      CommunityReport[]            @relation("ReporterUser")
+  resolvedReports       CommunityReport[]            @relation("ResolvedByUser")
+  createdJobs           Job[]
+  jobApplications       JobApplication[]
+  assignedJobs          JobAssignment[]
+  createdLearningPaths  LearningPath[]
+  assignedLearningPaths LearningPathAdmin[]          @relation("User_Admin_Assign")
+  permissions           LearningPathPermission[]
+  recommendations       LearningPathRecommendation[]
+  notifications         Notification[]
+  posts                 Post[]                       @relation("UserPosts")
+  postComments          PostComment[]                @relation("UserPostComments")
+  createdProjects       Project[]
+  assignedProjects      ProjectAssignment[]
+  quizAttempts          QuizAttempt[]
+  reports               Report[]
+  createdRoadmaps       Roadmap[]
+  assignedRoadmaps      RoadmapAssignment[]
+  tracks                TrackProgress[]
+  badges                UserBadge[]
+  enrolledLearningPaths UserLearningPath[]
+  lessonProgress        UserLessonProgress[]
+  projectViews          UserProjectView[]
+  enrolledRoadmaps      UserRoadmap[]
+  roadmapProgress       UserRoadmapProgress[]
+  stats                 UserStats?
+  stepProgress          UserStepProgress[]
+  views                 View[]
+  votes                 Vote[]
+  community             Community[]                  @relation("communitymembers")
+
+  @@map("user")
+}
+
+model AdminActionLog {
+  id         Int      @id @default(autoincrement())
+  adminId    Int
+  action     String
+  targetType String
+  targetId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([adminId], map: "AdminActionLog_adminId_fkey")
+  @@map("adminactionlog")
+}
+
+model Community {
+  id          Int                 @id @default(autoincrement())
+  name        String              @unique(map: "Community_name_key")
+  slug        String              @unique(map: "Community_slug_key")
+  description String?
+  icon        String?
+  createdAt   DateTime            @default(now())
+  createdById Int
+  color       String?
+  status      CommunityStatus     @default(ACTIVE)
+  questions   CommunityQuestion[]
+  reports     CommunityReport[]
+  posts       Post[]
+  user        User[]              @relation("communitymembers")
+
+  @@index([createdById], map: "community_createdById_fkey")
+  @@map("community")
+}
+
+model CommunityReport {
+  id           Int       @id @default(autoincrement())
+  reporterId   Int
+  communityId  Int
+  targetType   String
+  targetId     Int
+  reason       String
+  description  String?   @db.Text
+  status       String    @default("PENDING")
+  notes        String?   @db.Text
+  resolvedById Int?
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  community    Community @relation(fields: [communityId], references: [id], onDelete: Cascade, map: "CommunityReport_communityId_fkey")
+  reporter     User      @relation("ReporterUser", fields: [reporterId], references: [id], onDelete: Cascade, map: "CommunityReport_reporterId_fkey")
+  resolvedBy   User?     @relation("ResolvedByUser", fields: [resolvedById], references: [id], map: "CommunityReport_resolvedById_fkey")
+
+  @@index([communityId], map: "CommunityReport_communityId_idx")
+  @@index([reporterId], map: "CommunityReport_reporterId_idx")
+  @@index([resolvedById], map: "CommunityReport_resolvedById_fkey")
+  @@index([status], map: "CommunityReport_status_idx")
+  @@map("communityreport")
+}
+
+model CommunityQuestion {
+  id          Int               @id @default(autoincrement())
+  title       String
+  body        String            @db.LongText
+  votes       Int               @default(0)
+  views       Int               @default(0)
+  isAnswered  Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  authorId    Int
+  communityId Int
+  answers     CommunityAnswer[]
+  author      User              @relation("UserCommunityQuestions", fields: [authorId], references: [id], onDelete: Cascade, map: "CommunityQuestion_authorId_fkey")
+  community   Community         @relation(fields: [communityId], references: [id], onDelete: Cascade, map: "CommunityQuestion_communityId_fkey")
+  tag         tag[]             @relation("communityquestiontotag")
+
+  @@index([authorId], map: "CommunityQuestion_authorId_fkey")
+  @@index([communityId], map: "CommunityQuestion_communityId_fkey")
+  @@map("communityquestion")
+}
+
+model Post {
+  id          Int           @id @default(autoincrement())
+  title       String
+  body        String        @db.LongText
+  image       String?
+  readTime    String?
+  likes       Int           @default(0)
+  bookmarks   Int           @default(0)
+  views       Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  authorId    Int
+  communityId Int
+  author      User          @relation("UserPosts", fields: [authorId], references: [id], onDelete: Cascade, map: "Post_authorId_fkey")
+  community   Community     @relation(fields: [communityId], references: [id], onDelete: Cascade, map: "Post_communityId_fkey")
+  comments    PostComment[]
+  tag         tag[]         @relation("posttotag")
+
+  @@index([authorId], map: "Post_authorId_fkey")
+  @@index([communityId], map: "Post_communityId_fkey")
+  @@map("post")
+}
+
+model View {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  targetId   Int
+  targetType String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "View_userId_fkey")
+
+  @@unique([userId, targetId, targetType], map: "View_userId_targetId_targetType_key")
+  @@map("view")
+}
+
+model CommunityAnswer {
+  id         Int               @id @default(autoincrement())
+  body       String            @db.LongText
+  votes      Int               @default(0)
+  isAccepted Boolean           @default(false)
+  createdAt  DateTime          @default(now())
+  authorId   Int
+  questionId Int
+  author     User              @relation("UserCommunityAnswers", fields: [authorId], references: [id], onDelete: Cascade, map: "CommunityAnswer_authorId_fkey")
+  question   CommunityQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade, map: "CommunityAnswer_questionId_fkey")
+
+  @@index([authorId], map: "CommunityAnswer_authorId_fkey")
+  @@index([questionId], map: "CommunityAnswer_questionId_fkey")
+  @@map("communityanswer")
+}
+
+model Vote {
+  id         Int    @id @default(autoincrement())
+  userId     Int
+  targetId   Int
+  targetType String
+  value      Int
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Vote_userId_fkey")
+
+  @@unique([userId, targetId, targetType], map: "Vote_userId_targetId_targetType_key")
+  @@map("vote")
+}
+
+model ChatMessage {
+  id         Int      @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+  content    String   @db.Text
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade, map: "ChatMessage_receiverId_fkey")
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade, map: "ChatMessage_senderId_fkey")
+
+  @@index([createdAt], map: "ChatMessage_createdAt_idx")
+  @@index([receiverId], map: "ChatMessage_receiverId_fkey")
+  @@index([senderId, receiverId], map: "ChatMessage_senderId_receiverId_idx")
+  @@map("chatmessage")
+}
+
+model PostComment {
+  id        Int           @id @default(autoincrement())
+  body      String
+  createdAt DateTime      @default(now())
+  authorId  Int
+  postId    Int
+  parentId  Int?
+  author    User          @relation("UserPostComments", fields: [authorId], references: [id], onDelete: Cascade, map: "PostComment_authorId_fkey")
+  parent    PostComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade, map: "PostComment_parentId_fkey")
+  replies   PostComment[] @relation("CommentReplies")
+  post      Post          @relation(fields: [postId], references: [id], onDelete: Cascade, map: "PostComment_postId_fkey")
+
+  @@index([authorId], map: "PostComment_authorId_fkey")
+  @@index([parentId], map: "PostComment_parentId_fkey")
+  @@index([postId], map: "PostComment_postId_fkey")
+  @@map("postcomment")
+}
+
+model UserStats {
+  id         Int  @id @default(autoincrement())
+  userId     Int  @unique(map: "UserStats_userId_key")
+  reputation Int  @default(0)
+  followers  Int  @default(0)
+  following  Int  @default(0)
+  user       User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "UserStats_userId_fkey")
+
+  @@map("userstats")
+}
+
+model Badge {
+  id         Int         @id @default(autoincrement())
+  name       String
+  icon       String
+  color      String
+  userBadges UserBadge[]
+
+  @@map("badge")
+}
+
+model UserBadge {
+  id      Int   @id @default(autoincrement())
+  userId  Int
+  badgeId Int
+  badge   Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade, map: "UserBadge_badgeId_fkey")
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade, map: "UserBadge_userId_fkey")
+
+  @@unique([userId, badgeId], map: "UserBadge_userId_badgeId_key")
+  @@index([badgeId], map: "UserBadge_badgeId_fkey")
+  @@map("userbadge")
+}
+
+model TrackProgress {
+  id        Int     @id @default(autoincrement())
+  userId    Int
+  trackName String
+  progress  Int
+  color     String?
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "TrackProgress_userId_fkey")
+
+  @@index([userId], map: "TrackProgress_userId_fkey")
+  @@map("trackprogress")
+}
+
+model LearningPathRecommendation {
+  id              Int           @id @default(autoincrement())
+  experience      String
+  skills          Json
+  interest        String
+  hoursPerDay     Int
+  targetGoal      String?
+  recommendedPath String
+  confidence      Float?
+  topPaths        Json?
+  userId          Int
+  learningPathId  Int?
+  createdAt       DateTime      @default(now())
+  learningPath    LearningPath? @relation(fields: [learningPathId], references: [id], map: "LearningPathRecommendation_learningPathId_fkey")
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade, map: "LearningPathRecommendation_userId_fkey")
+
+  @@index([learningPathId], map: "LearningPathRecommendation_learningPathId_idx")
+  @@index([userId], map: "LearningPathRecommendation_userId_idx")
+  @@map("learningpathrecommendation")
+}
+
+model LearningPath {
+  id                Int                          @id @default(autoincrement())
+  title             String                       @unique(map: "LearningPath_title_key")
+  description       String
+  estimatedDuration Int
+  createdById       Int
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+  isPublished       Boolean                      @default(false)
+  image             String?
+  createdBy         User                         @relation(fields: [createdById], references: [id], map: "LearningPath_createdById_fkey")
+  assignedAdmins    LearningPathAdmin[]          @relation("LP_Admin_Assign")
+  permissions       LearningPathPermission[]
+  recommendations   LearningPathRecommendation[]
+  roadmaps          LearningPathRoadmap[]
+  projects          Project[]
+  enrollments       UserLearningPath[]
+
+  @@index([createdById], map: "LearningPath_createdById_fkey")
+  @@map("learningpath")
+}
+
+model LearningPathPermission {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  learningPathId Int
+  section        Section
+  learningPath   LearningPath @relation(fields: [learningPathId], references: [id], map: "LearningPathPermission_learningPathId_fkey")
+  user           User         @relation(fields: [userId], references: [id], map: "LearningPathPermission_userId_fkey")
+
+  @@unique([userId, learningPathId, section], map: "LearningPathPermission_userId_learningPathId_section_key")
+  @@index([learningPathId], map: "LearningPathPermission_learningPathId_fkey")
+  @@map("learningpathpermission")
+}
+
+model LearningPathAdmin {
+  id             Int          @id @default(autoincrement())
+  learningPathId Int
+  adminId        Int
+  assignedAt     DateTime     @default(now())
+  admin          User         @relation("User_Admin_Assign", fields: [adminId], references: [id], onDelete: Cascade, map: "LearningPathAdmin_adminId_fkey")
+  learningPath   LearningPath @relation("LP_Admin_Assign", fields: [learningPathId], references: [id], onDelete: Cascade, map: "LearningPathAdmin_learningPathId_fkey")
+
+  @@unique([learningPathId, adminId], map: "LearningPathAdmin_learningPathId_adminId_key")
+  @@index([adminId], map: "LearningPathAdmin_adminId_fkey")
+  @@map("learningpathadmin")
+}
+
+model Project {
+  id             Int                 @id @default(autoincrement())
+  title          String
+  description    String              @db.LongText
+  image          String?
+  technologies   Json?
+  githubUrl      String?
+  likes          Int                 @default(0)
+  isFeatured     Boolean             @default(false)
+  createdById    Int
+  learningPathId Int
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  status         ProjectStatus       @default(DRAFT)
+  createdBy      User                @relation(fields: [createdById], references: [id], onDelete: Cascade, map: "Project_createdById_fkey")
+  learningPath   LearningPath        @relation(fields: [learningPathId], references: [id], onDelete: Cascade, map: "Project_learningPathId_fkey")
+  assignments    ProjectAssignment[]
+  views          UserProjectView[]
+
+  @@index([createdById], map: "Project_createdById_fkey")
+  @@index([learningPathId], map: "Project_learningPathId_fkey")
+  @@map("project")
+}
+
+model ProjectAssignment {
+  id         Int      @id @default(autoincrement())
+  projectId  Int
+  adminId    Int
+  assignedAt DateTime @default(now())
+  admin      User     @relation(fields: [adminId], references: [id], onDelete: Cascade, map: "ProjectAssignment_adminId_fkey")
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade, map: "ProjectAssignment_projectId_fkey")
+
+  @@unique([projectId, adminId], map: "ProjectAssignment_projectId_adminId_key")
+  @@index([adminId], map: "ProjectAssignment_adminId_fkey")
+  @@map("projectassignment")
+}
+
+model Roadmap {
+  id                Int                   @id @default(autoincrement())
+  title             String
+  slug              String                @unique(map: "Roadmap_slug_key")
+  description       String?
+  category          String
+  level             LevelRoadmap          @default(BEGINNER)
+  estimatedDuration Int
+  createdById       Int
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  isPublished       Boolean               @default(false)
+  deadline          DateTime?
+  progress          Int                   @default(0)
+  status            RoadmapStatus         @default(DRAFT)
+  learningPaths     LearningPathRoadmap[]
+  reports           Report[]
+  createdBy         User                  @relation(fields: [createdById], references: [id], map: "Roadmap_createdById_fkey")
+  assignments       RoadmapAssignment[]
+  steps             Step[]
+  enrollments       UserRoadmap[]
+  roadmapProgress   UserRoadmapProgress[]
+
+  @@index([createdById], map: "Roadmap_createdById_fkey")
+  @@map("roadmap")
+}
+
+model RoadmapAssignment {
+  id         Int      @id @default(autoincrement())
+  roadmapId  Int
+  adminId    Int
+  assignedAt DateTime @default(now())
+  admin      User     @relation(fields: [adminId], references: [id], onDelete: Cascade, map: "RoadmapAssignment_adminId_fkey")
+  roadmap    Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade, map: "RoadmapAssignment_roadmapId_fkey")
+
+  @@unique([roadmapId, adminId], map: "RoadmapAssignment_roadmapId_adminId_key")
+  @@index([adminId], map: "RoadmapAssignment_adminId_fkey")
+  @@map("roadmapassignment")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  message   String   @db.Text
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  type      String   @default("info")
+  metadata  Json?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Notification_userId_fkey")
+
+  @@index([createdAt], map: "Notification_createdAt_idx")
+  @@index([read], map: "Notification_read_idx")
+  @@index([userId], map: "Notification_userId_idx")
+  @@map("notification")
+}
+
+model Job {
+  id              Int              @id @default(autoincrement())
+  title           String
+  description     String           @db.LongText
+  company         String
+  location        String?
+  salary          String?
+  jobType         job_jobType
+  status          job_status       @default(DRAFT)
+  deadline        DateTime?
+  isFeatured      Boolean          @default(false)
+  createdById     Int
+  learningPathId  Int
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  applyLink       String?          @db.Text
+  experienceLevel String?
+  externalId      String?          @unique(map: "Job_externalId_key")
+  matchScore      Float?
+  postedAt        DateTime?
+  scrapedAt       DateTime         @default(now())
+  skills          Json?
+  source          String?
+  createdBy       User             @relation(fields: [createdById], references: [id], onDelete: Cascade, map: "Job_createdById_fkey")
+  applications    JobApplication[]
+  assignments     JobAssignment[]
+
+  @@index([createdById], map: "Job_createdById_fkey")
+  @@map("job")
+}
+
+model JobRecommendationFeedback {
+  id                 Int      @id @default(autoincrement())
+  userId             Int
+  jobId              Int
+  action             String
+  score              Float?
+  skillOverlap       Float?
+  expMatch           Float?
+  freshness          Float?
+  careerFit          Float?
+  learningGap        Float?
+  lpAlignment        Float?
+  createdAt          DateTime @default(now())
+  label              Int?
+  jobSkillDifficulty Float?
+  matchedSkills      String?
+  missingSkills      String?
+  retrievalScore     Float?
+  skillGapPct        Float?
+  userSkillDensity   Float?
+
+  @@index([jobId], map: "JobRecommendationFeedback_jobId_idx")
+  @@index([userId], map: "JobRecommendationFeedback_userId_idx")
+  @@map("jobrecommendationfeedback")
+}
+
+model JobAssignment {
+  id         Int      @id @default(autoincrement())
+  jobId      Int
+  adminId    Int
+  assignedAt DateTime @default(now())
+  admin      User     @relation(fields: [adminId], references: [id], onDelete: Cascade, map: "JobAssignment_adminId_fkey")
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade, map: "JobAssignment_jobId_fkey")
+
+  @@unique([jobId, adminId], map: "JobAssignment_jobId_adminId_key")
+  @@index([adminId], map: "JobAssignment_adminId_fkey")
+  @@map("jobassignment")
+}
+
+model UserProjectView {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  projectId Int
+  viewedAt  DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade, map: "UserProjectView_projectId_fkey")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "UserProjectView_userId_fkey")
+
+  @@unique([userId, projectId], map: "UserProjectView_userId_projectId_key")
+  @@index([projectId], map: "UserProjectView_projectId_fkey")
+  @@map("userprojectview")
+}
+
+model JobApplication {
+  id          Int               @id @default(autoincrement())
+  jobId       Int
+  userId      Int
+  cvUrl       String?
+  coverLetter String?           @db.LongText
+  status      ApplicationStatus @default(PENDING)
+  appliedAt   DateTime          @default(now())
+  job         Job               @relation(fields: [jobId], references: [id], onDelete: Cascade, map: "JobApplication_jobId_fkey")
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade, map: "JobApplication_userId_fkey")
+
+  @@unique([jobId, userId], map: "JobApplication_jobId_userId_key")
+  @@index([userId], map: "JobApplication_userId_fkey")
+  @@map("jobapplication")
+}
+
+model UserStepProgress {
+  id                 Int     @id @default(autoincrement())
+  userId             Int
+  stepId             Int
+  progressPercentage Int     @default(0)
+  completed          Boolean @default(false)
+  step               Step    @relation(fields: [stepId], references: [id], onDelete: Cascade, map: "UserStepProgress_stepId_fkey")
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "UserStepProgress_userId_fkey")
+
+  @@unique([userId, stepId], map: "UserStepProgress_userId_stepId_key")
+  @@index([stepId], map: "UserStepProgress_stepId_fkey")
+  @@map("userstepprogress")
+}
+
+model UserJobWeight {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  feature   String
+  weight    Float    @default(1)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, feature], map: "UserJobWeight_userId_feature_key")
+  @@map("userjobweight")
+}
+
+model Report {
+  id        Int      @id @default(autoincrement())
+  roadmapId Int
+  adminId   Int
+  content   String   @db.LongText
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  admin     User     @relation(fields: [adminId], references: [id], onDelete: Cascade, map: "Report_adminId_fkey")
+  roadmap   Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade, map: "Report_roadmapId_fkey")
+
+  @@index([adminId], map: "Report_adminId_fkey")
+  @@index([roadmapId], map: "Report_roadmapId_fkey")
+  @@map("report")
+}
+
+model LearningPathRoadmap {
+  id             Int          @id @default(autoincrement())
+  learningPathId Int
+  roadmapId      Int
+  order          Int
+  learningPath   LearningPath @relation(fields: [learningPathId], references: [id], onDelete: Cascade, map: "LearningPathRoadmap_learningPathId_fkey")
+  roadmap        Roadmap      @relation(fields: [roadmapId], references: [id], onDelete: Cascade, map: "LearningPathRoadmap_roadmapId_fkey")
+
+  @@unique([learningPathId, roadmapId], map: "LearningPathRoadmap_learningPathId_roadmapId_key")
+  @@index([roadmapId], map: "LearningPathRoadmap_roadmapId_fkey")
+  @@map("learningpathroadmap")
+}
+
+model Step {
+  id           Int                @id @default(autoincrement())
+  title        String
+  description  String?
+  order        Int
+  roadmapId    Int
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  skills       Json?
+  lessons      Lesson[]
+  roadmap      Roadmap            @relation(fields: [roadmapId], references: [id], onDelete: Cascade, map: "Step_roadmapId_fkey")
+  stepProgress UserStepProgress[]
+
+  @@unique([roadmapId, order], map: "Step_roadmapId_order_key")
+  @@map("step")
+}
+
+model Lesson {
+  id          Int                  @id @default(autoincrement())
+  title       String
+  type        LessonType
+  order       Int
+  stepId      Int
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  description String?
+  duration    Int?
+  skills      Json?
+  article     ArticleLesson?
+  step        Step                 @relation(fields: [stepId], references: [id], onDelete: Cascade, map: "Lesson_stepId_fkey")
+  quiz        Quiz?
+  progress    UserLessonProgress[]
+  video       VideoLesson?
+
+  @@unique([stepId, order], map: "Lesson_stepId_order_key")
+  @@map("lesson")
+}
+
+model VideoLesson {
+  id         Int      @id @default(autoincrement())
+  lessonId   Int      @unique(map: "VideoLesson_lessonId_key")
+  duration   Int?
+  createdAt  DateTime @default(now())
+  provider   String?
+  thumbnail  String?
+  videoUrl   String
+  isExternal Boolean  @default(false)
+  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade, map: "VideoLesson_lessonId_fkey")
+
+  @@map("videolesson")
+}
+
+model ArticleLesson {
+  id         Int      @id @default(autoincrement())
+  lessonId   Int      @unique(map: "ArticleLesson_lessonId_key")
+  content    String   @db.LongText
+  createdAt  DateTime @default(now())
+  title      String   @default("New Article")
+  isExternal Boolean  @default(false)
+  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade, map: "ArticleLesson_lessonId_fkey")
+
+  @@map("articlelesson")
+}
+
+model Quiz {
+  id           Int           @id @default(autoincrement())
+  title        String
+  lessonId     Int           @unique(map: "Quiz_lessonId_key")
+  createdAt    DateTime      @default(now())
+  passingScore Int?
+  timeLimit    Int?
+  questions    Question[]
+  lesson       Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade, map: "Quiz_lessonId_fkey")
+  attempts     QuizAttempt[]
+
+  @@map("quiz")
+}
+
+model Question {
+  id        Int      @id @default(autoincrement())
+  question  String
+  quizId    Int
+  createdAt DateTime @default(now())
+  options   Option[]
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade, map: "Question_quizId_fkey")
+
+  @@index([quizId], map: "Question_quizId_fkey")
+  @@map("question")
+}
+
+model Option {
+  id         Int      @id @default(autoincrement())
+  text       String
+  isCorrect  Boolean  @default(false)
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade, map: "Option_questionId_fkey")
+
+  @@index([questionId], map: "Option_questionId_fkey")
+  @@map("option")
+}
+
+model QuizAttempt {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  quizId    Int
+  score     Int
+  passed    Boolean
+  createdAt DateTime @default(now())
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade, map: "QuizAttempt_quizId_fkey")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "QuizAttempt_userId_fkey")
+
+  @@index([quizId], map: "QuizAttempt_quizId_fkey")
+  @@index([userId, quizId], map: "QuizAttempt_userId_quizId_idx")
+  @@map("quizattempt")
+}
+
+model UserLessonProgress {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  lessonId    Int
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade, map: "UserLessonProgress_lessonId_fkey")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "UserLessonProgress_userId_fkey")
+
+  @@unique([userId, lessonId], map: "UserLessonProgress_userId_lessonId_key")
+  @@index([lessonId], map: "UserLessonProgress_lessonId_fkey")
+  @@map("userlessonprogress")
+}
+
+model UserRoadmap {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  roadmapId  Int
+  enrolledAt DateTime @default(now())
+  roadmap    Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade, map: "UserRoadmap_roadmapId_fkey")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "UserRoadmap_userId_fkey")
+
+  @@unique([userId, roadmapId], map: "UserRoadmap_userId_roadmapId_key")
+  @@index([roadmapId], map: "UserRoadmap_roadmapId_fkey")
+  @@map("userroadmap")
+}
+
+model UserLearningPath {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  learningPathId Int
+  enrolledAt     DateTime     @default(now())
+  learningPath   LearningPath @relation(fields: [learningPathId], references: [id], onDelete: Cascade, map: "UserLearningPath_learningPathId_fkey")
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade, map: "UserLearningPath_userId_fkey")
+
+  @@unique([userId, learningPathId], map: "UserLearningPath_userId_learningPathId_key")
+  @@index([learningPathId], map: "UserLearningPath_learningPathId_fkey")
+  @@map("userlearningpath")
+}
+
+model UserRoadmapProgress {
+  id                 Int     @id @default(autoincrement())
+  userId             Int
+  roadmapId          Int
+  progressPercentage Int     @default(0)
+  completed          Boolean @default(false)
+  roadmap            Roadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade, map: "UserRoadmapProgress_roadmapId_fkey")
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "UserRoadmapProgress_userId_fkey")
+
+  @@unique([userId, roadmapId], map: "UserRoadmapProgress_userId_roadmapId_key")
+  @@index([roadmapId], map: "UserRoadmapProgress_roadmapId_fkey")
+  @@map("userroadmapprogress")
+}
+
+model bannedmember {
+  id          Int       @id @default(autoincrement())
+  reason      String?   @db.Text
+  bannedAt    DateTime  @default(now())
+  unbannedAt  DateTime?
+  communityId Int
+  userId      Int
+  bannedById  Int
+
+  @@unique([communityId, userId], map: "uq_community_user")
+  @@index([bannedById], map: "bannedmember_bannedById_fkey")
+  @@index([communityId])
+  @@index([userId], map: "bannedmember_userId_fkey")
+}
+
+model tag {
+  id                Int                 @id @default(autoincrement())
+  name              String              @unique
+  communityquestion CommunityQuestion[] @relation("communityquestiontotag")
+  post              Post[]              @relation("posttotag")
+}
+
+enum Role {
+  STUDENT
+  SUPER_ADMIN
+  ADMIN
+}
+
+enum LevelRoadmap {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum LessonType {
+  VIDEO
+  ARTICLE
+  QUIZ
+}
+
+enum RoadmapStatus {
+  DRAFT
+  ASSIGNED
+  IN_PROGRESS
+  REVIEW
+  NEEDS_REVISION
+  PUBLISHED
+}
+
+enum ProjectStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  ACCEPTED
+  REJECTED
+}
+
+enum CommunityStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum Section {
+  PROJECT
+  JOB
+  ROADMAP
+}
+
+enum job_jobType {
+  REMOTE
+  ONSITE
+  HYBRID
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+  FULLTIME
+  PARTTIME
+  TEMPORARY
+  PERMANENT
+}
+
+enum job_status {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  ACTIVE
+  INACTIVE
+  EXPIRED
+}

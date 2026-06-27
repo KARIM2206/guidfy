@@ -51,6 +51,11 @@ const addStepToRoadmap = async (req, res) => {
         order: newOrder,
         roadmapId: Number(roadmapId),
       },
+      include: {
+        lessons: {
+          select: { video: true, article: true, quiz: true },
+        },
+      },
     });
 
     // ✨ استخراج المهارات تلقائياً من AI وتحديث الخطوة
@@ -151,7 +156,12 @@ const getSingleStep = async (req, res) => {
 
     const step = await prisma.step.findUnique({
       where: { id: Number(id) },
-      include: { lessons: true, roadmap: true },
+      include: { 
+        lessons: {
+          select: { video: true, article: true, quiz: true },
+        },
+        roadmap: true 
+      },
     });
 
     if (!step) return res.status(404).json({ success: false, message: "Step not found" });
@@ -176,6 +186,11 @@ const updateStep = async (req, res) => {
         title: title ?? existingStep.title,
         description: description ?? existingStep.description,
         order: order ?? existingStep.order,
+      },
+      include: {
+        lessons: {
+          select: { video: true, article: true, quiz: true },
+        },
       },
     });
 

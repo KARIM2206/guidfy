@@ -57,7 +57,15 @@ const createCommunity = async (req, res) => {
     const slug = makeSlug(name);
 
     const community = await prisma.community.create({
-      data: { name, slug, description, icon, color, createdById: adminId },
+      data: { 
+        name, 
+        slug, 
+        description, 
+        icon, 
+        color, 
+        createdById: adminId,
+        members: { connect: { id: adminId } }
+      },
     });
 
     return res.status(201).json({ message: "Community created", community });
@@ -270,6 +278,55 @@ const leaveCommunity = async (req, res) => {
 
 
 // ═══════════════════════════════════════════════════
+//  MEMBERS
+// ═══════════════════════════════════════════════════
+
+const getCommunityMembers = async (req, res) => {
+  try {
+    const communityId = Number(req.params.communityId);
+    const userId = req.user.id;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const [members, total] = await Promise.all([
+      prisma.user.findMany({
+        where: {
+          communitiesJoined: { some: { id: communityId } },
+          id: { not: userId } // exclude current user
+        },
+        select: {
+          id: true,
+          name: true,
+          avatar: true,
+        },
+        skip,
+        take: limit
+      }),
+      prisma.user.count({
+        where: {
+          communitiesJoined: { some: { id: communityId } },
+          id: { not: userId }
+        }
+      })
+    ]);
+
+    return res.status(200).json({
+      data: members,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit) || 1
+      }
+    });
+  } catch (error) {
+    console.error("[getCommunityMembers]", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// ═══════════════════════════════════════════════════
 //  QUESTIONS
 // ═══════════════════════════════════════════════════
 
@@ -280,18 +337,46 @@ const getCommunityQuestions = async (req, res) => {
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
+    const search = req.query.search || '';
+    const sort = req.query.sort || 'latest';
+    const quickFilter = req.query.quickFilter || '';
+
+    const where = { communityId };
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search } },
+        { body: { contains: search } }
+      ];
+    }
+
+    if (quickFilter === 'answered') {
+      where.isAnswered = true;
+    } else if (quickFilter === 'unanswered') {
+      where.isAnswered = false;
+    } else if (quickFilter === 'recent') {
+      where.createdAt = { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) };
+    }
+
+    let orderBy = { createdAt: 'desc' };
+    if (sort === 'popular') {
+      orderBy = { answers: { _count: 'desc' } };
+    } else if (sort === 'trending') {
+      orderBy = { votes: 'desc' };
+    }
+
     const [questions, total] = await Promise.all([
       prisma.communityQuestion.findMany({
-        where: { communityId },
+        where,
         include: { 
           author: { select: { id: true, name: true, avatar: true } },
           answers: true
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip,
         take: limit
       }),
-      prisma.communityQuestion.count({ where: { communityId } })
+      prisma.communityQuestion.count({ where })
     ]);
 
     return res.json({
@@ -335,8 +420,22 @@ const createQuestion = async (req, res) => {
       return res.status(403).json({ message: "Join the community first to post questions" });
 
     const question = await prisma.communityQuestion.create({
-      data:    { title, body, tags: tags || [], authorId: userId, communityId },
-      include: { author: { select: { id: true, name: true, avatar: true } } },
+      data: { 
+        title, 
+        body, 
+        tags: {
+          connectOrCreate: (tags || []).map(tag => ({
+            where: { name: tag },
+            create: { name: tag }
+          }))
+        },
+        authorId: userId, 
+        communityId 
+      },
+      include: { 
+        author: { select: { id: true, name: true, avatar: true } },
+        tags: true
+      },
     });
 
     // ✅ أبلغ الـ creator
@@ -366,6 +465,45 @@ const createQuestion = async (req, res) => {
     );
 
     return res.status(201).json({ message: "Question created", question });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+const updateQuestion = async (req, res) => {
+  try {
+    const communityId = Number(req.params.communityId);
+    const questionId = Number(req.params.questionId);
+    const userId = req.user.id;
+    const { title, body, tags } = req.body;
+
+    const question = await prisma.communityQuestion.findUnique({ where: { id: questionId } });
+    if (!question || question.communityId !== communityId) return res.status(404).json({ message: "Question not found" });
+
+    if (question.authorId !== userId) return res.status(403).json({ message: "Not authorized to edit this question" });
+
+    const updatedQuestion = await prisma.communityQuestion.update({
+      where: { id: questionId },
+      data: { 
+        title, 
+        body, 
+        ...(tags && {
+          tags: {
+            set: [], // Disconnect old tags
+            connectOrCreate: tags.map(tag => ({
+              where: { name: tag },
+              create: { name: tag }
+            }))
+          }
+        })
+      },
+      include: { 
+        author: { select: { id: true, name: true, avatar: true } },
+        tags: true
+      },
+    });
+
+    return res.status(200).json({ message: "Question updated", question: updatedQuestion });
   } catch (error) {
     return res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -520,18 +658,42 @@ const getCommunityPosts = async (req, res) => {
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
+    const search = req.query.search || '';
+    const sort = req.query.sort || 'latest';
+    const quickFilter = req.query.quickFilter || '';
+
+    const where = { communityId };
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search } },
+        { body: { contains: search } }
+      ];
+    }
+
+    if (quickFilter === 'recent') {
+      where.createdAt = { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) };
+    }
+
+    let orderBy = { createdAt: 'desc' };
+    if (sort === 'popular') {
+      orderBy = { likes: 'desc' };
+    } else if (sort === 'trending') {
+      orderBy = { views: 'desc' };
+    }
+
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
-        where: { communityId },
+        where,
         include: { 
           author: { select: { id: true, name: true, avatar: true } },
           comments: true
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip,
         take: limit
       }),
-      prisma.post.count({ where: { communityId } })
+      prisma.post.count({ where })
     ]);
 
     return res.json({
@@ -552,7 +714,7 @@ const createPost = async (req, res) => {
     const communityId = Number(req.params.communityId);
     const userId      = req.user.id;
     const io          = req.app.get("io");
-    const { title, body, image, tags, readTime } = req.body;
+    const { title, body, tags, readTime } = req.body;
 
     if (!title || !body)
       return res.status(400).json({ message: "title and body are required" });
@@ -572,8 +734,23 @@ const createPost = async (req, res) => {
       return res.status(403).json({ message: "Join the community first to create posts" });
 
     const post = await prisma.post.create({
-      data: { title, body, image, tags: tags || [], readTime, authorId: userId, communityId },
-      include: { author: { select: { id: true, name: true, avatar: true } } },
+      data: { 
+        title, 
+        body, 
+        tags: {
+          connectOrCreate: (tags || []).map(tag => ({
+            where: { name: tag },
+            create: { name: tag }
+          }))
+        },
+        readTime, 
+        authorId: userId, 
+        communityId 
+      },
+      include: { 
+        author: { select: { id: true, name: true, avatar: true } },
+        tags: true
+      },
     });
 
     // ✅ أبلغ الـ creator إن في post جديد (لو مش هو اللي عمله)
@@ -603,6 +780,46 @@ const createPost = async (req, res) => {
     );
 
     return res.status(201).json({ message: "Post created", post });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+const updatePost = async (req, res) => {
+  try {
+    const communityId = Number(req.params.communityId);
+    const postId = Number(req.params.postId);
+    const userId = req.user.id;
+    const { title, body, tags, readTime } = req.body;
+
+    const post = await prisma.post.findUnique({ where: { id: postId } });
+    if (!post || post.communityId !== communityId) return res.status(404).json({ message: "Post not found" });
+
+    if (post.authorId !== userId) return res.status(403).json({ message: "Not authorized to edit this post" });
+
+    const updatedPost = await prisma.post.update({
+      where: { id: postId },
+      data: { 
+        title, 
+        body, 
+        ...(tags && {
+          tags: {
+            set: [], // Disconnect old tags
+            connectOrCreate: tags.map(tag => ({
+              where: { name: tag },
+              create: { name: tag }
+            }))
+          }
+        }),
+        readTime: readTime || post.readTime 
+      },
+      include: { 
+        author: { select: { id: true, name: true, avatar: true } },
+        tags: true
+      },
+    });
+
+    return res.status(200).json({ message: "Post updated", post: updatedPost });
   } catch (error) {
     return res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -813,11 +1030,13 @@ const vote = async (req, res) => {
     const model =
       targetType === "QUESTION"
         ? prisma.communityQuestion
-        : prisma.communityAnswer;
+        : targetType === "POST"
+          ? prisma.post
+          : prisma.communityAnswer;
 
     const updated = await model.update({
       where: { id: targetId },
-      data: { votes: { increment: change } },
+      data: targetType === "POST" ? { likes: { increment: change } } : { votes: { increment: change } },
     });
     
     // ==============================
@@ -838,17 +1057,27 @@ const vote = async (req, res) => {
       },
     });
 
- 
     // =============== ===============
     // 🔥 REAL-TIME EMIT
     // ==============================
-    io.to(`user_${updated.authorId}`).emit("new_notification", {
-      id: notification.id,
-      message: notification.message,
-      type: notification.type,
-      metadata: notification.metadata,
-      createdAt: notification.createdAt,
-    });
+    if (io) {
+      // 1. Notify the author specifically
+      io.to(`user_${updated.authorId}`).emit("new_notification", {
+        id: notification.id,
+        message: notification.message,
+        type: notification.type,
+        metadata: notification.metadata,
+        createdAt: notification.createdAt,
+      });
+
+      // 2. Notify everyone about the stat change
+      io.emit("community_stats_update", {
+        targetId,
+        targetType: targetType.toUpperCase(),
+        type: "VOTES",
+        value: targetType === "POST" ? updated.likes : updated.votes
+      });
+    }
 
     return res.json({ message: "Vote updated", change });
 
@@ -867,14 +1096,16 @@ const getVotes = async (req, res) => {
     // جيب الـ total votes من الجدول الأساسي
     const model = targetType === "QUESTION"
       ? prisma.communityQuestion
-      : prisma.communityAnswer;
+      : targetType === "POST"
+        ? prisma.post
+        : prisma.communityAnswer;
 
     const record = await model.findUnique({
       where: { id: targetId },
-      select: { votes: true },
+      select: targetType === "POST" ? { likes: true } : { votes: true },
     });
 
-    const totalVotes = record?.votes ?? 0;
+    const totalVotes = targetType === "POST" ? (record?.likes ?? 0) : (record?.votes ?? 0);
 
     // جيب الـ userVote
     let userVote = 0;
@@ -970,6 +1201,17 @@ const incrementView = async (req, res) => {
     //   });
     // }
 
+    // 🔥 4. Global socket emit
+    const io = req.app.get('io');
+    if (io) {
+      io.emit("community_stats_update", {
+        targetId: numericTargetId,
+        targetType: type,
+        type: "VIEWS",
+        value: updated.views
+      });
+    }
+
     return res.json({
       success: true,
       views: updated.views,
@@ -1057,6 +1299,7 @@ const getGlobalFeed = async (req, res) => {
       limit       = 10,
       search      = '',
       quickFilter = '',
+      communityId = '',
     } = req.query;
 
     const pageNum  = Math.max(1, parseInt(page));
@@ -1074,12 +1317,15 @@ const getGlobalFeed = async (req, res) => {
 
     // ── Question Where ────────────────────────────────────────
     const questionWhere = {};
+    if (communityId) questionWhere.communityId = Number(communityId);
 
     // Search — MySQL: contains بدون mode
     if (search?.trim()) {
+      const s = search.trim();
       questionWhere.OR = [
-        { title: { contains: search.trim() } },
-        { body:  { contains: search.trim() } },
+        { title: { contains: s } },
+        { body:  { contains: s } },
+        { tags:  { some: { name: { contains: s } } } },
       ];
     }
 
@@ -1114,10 +1360,13 @@ const getGlobalFeed = async (req, res) => {
 
     // ── Post Where ────────────────────────────────────────────
     const postWhere = {};
+    if (communityId) postWhere.communityId = Number(communityId);
     if (search?.trim()) {
+      const s = search.trim();
       postWhere.OR = [
-        { title: { contains: search.trim() } },
-        { body:  { contains: search.trim() } },
+        { title: { contains: s } },
+        { body:  { contains: s } },
+        { tags:  { some: { name: { contains: s } } } },
       ];
     }
 
@@ -1130,65 +1379,42 @@ const getGlobalFeed = async (req, res) => {
     let questions = [];
     let posts     = [];
 
+    let questionsTotal = 0;
     if (fetchQuestions) {
-      questions = await prisma.communityQuestion.findMany({
-        where  : questionWhere,
-        orderBy: questionOrderBy,
-        include: {
-          // ✅ الـ Schema: User عنده name و image (مش avatar)
-          author: {
-            select: {
-              id   : true,
-              name : true,
-              avatar: true,   // ← صح حسب الـ User model
-            },
+      const [qData, qTotal] = await Promise.all([
+        prisma.communityQuestion.findMany({
+          where  : questionWhere,
+          orderBy: questionOrderBy,
+          include: {
+            author: { select: { id: true, name: true, avatar: true } },
+            community: { select: { id: true, name: true, slug: true, icon: true, color: true } },
+            _count: { select: { answers: true } },
           },
-          // ✅ Community fields: id, name, slug, icon, color
-          community: {
-            select: {
-              id   : true,
-              name : true,
-              slug : true,
-              icon : true,
-              color: true,
-            },
-          },
-          // ✅ CommunityQuestion عنده answers (CommunityAnswer[])
-          _count: {
-            select: { answers: true },
-          },
-        },
-      });
+          // ⚠️ We don't skip/take here because we must sort the combined results 
+          // across both questions and posts before paginating.
+        }),
+        prisma.communityQuestion.count({ where: questionWhere })
+      ]);
+      questions = qData;
+      questionsTotal = qTotal;
     }
 
+    let postsTotal = 0;
     if (fetchPosts) {
-      posts = await prisma.post.findMany({
-        where  : postWhere,
-        orderBy: postOrderBy,
-        include: {
-          // ✅ نفس الـ author select
-          author: {
-            select: {
-              id   : true,
-              name : true,
-              avatar: true,
-            },
+      const [pData, pTotal] = await Promise.all([
+        prisma.post.findMany({
+          where  : postWhere,
+          orderBy: postOrderBy,
+          include: {
+            author: { select: { id: true, name: true, avatar: true } },
+            community: { select: { id: true, name: true, slug: true, icon: true, color: true } },
+            _count: { select: { comments: true } },
           },
-          community: {
-            select: {
-              id   : true,
-              name : true,
-              slug : true,
-              icon : true,
-              color: true,
-            },
-          },
-          // ✅ Post عنده comments (PostComment[])
-          _count: {
-            select: { comments: true },
-          },
-        },
-      });
+        }),
+        prisma.post.count({ where: postWhere })
+      ]);
+      posts = pData;
+      postsTotal = pTotal;
     }
 
     // ── Format Questions ──────────────────────────────────────
@@ -1263,7 +1489,7 @@ const getGlobalFeed = async (req, res) => {
     }
 
     // ── Paginate ──────────────────────────────────────────────
-    const total     = merged.length;
+    const total     = questionsTotal + postsTotal;
     const pages     = Math.ceil(total / limitNum) || 1;
     const paginated = merged.slice(skip, skip + limitNum);
 
@@ -1296,6 +1522,31 @@ const formatRelativeTime = (date) => {
   if (diffDays < 7)  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
   return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
+
+const getPopularTags = async (req, res) => {
+  try {
+    const tags = await prisma.tag.findMany({
+      include: {
+        _count: {
+          select: { questions: true, posts: true }
+        }
+      }
+    });
+
+    const popularTags = tags
+      .map(tag => ({
+        id: tag.id,
+        name: tag.name,
+        count: tag._count.questions + tag._count.posts
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    res.status(200).json({ success: true, data: popularTags });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
 // ═══════════════════════════════════════════════════
 //  EXPORTS
 // ═══════════════════════════════════════════════════
@@ -1311,10 +1562,13 @@ module.exports = {
   isCommunityAdmin,
   getCommunityQuestions,
   createQuestion,
+  updateQuestion,
   deleteQuestion,
   getCommunityPosts,
   createPost,
+  updatePost,
   deletePost,
+  getPopularTags,
   getCommunityAnalytics,
   getQuestion,
   deleteAnswer,
@@ -1326,6 +1580,6 @@ module.exports = {
   getVotes,
   incrementView,
   getView,
-  getGlobalFeed
-
+  getGlobalFeed,
+  getCommunityMembers
 };
