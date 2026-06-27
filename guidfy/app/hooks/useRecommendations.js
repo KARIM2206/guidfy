@@ -1,31 +1,28 @@
-'use client'// hooks/useRecommendations.js
-import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-import api from '@/services/apiCommunity';
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+import apiClient from '@/lib/apiClient';
+
+async function fetchRecommendations() {
+  // ⚠️ apiClient بيرجع response.data مباشرة من الـ interceptor
+  const data = await apiClient.get('/recommendations');
+  
+  // ✅ تأمين ضد undefined
+  return data || { recommendations: [], meta: null };
+}
 
 export function useRecommendations() {
-  const [recommendations, setRecommendations] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [meta, setMeta] = useState(null);
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['recommendations'],
+    queryFn: fetchRecommendations,
+    staleTime: 1000 * 60 * 5,
+  });
 
-  const fetchRecommendations = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await api.get('/recommendations');
-      setRecommendations(data.recommendations || []);
-      setMeta(data.meta || null);
-    } catch (err) {
-      setError(err.response?.data?.message || err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchRecommendations();
-  }, [fetchRecommendations]);
-
-  return { recommendations, loading, error, meta, refetch: fetchRecommendations };
+  return {
+    recommendations: data?.recommendations || [],
+    meta: data?.meta || null,
+    loading: isLoading,
+    error: isError ? (error?.message || 'Failed to fetch recommendations') : null,
+    refetch,
+  };
 }

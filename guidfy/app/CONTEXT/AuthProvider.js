@@ -1,4 +1,4 @@
-'use client';
+
 
 import { getMe, login } from "@/services/auth";
 import { useRouter } from "next/navigation";

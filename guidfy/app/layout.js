@@ -1,9 +1,10 @@
-
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { ToastContainer } from "react-toastify";
+
+import QueryClientProviderWrapper from "./providers/QueryClientProvider";
 import { AuthProvider } from "./CONTEXT/AuthProvider";
 import NotificationListener from "./components/notification/NotificationListener";
 import { NotificationProvider } from "./CONTEXT/NotificationContext";
@@ -27,17 +28,29 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <AuthProvider>
-          <NotificationProvider>
-            <ToastContainer />
-            <NotificationListener />
-            <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-black">
-              <Header />
-              <main className="flex-1 flex flex-col">{children}</main>
-              <Footer />
-            </div>
-          </NotificationProvider>
-        </AuthProvider>
+
+        {/* ✅ لازم ده يبقى أول wrapper */}
+        <QueryClientProviderWrapper>
+
+          <AuthProvider>
+            <NotificationProvider>
+
+              <ToastContainer />
+              <NotificationListener />
+
+              <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-black">
+                <Header />
+                <main className="flex-1 flex flex-col">
+                  {children}
+                </main>
+                <Footer />
+              </div>
+
+            </NotificationProvider>
+          </AuthProvider>
+
+        </QueryClientProviderWrapper>
+
       </body>
     </html>
   );

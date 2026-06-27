@@ -105,9 +105,9 @@ export function CommunityProvider({ children }) {
   // ═══════════════════════════════════════════════
   //  JOIN / LEAVE
   // ═══════════════════════════════════════════════
-  const join = useCallback((slug) => // تم التعديل ليستقبل slug
+  const join = useCallback((communityId, slug) => 
     run(async () => {
-      const res = await communityService.joinCommunity(slug);
+      const res = await communityService.joinCommunity(communityId);
       setCommunities((prev) =>
         prev.map((c) =>
           c.slug === slug
@@ -125,9 +125,9 @@ export function CommunityProvider({ children }) {
       return res;
     }), [run, currentCommunity]);
 
-  const leave = useCallback((slug) => // تم التعديل ليستقبل slug
+  const leave = useCallback((communityId, slug) => 
     run(async () => {
-      const res = await communityService.leaveCommunity(slug);
+      const res = await communityService.leaveCommunity(communityId);
       setCommunities((prev) =>
         prev.map((c) =>
           c.slug === slug
