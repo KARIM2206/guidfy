@@ -37,6 +37,11 @@ export default function NotificationBell() {
     removeNotification,
   } = useNotifications();
 
+  // جيب الـ notifications أول مرة عشان العدد المبدئي
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
   // جيب الـ notifications عند الفتح
   useEffect(() => {
     if (open) fetchNotifications();

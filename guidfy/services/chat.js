@@ -1,10 +1,14 @@
-import api from "./apiCommunity";
+import apiClient from '@/lib/apiClient';
 
-export const sendMessageService    = (receiverId, content) =>
-  api.post("/chat/messages", { receiverId, content }).then(r => r.data);
+// ═══════════════════════════════════════════════════
+//  CHAT SERVICES (using apiClient with HttpOnly cookies)
+// ═══════════════════════════════════════════════════
+
+export const sendMessageService = (receiverId, content) =>
+  apiClient.post('/chat/messages', { receiverId, content });
 
 export const getConversationService = (userId, page = 1) =>
-  api.get(`/chat/messages/${userId}?page=${page}`).then(r => r.data);
+  apiClient.get(`/chat/messages/${userId}`, { params: { page } });
 
 export const getInboxService = () =>
-  api.get("/chat/inbox").then(r => r.data);
+  apiClient.get('/chat/inbox');

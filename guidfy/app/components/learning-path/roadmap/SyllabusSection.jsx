@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useIsFetching } from "@tanstack/react-query";
 import {
   ChevronDown,
   ChevronUp,
@@ -12,214 +13,88 @@ import {
   ExternalLink,
   Eye,
   CheckCheck,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
-import { useSteps } from "@/app/hooks/useStep";
-import { useLessons } from "@/app/hooks/useLesson";
+import { useUpdateLessonProgress, studentKeys } from "@/app/hooks/useStudent";
+import { useParams, useRouter } from "next/navigation";
 
-// Helper to get stored progress from localStorage
-const getStoredProgress = (roadmapId) => {
-  if (typeof window === "undefined") return null;
-  try {
-    const stored = localStorage.getItem(`roadmap_progress_${roadmapId}`);
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
+// ── Helper: يتعامل مع progress Object أو Array ──────────────────────
+const getProgress = (progress) => {
+  if (!progress) return { completed: false, progressPercentage: 0 };
+  if (Array.isArray(progress)) {
+    return {
+      completed: progress[0]?.completed ?? false,
+      progressPercentage: progress[0]?.progressPercentage ?? 0,
+    };
   }
-};
-
-// Helper to save progress to localStorage
-const saveProgress = (roadmapId, progress) => {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(`roadmap_progress_${roadmapId}`, JSON.stringify(progress));
+  return {
+    completed: progress.completed ?? false,
+    progressPercentage: progress.progressPercentage ?? 0,
+  };
 };
 
 const SyllabusSection = ({ roadmap }) => {
   const [expandedModule, setExpandedModule] = useState(null);
-  const [stepId, setStepId] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { title: learningPathTitle } = useParams() || {};
+  const router = useRouter();
+  
+  // ✅ Optimistic state: دروس اتعملها Mark مؤقتاً لحد ما الـ Backend يؤكد
+  const [optimisticCompleted, setOptimisticCompleted] = useState(new Set());
+  
+  // ✅ Detect lما الـ React Query بيعيد Fetch
+  const isRefetching = useIsFetching({ queryKey: studentKeys.all() }) > 0;
 
-  // Local state for lessons of currently opened step
-  const [currentLessons, setCurrentLessons] = useState(null);
-  const [lessonsLoading, setLessonsLoading] = useState(false);
-
-  // PERSISTENT progress state - survives refresh
-  const [persistentProgress, setPersistentProgress] = useState(() => {
-    return getStoredProgress(roadmap?.roadmapId) || {
-      completedLessons: [],
-      stepProgress: {},
-      roadmapProgress: {
-        completedSteps: 0,
-        totalSteps: 0,
-        progressPercentage: 0,
-        completed: false,
-      },
-    };
-  });
-
-  const {
-    fetchStudentLessonsByStepId,
-    studentLessons,
-    markLessonAsCompleted,
-  } = useLessons();
-  const { fetchStudentStepsByRoadmap, studentSteps } = useSteps();
+  const { mutate: updateProgress, isPending: isUpdating } = useUpdateLessonProgress();
 
   const isLocked = roadmap?.locked;
 
-  // ── Save to localStorage whenever progress changes ─────────────────
-  useEffect(() => {
-    if (roadmap?.roadmapId && persistentProgress) {
-      saveProgress(roadmap.roadmapId, persistentProgress);
-    }
-  }, [persistentProgress, roadmap?.roadmapId]);
-
-  // ── Initialize from localStorage on mount ─────────────────
-  useEffect(() => {
-    if (roadmap?.roadmapId) {
-      const stored = getStoredProgress(roadmap.roadmapId);
-      if (stored) {
-        setPersistentProgress(stored);
-      }
-    }
-  }, [roadmap?.roadmapId]);
-
-  // ── Fetch steps when roadmap loads ─────────────────
-  useEffect(() => {
-    if (!roadmap?.roadmapId || isLocked) {
-      setLoading(false);
-      return;
-    }
-
-    const fetch = async () => {
-      setLoading(true);
-      await fetchStudentStepsByRoadmap(roadmap.roadmapId);
-      setLoading(false);
-    };
-    fetch();
-  }, [roadmap?.roadmapId, isLocked]);
-
-  // ── Fetch lessons when selecting a specific step ──────────────
-  const loadLessonsForStep = useCallback(
-    async (id) => {
-      if (!id) return;
-      setLessonsLoading(true);
-      setCurrentLessons(null);
-      try {
-        await fetchStudentLessonsByStepId(id);
-      } catch (error) {
-        console.error("Failed to fetch lessons", error);
-        setCurrentLessons([]);
-        setLessonsLoading(false);
-      }
-    },
-    [fetchStudentLessonsByStepId]
-  );
-
-  // Sync studentLessons from hook to local state + MERGE with persistent progress
-  useEffect(() => {
-    if (stepId && studentLessons) {
-      // Merge API data with persistent progress
-      const mergedLessons = studentLessons.map((lesson) => ({
-        ...lesson,
-        progress: {
-          ...lesson.progress,
-          completed:
-            lesson.progress?.completed ||
-            persistentProgress.completedLessons.includes(lesson.id),
-        },
-      }));
-
-      setCurrentLessons(mergedLessons);
-      setLessonsLoading(false);
-    }
-  }, [studentLessons, stepId, persistentProgress.completedLessons]);
-
-  // When stepId changes, start fetching
-  useEffect(() => {
-    if (stepId) {
-      loadLessonsForStep(stepId);
-    }
-  }, [stepId, loadLessonsForStep]);
+  // ── Roadmap Progress من الـ Backend ───────────────────────────────
+  const roadmapProg = roadmap?.roadmap?.progress || {
+    totalSteps: 0,
+    completedSteps: 0,
+    progressPercentage: 0,
+    completed: false,
+  };
 
   const toggleModule = (moduleId) => {
     setExpandedModule((prev) => (prev === moduleId ? null : moduleId));
-    setStepId(moduleId);
-    setCurrentLessons(null);
   };
 
-  // ── Mark lesson as read - PERSISTENT VERSION ─────────────────
-  const handleMarkAsRead = async (lessonId) => {
-    try {
-      // 1. Call API first
-      if (markLessonAsCompleted) {
-        await markLessonAsCompleted(lessonId);
+  // ── Mark lesson as read (مع Optimistic Update) ────────────────────
+  const handleMarkAsRead = (lessonId) => {
+    // 1. أظهر الـ UI على طول إنها completed
+    setOptimisticCompleted((prev) => new Set(prev).add(lessonId));
+
+    // 2. ابعت للـ Backend
+    updateProgress(
+      { lessonId, completed: true },
+      {
+        onSuccess: () => {
+          // ✅ بعد الـ Refetch، امسح الـ Optimistic لأن الـ Backend data هتجي صح
+          setTimeout(() => {
+            setOptimisticCompleted((prev) => {
+              const next = new Set(prev);
+              next.delete(lessonId);
+              return next;
+            });
+          }, 500);
+        },
+        onError: (error) => {
+          // ❌ لو فشلت، رجع الـ UI زي ما كان
+          setOptimisticCompleted((prev) => {
+            const next = new Set(prev);
+            next.delete(lessonId);
+            return next;
+          });
+          console.error("[Syllabus] Failed:", error);
+          alert(error?.message || "Failed to update progress");
+        },
       }
-
-      // 2. Update persistent progress
-      setPersistentProgress((prev) => {
-        const newCompleted = [...prev.completedLessons];
-        if (!newCompleted.includes(lessonId)) {
-          newCompleted.push(lessonId);
-        }
-
-        // Calculate new step progress
-        const stepLessons = currentLessons || [];
-        const completedInStep = stepLessons.filter(
-          (l) => newCompleted.includes(l.id) || l.progress?.completed
-        ).length;
-        const totalInStep = stepLessons.length;
-        const stepPercentage =
-          totalInStep > 0 ? Math.round((completedInStep / totalInStep) * 100) : 0;
-
-        const newStepProgress = {
-          ...prev.stepProgress,
-          [stepId]: {
-            completedLessons: completedInStep,
-            totalLessons: totalInStep,
-            progressPercentage: stepPercentage,
-            completed: stepPercentage === 100 && totalInStep > 0,
-          },
-        };
-
-        // Calculate new roadmap progress
-        const totalSteps = studentSteps.length;
-        const completedSteps = Object.values(newStepProgress).filter(
-          (sp) => sp.completed
-        ).length;
-        const roadmapPercentage =
-          totalSteps > 0
-            ? Math.round((completedSteps / totalSteps) * 100)
-            : 0;
-
-        const newProgress = {
-          completedLessons: newCompleted,
-          stepProgress: newStepProgress,
-          roadmapProgress: {
-            completedSteps,
-            totalSteps,
-            progressPercentage: roadmapPercentage,
-            completed: roadmapPercentage === 100 && totalSteps > 0,
-          },
-        };
-
-        // Save immediately
-        saveProgress(roadmap.roadmapId, newProgress);
-        return newProgress;
-      });
-
-      // 3. Update current lessons UI immediately
-      setCurrentLessons((prev) =>
-        prev?.map((l) =>
-          l.id === lessonId
-            ? { ...l, progress: { ...l.progress, completed: true } }
-            : l
-        )
-      );
-    } catch (error) {
-      console.error("Failed to mark lesson as read", error);
-    }
+    );
   };
 
-  // ── Render lesson card based on type ─────────────────────
+  // ── Render lesson content ───────────────────────────────────────────
   const renderLessonContent = (lesson) => {
     switch (lesson.type) {
       case "VIDEO":
@@ -232,12 +107,8 @@ const SyllabusSection = ({ roadmap }) => {
                   <ExternalLink className="w-4 h-4 text-blue-600" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    External Video
-                  </p>
-                  <p className="text-xs text-blue-600 truncate">
-                    {lesson.video.videoUrl}
-                  </p>
+                  <p className="text-sm font-medium text-gray-900 truncate">External Video</p>
+                  <p className="text-xs text-blue-600 truncate">{lesson.video.videoUrl}</p>
                 </div>
               </div>
               <a
@@ -247,48 +118,38 @@ const SyllabusSection = ({ roadmap }) => {
                 className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                Open Link
+                Open
               </a>
             </div>
           );
-        } else {
-          return (
-            <div className="mt-3 rounded-lg overflow-hidden border border-gray-200">
-              <video
-                controls
-                className="w-full aspect-video"
-                poster={lesson.video.thumbnail || undefined}
-                preload="metadata"
-              >
-                <source src={lesson.video.videoUrl} type="video/mp4" />
-                Your browser does not support video playback.
-              </video>
-            </div>
-          );
         }
+        return (
+          <div className="mt-3 rounded-lg overflow-hidden border border-gray-200">
+            <video controls className="w-full aspect-video" poster={lesson.video.thumbnail || undefined} preload="metadata">
+              <source src={lesson.video.videoUrl} type="video/mp4" />
+              Your browser does not support video playback.
+            </video>
+          </div>
+        );
 
       case "QUIZ":
         return (
           <div className="mt-3 bg-purple-50/50 border border-purple-100 rounded-lg p-3 flex items-center gap-3">
             <FileQuestion className="w-5 h-5 text-purple-600" />
-            <span className="text-sm text-purple-700 font-medium">
-              Quiz: {lesson.title}
-            </span>
+            <span className="text-sm text-purple-700 font-medium">Quiz: {lesson.title}</span>
           </div>
         );
 
       default:
         return (
           <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-3">
-            <p className="text-sm text-gray-600">
-              {lesson.description || "Read this lesson"}
-            </p>
+            <p className="text-sm text-gray-600">{lesson.description || "Read this lesson"}</p>
           </div>
         );
     }
   };
 
-  // ── If roadmap is locked ─────────────────────────
+  // ── Locked Roadmap ─────────────────────────────────────────────────
   if (isLocked) {
     return (
       <motion.div
@@ -310,55 +171,49 @@ const SyllabusSection = ({ roadmap }) => {
                   {roadmap.roadmap.level}
                 </span>
               )}
-              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 font-medium">
-                🔒 Locked
-              </span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 font-medium">🔒 Locked</span>
             </div>
-            <p className="text-xs text-gray-400 mt-1">
-              Complete the previous level to unlock this roadmap
-            </p>
-            <div className="mt-2 w-48 h-1.5 bg-gray-200 rounded-full" />
+            <p className="text-xs text-gray-400 mt-1">Complete the previous level to unlock</p>
           </div>
         </div>
       </motion.div>
     );
   }
 
-  // Use persistent progress (survives refresh)
-  const displayProgress = persistentProgress.roadmapProgress;
+  const steps = roadmap?.roadmap?.steps ?? [];
+  const isCalculating = !steps || steps.length === 0;
 
-  // ── Roadmap is open ─────────────────────────────────
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`mb-6 rounded-2xl border-2 overflow-hidden transition-all ${
-        displayProgress.completed
-          ? "border-green-200 bg-green-50/20"
-          : "border-blue-100 bg-white"
+      className={`mb-6 rounded-2xl border-2 overflow-hidden transition-all relative ${
+        roadmapProg.completed ? "border-green-200 bg-green-50/20" : "border-blue-100 bg-white"
       }`}
     >
+      {/* ✅ Refetching Overlay — بيظهر لما الـ Backend بيعيد حساب الـ Progress */}
+      {isRefetching && (
+        <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-2xl">
+          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-md border border-gray-100">
+            <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />
+            <span className="text-sm text-gray-600 font-medium">Updating progress...</span>
+          </div>
+        </div>
+      )}
+
       {/* Roadmap Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 border-b border-gray-100">
         <div className="flex items-center gap-3">
-          <div
-            className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-              displayProgress.completed ? "bg-green-100" : "bg-blue-100"
-            }`}
-          >
-            {displayProgress.completed ? (
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${roadmapProg.completed ? "bg-green-100" : "bg-blue-100"}`}>
+            {roadmapProg.completed ? (
               <CheckCircle2 className="w-6 h-6 text-green-600" />
             ) : (
-              <span className="text-sm font-bold text-blue-600">
-                {roadmap.order}
-              </span>
+              <span className="text-sm font-bold text-blue-600">{roadmap.order}</span>
             )}
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-bold text-gray-900">
-                {roadmap.roadmap?.title}
-              </h2>
+              <h2 className="text-xl font-bold text-gray-900">{roadmap.roadmap?.title}</h2>
               {roadmap.roadmap?.level && (
                 <span
                   className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -372,47 +227,35 @@ const SyllabusSection = ({ roadmap }) => {
                   {roadmap.roadmap.level}
                 </span>
               )}
-              {displayProgress.completed && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
-                  ✓ Completed
-                </span>
+              {roadmapProg.completed && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">✓ Completed</span>
               )}
             </div>
-            <p className="text-gray-500 text-sm mt-0.5">
-              {roadmap.roadmap?.description}
-            </p>
+            <p className="text-gray-500 text-sm mt-0.5">{roadmap.roadmap?.description}</p>
           </div>
         </div>
 
-        {/* Circular Progress */}
+        {/* Progress Circle */}
         <div className="flex items-center gap-3 bg-blue-50 px-4 py-3 rounded-xl flex-shrink-0">
           <div className="relative">
             <svg className="w-12 h-12" viewBox="0 0 36 36">
+              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#E5E7EB" strokeWidth="3" />
               <path
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831
-                   a 15.9155 15.9155 0 0 1 0 -31.831"
+                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                 fill="none"
-                stroke="#E5E7EB"
+                stroke={roadmapProg.completed ? "#22c55e" : "#3B82F6"}
                 strokeWidth="3"
-              />
-              <path
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831
-                   a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none"
-                stroke={displayProgress.completed ? "#22c55e" : "#3B82F6"}
-                strokeWidth="3"
-                strokeDasharray={`${displayProgress.progressPercentage}, 100`}
+                strokeDasharray={`${roadmapProg.progressPercentage}, 100`}
               />
             </svg>
             <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-blue-700">
-              {displayProgress.progressPercentage}%
+              {roadmapProg.progressPercentage}%
             </span>
           </div>
           <div>
             <p className="text-sm text-gray-500">Progress</p>
             <p className="font-bold text-gray-900 text-sm">
-              {displayProgress.completedSteps} / {displayProgress.totalSteps}{" "}
-              Steps
+              {roadmapProg.completedSteps} / {roadmapProg.totalSteps} Steps
             </p>
           </div>
         </div>
@@ -420,91 +263,71 @@ const SyllabusSection = ({ roadmap }) => {
 
       {/* Steps List */}
       <div className="p-5 space-y-4">
-        {loading ? (
-          [...Array(3)].map((_, i) => (
-            <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />
-          ))
-        ) : studentSteps.length > 0 ? (
+        {isCalculating ? (
+          <div className="flex flex-col items-center justify-center py-8 space-y-3">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            <p className="text-sm text-gray-500 font-medium">Loading steps...</p>
+          </div>
+        ) : steps.length > 0 ? (
           <AnimatePresence>
-            {studentSteps.map((module, index) => {
-              // Use persistent step progress
-              const stepProg =
-                persistentProgress.stepProgress[module.id] ||
-                module.progress || {
-                  completedLessons: 0,
-                  totalLessons: 0,
-                  progressPercentage: 0,
-                  completed: false,
-                };
+            {steps.map((step, index) => {
+              const stepProg = step.progress || {
+                completedLessons: 0,
+                totalLessons: 0,
+                progressPercentage: 0,
+                completed: false,
+              };
 
               return (
                 <motion.div
-                  key={module.id}
+                  key={step.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                   className={`border rounded-xl overflow-hidden transition-colors ${
-                    module.locked
-                      ? "border-gray-200 bg-gray-50 opacity-60"
-                      : "border-gray-200 hover:border-blue-200 bg-white"
+                    step.locked ? "border-gray-200 bg-gray-50 opacity-60" : "border-gray-200 hover:border-blue-200 bg-white"
                   }`}
                 >
                   {/* Step Header */}
                   <button
-                    onClick={() => !module.locked && toggleModule(module.id)}
-                    disabled={module.locked}
+                    onClick={() => !step.locked && toggleModule(step.id)}
+                    disabled={step.locked}
                     className={`w-full flex items-center justify-between p-4 text-left transition-colors ${
-                      module.locked ? "cursor-not-allowed" : "hover:bg-gray-50"
+                      step.locked ? "cursor-not-allowed" : "hover:bg-gray-50"
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className="relative w-9 h-9 rounded-lg bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
-                        {module.locked ? (
+                        {step.locked ? (
                           <Lock className="w-4 h-4 text-gray-400" />
                         ) : stepProg.completed ? (
                           <CheckCircle2 className="w-4 h-4 text-green-500" />
                         ) : (
-                          <span className="text-sm font-bold text-gray-600">
-                            {index + 1}
-                          </span>
+                          <span className="text-sm font-bold text-gray-600">{index + 1}</span>
                         )}
                       </div>
                       <div>
-                        <h3
-                          className={`font-semibold text-sm ${
-                            module.locked ? "text-gray-400" : "text-gray-900"
-                          }`}
-                        >
-                          {module.title}
-                        </h3>
-                        {module.description && (
-                          <p className="text-gray-500 text-xs mt-0.5 line-clamp-1">
-                            {module.description}
-                          </p>
-                        )}
+                        <h3 className={`font-semibold text-sm ${step.locked ? "text-gray-400" : "text-gray-900"}`}>{step.title}</h3>
+                        {step.description && <p className="text-gray-500 text-xs mt-0.5 line-clamp-1">{step.description}</p>}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3 flex-shrink-0">
                       <div className="text-right hidden sm:block">
                         <p className="text-xs text-gray-500">
-                          {stepProg.completedLessons ?? 0} / 
-                          {stepProg.totalLessons ?? 0} lessons
+                          {stepProg.completedLessons ?? 0} / {stepProg.totalLessons ?? 0} lessons
                         </p>
                         <div className="w-28 h-1.5 bg-gray-200 rounded-full overflow-hidden mt-1">
                           <motion.div
                             className="h-full bg-blue-500 rounded-full"
                             initial={{ width: 0 }}
-                            animate={{
-                              width: `${stepProg.progressPercentage ?? 0}%`,
-                            }}
+                            animate={{ width: `${stepProg.progressPercentage ?? 0}%` }}
                             transition={{ duration: 0.5 }}
                           />
                         </div>
                       </div>
-
-                      {!module.locked &&
-                        (expandedModule === module.id ? (
+                      {!step.locked &&
+                        (expandedModule === step.id ? (
                           <ChevronUp className="w-4 h-4 text-gray-400" />
                         ) : (
                           <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -512,9 +335,9 @@ const SyllabusSection = ({ roadmap }) => {
                     </div>
                   </button>
 
-                  {/* Step Content (Lessons) */}
+                  {/* Lessons */}
                   <AnimatePresence>
-                    {expandedModule === module.id && !module.locked && (
+                    {expandedModule === step.id && !step.locked && (
                       <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
@@ -523,39 +346,24 @@ const SyllabusSection = ({ roadmap }) => {
                         className="overflow-hidden"
                       >
                         <div className="border-t border-gray-100 p-4 space-y-3 bg-gray-50">
-                          {lessonsLoading ? (
-                            [...Array(2)].map((_, i) => (
-                              <div
-                                key={i}
-                                className="h-20 bg-gray-200 rounded-lg animate-pulse"
-                              />
-                            ))
-                          ) : currentLessons && currentLessons.length > 0 ? (
-                            currentLessons.map((lesson) => {
-                              // Check completion from persistent state FIRST
-                              const isRead =
-                                persistentProgress.completedLessons.includes(
-                                  lesson.id
-                                ) || lesson.progress?.completed;
+                          {step.lessons?.length > 0 ? (
+                            step.lessons.map((lesson) => {
+                              // ✅ ندمج الـ Backend data مع الـ Optimistic state
+                              const backendProg = getProgress(lesson.progress);
+                              const isOptimistic = optimisticCompleted.has(lesson.id);
+                              const isRead = lesson.completed || backendProg.completed || isOptimistic;
 
                               return (
                                 <div
                                   key={lesson.id}
-                                  className={`bg-white p-4 rounded-lg border transition-shadow ${
-                                    isRead
-                                      ? "border-green-200 bg-green-50/30"
-                                      : "border-gray-200 hover:shadow-sm"
-                                  }`}
+                                  className={`bg-white p-4 rounded-lg border transition-all duration-300 ${
+                                    isRead ? "border-green-200 bg-green-50/30" : "border-gray-200 hover:shadow-sm"
+                                  } ${isOptimistic ? "ring-2 ring-green-300 ring-offset-1" : ""}`}
                                 >
                                   <div className="flex items-start gap-3">
-                                    {/* Type Icon */}
                                     <div
-                                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                        isRead
-                                          ? "bg-green-100"
-                                          : lesson.type === "VIDEO"
-                                          ? "bg-blue-50"
-                                          : "bg-purple-50"
+                                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                                        isRead ? "bg-green-100" : lesson.type === "VIDEO" ? "bg-blue-50" : "bg-purple-50"
                                       }`}
                                     >
                                       {isRead ? (
@@ -575,29 +383,56 @@ const SyllabusSection = ({ roadmap }) => {
                                           {lesson.title}
                                           {isRead && (
                                             <span className="ml-2 text-xs text-green-600 font-normal">
-                                              (Completed)
+                                              {isOptimistic ? "(Saving...)" : "(Completed)"}
                                             </span>
                                           )}
                                         </h4>
-                                        {!isRead && (
+                                        {!isRead && !lesson.locked && lesson.type !== "QUIZ" && (
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               handleMarkAsRead(lesson.id);
                                             }}
-                                            className="flex-shrink-0 text-xs flex items-center gap-1 px-2 py-1 rounded-md bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                                            disabled={isUpdating}
+                                            className={`flex-shrink-0 text-xs flex items-center gap-1 px-2 py-1 rounded-md transition-colors ${
+                                              isUpdating
+                                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                                : "bg-green-50 text-green-700 hover:bg-green-100"
+                                            }`}
                                           >
-                                            <CheckCheck className="w-3 h-3" />
-                                            Mark as Read
+                                            {isUpdating ? (
+                                              <Loader2 className="w-3 h-3 animate-spin" />
+                                            ) : (
+                                              <CheckCheck className="w-3 h-3" />
+                                            )}
+                                            {isUpdating ? "Saving..." : "Mark as Read"}
                                           </button>
+                                        )}
+                                        {!isRead && !lesson.locked && lesson.type === "QUIZ" && (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if (lesson.quiz?.id) {
+                                                router.push(`/learning-paths/${learningPathTitle}/quiz/${lesson.quiz.id}`);
+                                              } else {
+                                                alert("Quiz is not available yet.");
+                                              }
+                                            }}
+                                            className="flex-shrink-0 text-xs flex items-center gap-1 px-2 py-1 rounded-md transition-colors bg-purple-50 text-purple-700 hover:bg-purple-100"
+                                          >
+                                            <FileQuestion className="w-3 h-3" />
+                                            Take Quiz
+                                          </button>
+                                        )}
+                                        {lesson.locked && (
+                                          <span className="text-xs text-gray-400 flex items-center gap-1">
+                                            <Lock className="w-3 h-3" /> Locked
+                                          </span>
                                         )}
                                       </div>
                                       {lesson.description && (
-                                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
-                                          {lesson.description}
-                                        </p>
+                                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{lesson.description}</p>
                                       )}
-                                      {/* Render content based on type */}
                                       {renderLessonContent(lesson)}
                                     </div>
                                   </div>
@@ -607,13 +442,7 @@ const SyllabusSection = ({ roadmap }) => {
                           ) : (
                             <div className="flex flex-col items-center justify-center py-8 text-gray-400">
                               <FileQuestion className="w-10 h-10 mb-2" />
-                              <p className="text-sm font-medium">
-                                No lessons added yet for this step.
-                              </p>
-                              <p className="text-xs mt-1">
-                                Content will appear here once the instructor adds
-                                lessons.
-                              </p>
+                              <p className="text-sm font-medium">No lessons added yet.</p>
                             </div>
                           )}
                         </div>
@@ -625,9 +454,7 @@ const SyllabusSection = ({ roadmap }) => {
             })}
           </AnimatePresence>
         ) : (
-          <p className="text-center text-gray-400 py-8">
-            No steps available for this roadmap.
-          </p>
+          <p className="text-center text-gray-400 py-8">No steps available.</p>
         )}
       </div>
     </motion.div>

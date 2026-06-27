@@ -48,12 +48,8 @@ export default function SyllabusItem({ lesson,stepId,roadmapId }) {
   const router=useRouter()
   const handleClick = () => {
     if (locked) return;
-    if (type === 'VIDEO' || type === 'ARTICLE') {
-      setIsModalOpen(true);
-    }
-    if (type === 'QUIZ') {
-      router.push(`${learningPathTitle}/quiz/${quiz.id}`);
-    }
+    // فتح النافذة (Modal) لجميع أنواع الدروس
+    setIsModalOpen(true);
   };
 console.log('Lesson in SyllabusItem', lesson);
   return (
@@ -170,8 +166,22 @@ console.log('Lesson in SyllabusItem', lesson);
           </div>
         )}
 
-        {/* ✅ Mark as Completed Button */}
-        {!completed && !locked && (
+        {/* QUIZ info */}
+        {type === "QUIZ" && quiz && (
+          <div className="bg-purple-50 p-6 rounded-xl mb-6 text-center">
+            <HelpCircle size={40} className="mx-auto text-purple-500 mb-3" />
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Quiz Time!</h3>
+            <p className="text-sm text-gray-600 mb-4">You need to pass this quiz to complete the lesson.</p>
+            <div className="flex justify-center gap-4 text-sm font-medium text-purple-700">
+              {quiz.timeLimit && <span>⏱️ {quiz.timeLimit} min</span>}
+              {quiz.passingScore && <span>🎯 Pass: {quiz.passingScore}%</span>}
+              {quiz.questionsCount && <span>📝 {quiz.questionsCount} Questions</span>}
+            </div>
+          </div>
+        )}
+
+        {/* ✅ Buttons depending on type and completion */}
+        {!completed && !locked && type !== "QUIZ" && (
           <button
             onClick={async () => {
               try {
@@ -179,8 +189,8 @@ console.log('Lesson in SyllabusItem', lesson);
                   lessonId: id,
                   completed: true,
                 });
-              await fetchStudentLessonsByStepId(stepId);
-              await fetchStudentStepsByRoadmap(roadmapId);
+                await fetchStudentLessonsByStepId(stepId);
+                await fetchStudentStepsByRoadmap(roadmapId);
 
                 setIsModalOpen(false); // يقفل المودال بعد النجاح
               } catch (err) {
@@ -190,6 +200,20 @@ console.log('Lesson in SyllabusItem', lesson);
             className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition"
           >
             Mark as Completed
+          </button>
+        )}
+
+        {!completed && !locked && type === "QUIZ" && (
+          <button
+            onClick={() => {
+              if (quiz?.id) {
+                setIsModalOpen(false);
+                router.push(`/learning-paths/${learningPathTitle}/quiz/${quiz.id}`);
+              }
+            }}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium transition flex items-center justify-center gap-2"
+          >
+            <HelpCircle size={18} /> Take Quiz
           </button>
         )}
 

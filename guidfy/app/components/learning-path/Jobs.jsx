@@ -1,33 +1,157 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '@/services/apiProfile';
 import JobCard from './JobCard';
 import { useRecommendations } from '@/app/hooks/useRecommendations';
 import Modal from '@/app/components/ui/Modal';
-import { Loader2, Sparkles, CheckCircle, AlertTriangle, X, ExternalLink, TrendingUp, BookOpen, Award, Zap } from 'lucide-react';
+import {
+  Loader2, Sparkles, CheckCircle, AlertTriangle,
+  ExternalLink, Zap, Bookmark, BookmarkX, Eye, EyeOff,
+  Target, TrendingUp, Brain, BarChart3, Award,
+} from 'lucide-react';
 import FilterBar from './FilterBar';
 import RecommendationPanel from './RecommendationPanel';
-import { getAlljobsToStudentByLearningPathId, getJobsFromN8N } from '@/services/admin/jobs';
+// ✅ Fix: استخدام الأسماء الصح من services/admin/jobs.js
+import { getJobsByLearningPath, fetchJobsFromN8N } from '@/services/admin/jobs';
+import { useSavedJobs, useToggleSavedJob } from '@/app/hooks/useJobsQueries';
 import MatchAnalysis from './Matchanalysis';
+import Pagination from './Pagination';
 
-const JobsSection = ({ learningPathId }) => {
-  const [activeTab, setActiveTab] = useState('all');
-  const [selectedJob, setSelectedJob] = useState(null);
+// ═══════════════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════
 
-  // All Jobs state
-  const [allJobs, setAllJobs] = useState([]);
-  const [allJobsLoading, setAllJobsLoading] = useState(false);
-  const [allJobsError, setAllJobsError] = useState(null);
+const JOBS_PER_PAGE = 9;
 
-  // N8N state
-  const [n8nLoading, setN8nLoading] = useState(false);
-  const [n8nError, setN8nError] = useState(null);
-  const [n8nResult, setN8nResult] = useState(null);
+const FEEDBACK_LABELS = {
+  dismiss:    0,
+  impression: 1,
+  click:      2,
+  save:       3,
+  apply:      4,
+};
 
-  // Recommendations
-  const { recommendations, loading: recLoading, error: recError, meta } = useRecommendations();
+// ═══════════════════════════════════════════════════════════════════════════
+// CUSTOM HOOK: useFeedback
+// ═══════════════════════════════════════════════════════════════════════════
 
-  // Filters
+function useFeedback(userSkills = []) {
+  const sentImpressions = useRef(new Set());
+  const pendingFeedback = useRef([]);
+
+  const { mutate: sendFeedback } = useMutation({
+    mutationFn: (data) => api.post('/feedback', data),
+    onError: (err) => console.warn('[Feedback] failed:', err.message),
+  });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (pendingFeedback.current.length > 0) {
+        const batch = [...pendingFeedback.current];
+        pendingFeedback.current = [];
+        batch.forEach((data) => sendFeedback(data));
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [sendFeedback]);
+
+  const track = useCallback((job, action, extra = {}) => {
+    const jobId = job.jobId || job.id;
+    if (!jobId) return;
+
+    const impressionKey = `${jobId}-${action}`;
+    if (action === 'impression' && sentImpressions.current.has(impressionKey)) return;
+    if (action === 'impression') sentImpressions.current.add(impressionKey);
+
+    const md = job.matchDetails || {};
+    const feats = md.features || {};
+
+    const payload = {
+      userId: extra.userId || null,
+      jobId,
+      action,
+      label: FEEDBACK_LABELS[action] ?? 0,
+      score: job.score ?? null,
+      userSkills,
+      jobSkills: job.skills || [],
+      retrievalScore: job.retrievalScore ?? job.rawScore ?? null,
+      matchDetails: {
+        skillOverlap: md.skillOverlap ?? feats.skillOverlap ?? 0,
+        expMatch: md.expMatch ?? feats.expMatch ?? false,
+        freshness: md.freshness ?? feats.freshness ?? 0,
+        careerFit: md.careerFit ?? feats.careerFit ?? 0,
+        learningGap: md.learningGap ?? feats.learningGap ?? 0,
+        lpAlignment: md.lpAlignment ?? feats.lpAlignment ?? 0,
+        userSkillDensity: md.userSkillDensity ?? feats.userSkillDensity ?? null,
+        jobSkillDifficulty: md.jobSkillDifficulty ?? feats.jobSkillDifficulty ?? null,
+        matchedSkills: md.matchedSkills ?? [],
+        missingSkills: md.missingSkills ?? [],
+        skillGapPct: md.skillGapPct ?? 0,
+        features: {
+          skillOverlap: feats.skillOverlap ?? md.skillOverlap ?? 0,
+          freshness: feats.freshness ?? md.freshness ?? 0,
+          lpAlignment: feats.lpAlignment ?? md.lpAlignment ?? 0,
+          careerFit: feats.careerFit ?? md.careerFit ?? 0,
+          readiness: feats.readiness ?? (md.learningGap != null ? Math.max(0, 1 - md.learningGap) : 0),
+          userSkillDensity: feats.userSkillDensity ?? null,
+          jobSkillDifficulty: feats.jobSkillDifficulty ?? null,
+        },
+        explanation: md.explanation ?? [],
+      },
+      timestamp: new Date().toISOString(),
+      ...extra,
+    };
+
+    pendingFeedback.current.push(payload);
+    if (['apply', 'save', 'dismiss'].includes(action)) {
+      sendFeedback(payload);
+    }
+  }, [sendFeedback, userSkills]);
+
+  return { track, sentImpressions };
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CUSTOM HOOK: useJobsSection — ✅ TanStack Query فقط، بدون Context
+// ═══════════════════════════════════════════════════════════════════════════
+
+function useJobsSection(learningPathId) {
+  const queryClient = useQueryClient();
+
+  const {
+    recommendations,
+    loading: recLoading,
+    error: recError,
+    meta,
+    refetch: refetchRecommendations,
+  } = useRecommendations();
+
+  // ✅ Fix: استخدام getJobsByLearningPath بدل getAlljobsToStudentByLearningPathId
+  const {
+    data: allJobs = [],
+    isLoading: allJobsLoading,
+    isError: allJobsIsError,
+    error: allJobsError,
+    refetch: refetchAllJobs,
+  } = useQuery({
+    queryKey: ['all-jobs', learningPathId],
+    queryFn: async () => {
+      const res = await getJobsByLearningPath(learningPathId);
+      const jobsArray = res?.data?.jobs ?? res?.data ?? res?.jobs ?? [];
+      return Array.isArray(jobsArray) ? jobsArray : [];
+    },
+    enabled: !!learningPathId,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const { data: savedJobsData = [], isLoading: savedJobsLoading, refetch: refetchSavedJobs } = useSavedJobs();
+
+  // Filter savedJobsData to only include those relevant to this learning path (or show all saved jobs if preferred. The user asked for "all jobs they saved" so showing all saved jobs is fine).
+
   const [filters, setFilters] = useState({
     search: '',
     minScore: '',
@@ -36,70 +160,26 @@ const JobsSection = ({ learningPathId }) => {
     selectedSkills: [],
   });
 
-  // Fetch All Jobs
-  const fetchAllJobs = async () => {
-    setAllJobsLoading(true);
-    setAllJobsError(null);
-    try {
-      const res = await getAlljobsToStudentByLearningPathId({
-        learningPathId,
-        page: 1,
-        limit: 50
-      });
-      const jobsArray = res?.jobs || res?.data || [];
-      setAllJobs(Array.isArray(jobsArray) ? jobsArray : []);
-    } catch (err) {
-      setAllJobsError(err?.message || 'Failed to fetch jobs');
-      setAllJobs([]);
-    } finally {
-      setAllJobsLoading(false);
-    }
-  };
+  const updateFilter = useCallback((key, value) => {
+    setFilters((prev) => {
+      if (key === 'skillToggle') {
+        const exists = prev.selectedSkills.includes(value);
+        return {
+          ...prev,
+          selectedSkills: exists
+            ? prev.selectedSkills.filter((s) => s !== value)
+            : [...prev.selectedSkills, value],
+        };
+      }
+      return { ...prev, [key]: value };
+    });
+  }, []);
 
-  useEffect(() => {
-    if (activeTab === 'all' && allJobs.length === 0) {
-      fetchAllJobs();
-    }
-  }, [activeTab]);
-
-  // N8N Refresh
-  const handleFetchFromN8N = async () => {
-    setN8nLoading(true);
-    setN8nError(null);
-    setN8nResult(null);
-    try {
-      const result = await getJobsFromN8N({
-        learningPathId,
-        jobTitle: 'Frontend Developer',
-      });
-      setN8nResult(result);
-      await fetchAllJobs();
-    } catch (err) {
-      setN8nError(err?.message || 'Failed to fetch jobs');
-    } finally {
-      setN8nLoading(false);
-    }
-  };
-
-  const updateFilter = (key, value) => {
-    if (key === 'skillToggle') {
-      setFilters(prev => ({
-        ...prev,
-        selectedSkills: prev.selectedSkills.includes(value)
-          ? prev.selectedSkills.filter(s => s !== value)
-          : [...prev.selectedSkills, value]
-      }));
-    } else {
-      setFilters(prev => ({ ...prev, [key]: value }));
-    }
-  };
-
-  // Filter Recommendations
   const availableSkills = useMemo(() => {
     const s = new Set();
-    recommendations.forEach(j => {
-      j.matchedSkills?.forEach(skill => s.add(skill));
-      j.missingSkills?.forEach(skill => s.add(skill));
+    recommendations.forEach((j) => {
+      j.matchedSkills?.forEach((skill) => s.add(skill));
+      j.missingSkills?.forEach((skill) => s.add(skill));
     });
     return [...s].sort();
   }, [recommendations]);
@@ -108,206 +188,382 @@ const JobsSection = ({ learningPathId }) => {
     let arr = [...recommendations];
     if (filters.search) {
       const q = filters.search.toLowerCase();
-      arr = arr.filter(j => j.title?.toLowerCase().includes(q) || j.company?.toLowerCase().includes(q));
+      arr = arr.filter(
+        (j) => j.title?.toLowerCase().includes(q) || j.company?.toLowerCase().includes(q)
+      );
     }
-    if (filters.minScore) arr = arr.filter(j => (j.score || 0) >= +filters.minScore);
-    if (filters.jobType) arr = arr.filter(j => j.jobType === filters.jobType);
-    if (filters.maxMissingSkills) arr = arr.filter(j => (j.missingSkills?.length || 0) <= +filters.maxMissingSkills);
+    if (filters.minScore)        arr = arr.filter((j) => (j.score || 0) >= +filters.minScore);
+    if (filters.jobType)         arr = arr.filter((j) => j.jobType === filters.jobType);
+    if (filters.maxMissingSkills) arr = arr.filter((j) => (j.missingSkills?.length || 0) <= +filters.maxMissingSkills);
     if (filters.selectedSkills.length) {
-      arr = arr.filter(j => {
+      arr = arr.filter((j) => {
         const skills = [...(j.matchedSkills || []), ...(j.missingSkills || [])];
-        return filters.selectedSkills.some(s => skills.includes(s));
+        return filters.selectedSkills.some((s) => skills.includes(s));
       });
     }
     return arr;
   }, [recommendations, filters]);
 
-  // Jobs to display
-  const displayedJobs = activeTab === 'all' ? allJobs : filteredRecs;
-  const isLoading = activeTab === 'all' ? allJobsLoading : recLoading;
-  const errorMsg = activeTab === 'all' ? allJobsError : recError;
-
-  // Render Match Details Modal Content
-  const renderMatchDetails = (job) => {
-    if (!job) return null;
-
-    const scorePercent = Math.round((job.score || 0) );
-    const gapPercent = job.skillGapPct || 0;
-console.log(scorePercent,'score percent');
-
-    return (
-      <div className="space-y-6">
-        {/* Header with Score */}
-        <div className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-indigo-50 p-4 rounded-xl border border-purple-100">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">{job.title}</h3>
-            <p className="text-sm text-gray-600">{job.company} • {job.location}</p>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600">{scorePercent}%</div>
-            <div className="text-xs text-gray-500 font-medium">Match Score</div>
-          </div>
-        </div>
-
-        {/* Features Breakdown */}
-        {job.features && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {Object.entries(job.features).map(([key, value]) => (
-              <div key={key} className="bg-gray-50 p-3 rounded-lg">
-                <div className="text-xs text-gray-500 capitalize mb-1">{key.replace(/([A-Z])/g, ' $1').trim()}</div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-purple-500 rounded-full transition-all"
-                      style={{ width: `${Math.round((value || 0) * 100)}%` }}
-                    />
-                  </div>
-                  <span className="text-xs font-bold text-gray-700">{Math.round((value || 0) )}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Matched Skills */}
-        {job.matchedSkills?.length > 0 && (
-          <div>
-            <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <CheckCircle size={16} className="text-green-500" />
-              Matched Skills ({job.matchedSkills.length})
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {job.matchedSkills.map((skill) => (
-                <span key={skill} className="px-3 py-1.5 bg-green-50 text-green-700 text-sm rounded-lg font-medium border border-green-200 flex items-center gap-1.5">
-                  <CheckCircle size={14} />
-                  {skill}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Missing Skills */}
-        {job.missingSkills?.length > 0 && (
-          <div>
-            <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <AlertTriangle size={16} className="text-amber-500" />
-              Missing Skills ({job.missingSkills.length}) 
-              <span className="text-xs font-normal text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-                Gap: {gapPercent}%
-              </span>
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {job.missingSkills.map((skill) => (
-                <span key={skill} className="px-3 py-1.5 bg-amber-50 text-amber-700 text-sm rounded-lg font-medium border border-amber-200 flex items-center gap-1.5">
-                  <AlertTriangle size={14} />
-                  {skill}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Explanation */}
-        {job.explanation?.length > 0 && (
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-            <h4 className="text-sm font-bold text-blue-900 mb-2 flex items-center gap-2">
-              <Zap size={16} />
-              Why this job?
-            </h4>
-            <ul className="space-y-2">
-              {job.explanation.map((line, idx) => (
-                <li key={idx} className="text-sm text-blue-800 flex items-start gap-2">
-                  <span className="mt-0.5">•</span>
-                  <span>{line}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex gap-3 pt-2">
-          <a
-            href={job.applyLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
-          >
-            <ExternalLink size={18} />
-            Apply Now
-          </a>
-          <button
-            onClick={() => setSelectedJob(null)}
-            className="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    );
+  return {
+    allJobs,
+    recommendations,
+    filteredRecs,
+    savedJobsData,
+    meta,
+    availableSkills,
+    allJobsLoading,
+    recLoading,
+    savedJobsLoading,
+    allJobsError: allJobsIsError ? allJobsError?.message || 'Failed to fetch jobs' : null,
+    recError,
+    refetchAllJobs,
+    refetchRecommendations,
+    refetchSavedJobs,
+    updateFilter,
+    filters,
   };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COMPONENT: SkillComparisonBadge
+// ═══════════════════════════════════════════════════════════════════════════
+
+const SkillComparisonBadge = ({ userSkills, jobSkills, matchedSkills, missingSkills }) => {
+  const matchedSet = new Set(matchedSkills || []);
+  const missingSet = new Set(missingSkills || []);
+  const jobSet     = new Set(jobSkills || []);
+  const overlap    = matchedSet.size;
+  const total      = jobSet.size || (matchedSet.size + missingSet.size);
+  const pct        = total > 0 ? Math.round((overlap / total) * 100) : 0;
 
   return (
-    <div className="my-12 flex flex-col gap-6 w-full">
-      {/* N8N Fetch Bar */}
-      <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
-        <div className="text-sm text-blue-700">
-          {n8nResult ? (
-            <span>✅ Saved <strong>{n8nResult.totalSaved}</strong> new jobs {n8nResult.totalSkipped > 0 && `(${n8nResult.totalSkipped} skipped)`}</span>
-          ) : (
-            <span>Fetch latest jobs from the web</span>
-          )}
-          {n8nError && <span className="text-red-600 ml-2">❌ {n8nError}</span>}
+    <div className="bg-gradient-to-br from-slate-50 to-blue-50 border border-blue-100 rounded-xl p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-700">
+          <Target size={14} /> Skill Analysis
         </div>
-        <button
-          onClick={handleFetchFromN8N}
-          disabled={n8nLoading}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-        >
-          {n8nLoading ? <><Loader2 className="animate-spin h-4 w-4" /> Fetching...</> : '🔄 Refresh Jobs'}
-        </button>
+        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+          pct >= 70 ? 'bg-green-100 text-green-700' :
+          pct >= 40 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+        }`}>
+          {pct}% Match
+        </span>
       </div>
+
+      {userSkills?.length > 0 && (
+        <div>
+          <span className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">Your Skills</span>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {userSkills.slice(0, 5).map((skill) => (
+              <span key={skill} className={`px-1.5 py-0.5 text-[10px] rounded-md font-medium ${
+                matchedSet.has(skill)
+                  ? 'bg-green-100 text-green-700 border border-green-200'
+                  : 'bg-gray-100 text-gray-500 border border-gray-200'
+              }`}>
+                {matchedSet.has(skill) && <CheckCircle size={8} className="inline mr-0.5" />}
+                {skill}
+              </span>
+            ))}
+            {userSkills.length > 5 && (
+              <span className="px-1.5 py-0.5 text-[10px] text-gray-400">+{userSkills.length - 5}</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {(jobSkills?.length > 0 || missingSkills?.length > 0) && (
+        <div>
+          <span className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">Job Requires</span>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {matchedSkills?.slice(0, 3).map((skill) => (
+              <span key={skill} className="px-1.5 py-0.5 text-[10px] rounded-md font-medium bg-green-100 text-green-700 border border-green-200">
+                <CheckCircle size={8} className="inline mr-0.5" />{skill}
+              </span>
+            ))}
+            {missingSkills?.slice(0, 3).map((skill) => (
+              <span key={skill} className="px-1.5 py-0.5 text-[10px] rounded-md font-medium bg-amber-100 text-amber-700 border border-amber-200">
+                +{skill}
+              </span>
+            ))}
+            {((matchedSkills?.length || 0) + (missingSkills?.length || 0)) > 6 && (
+              <span className="px-1.5 py-0.5 text-[10px] text-gray-400">
+                +{(matchedSkills?.length + missingSkills?.length) - 6} more
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COMPONENT: ModelInsights
+// ═══════════════════════════════════════════════════════════════════════════
+
+const ModelInsights = ({ matchDetails }) => {
+  const md    = matchDetails || {};
+  const feats = md.features || {};
+
+  const colorMap = {
+    green:  { bg: 'bg-green-50',  text: 'text-green-700',  border: 'border-green-200',  bar: 'bg-green-500'  },
+    yellow: { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200', bar: 'bg-yellow-500' },
+    red:    { bg: 'bg-red-50',    text: 'text-red-700',    border: 'border-red-200',    bar: 'bg-red-500'    },
+    orange: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', bar: 'bg-orange-500' },
+    blue:   { bg: 'bg-blue-50',   text: 'text-blue-700',   border: 'border-blue-200',   bar: 'bg-blue-500'   },
+  };
+
+  const insights = [
+    md.skillOverlap != null && {
+      icon: Target, label: 'Skill Overlap',
+      value: `${Math.round(md.skillOverlap * 100)}%`,
+      color: md.skillOverlap >= 0.5 ? 'green' : md.skillOverlap >= 0.2 ? 'yellow' : 'red',
+      desc: `${md.matchedSkills?.length || 0} of ${(md.matchedSkills?.length || 0) + (md.missingSkills?.length || 0)} skills match`,
+    },
+    feats.lpAlignment != null && {
+      icon: TrendingUp, label: 'Learning Path Fit',
+      value: `${Math.round(feats.lpAlignment * 100)}%`,
+      color: feats.lpAlignment >= 0.7 ? 'green' : feats.lpAlignment >= 0.4 ? 'yellow' : 'red',
+      desc: 'How well this job aligns with your learning path',
+    },
+    feats.careerFit != null && {
+      icon: Award, label: 'Career Fit',
+      value: `${Math.round(feats.careerFit * 100)}%`,
+      color: feats.careerFit >= 0.5 ? 'green' : 'yellow',
+      desc: 'Title and experience level alignment',
+    },
+    md.learningGap != null && {
+      icon: Brain, label: 'Readiness',
+      value: `${Math.round((feats.readiness ?? Math.max(0, 1 - md.learningGap)) * 100)}%`,
+      color: (feats.readiness ?? Math.max(0, 1 - md.learningGap)) >= 0.7 ? 'green' :
+             (feats.readiness ?? Math.max(0, 1 - md.learningGap)) >= 0.4 ? 'yellow' : 'red',
+      desc: `Learning gap: ${Math.round(md.learningGap * 100)}%`,
+    },
+    feats.freshness != null && {
+      icon: Zap, label: 'Freshness',
+      value: `${Math.round(feats.freshness * 100)}%`,
+      color: feats.freshness >= 0.8 ? 'green' : 'yellow',
+      desc: 'How recent is this job posting',
+    },
+    feats.userSkillDensity != null && {
+      icon: BarChart3, label: 'Your Skill Density',
+      value: `${Math.round(feats.userSkillDensity * 100)}%`,
+      color: 'blue',
+      desc: 'Breadth and depth of your skill set',
+    },
+    feats.jobSkillDifficulty != null && {
+      icon: BarChart3, label: 'Job Difficulty',
+      value: `${Math.round(feats.jobSkillDifficulty * 100)}%`,
+      color: feats.jobSkillDifficulty >= 0.7 ? 'orange' : 'blue',
+      desc: 'Complexity level of required skills',
+    },
+  ].filter(Boolean);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-1.5 text-xs font-semibold text-purple-700 mb-2">
+        <Brain size={14} /> AI Model Insights
+      </div>
+      {insights.map((insight) => {
+        const colors = colorMap[insight.color] || colorMap.blue;
+        return (
+          <div key={insight.label} className={`${colors.bg} border ${colors.border} rounded-lg p-2.5`}>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1.5">
+                <insight.icon size={12} className={colors.text} />
+                <span className={`text-xs font-medium ${colors.text}`}>{insight.label}</span>
+              </div>
+              <span className={`text-sm font-bold ${colors.text}`}>{insight.value}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div className={`h-full ${colors.bar} rounded-full transition-all`} style={{ width: insight.value }} />
+              </div>
+            </div>
+            <p className="text-[10px] text-gray-500 mt-1">{insight.desc}</p>
+          </div>
+        );
+      })}
+
+      {md.explanation?.length > 0 && (
+        <div className="bg-purple-50 border border-purple-100 rounded-lg p-2.5 mt-2">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-purple-700 mb-1">
+            <Sparkles size={12} /> Why this job?
+          </div>
+          <ul className="space-y-1">
+            {md.explanation.slice(0, 3).map((exp, i) => (
+              <li key={i} className="text-[11px] text-purple-600 flex items-start gap-1">
+                <span className="text-purple-400 mt-0.5">•</span>{exp}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COMPONENT: JobsSection
+// ═══════════════════════════════════════════════════════════════════════════
+
+const JobsSection = ({ learningPathId, currentUserId, userSkills = [] }) => {
+  const [activeTab,      setActiveTab]      = useState('all');
+  const [selectedJob,    setSelectedJob]    = useState(null);
+  const [savedJobs,      setSavedJobs]      = useState(new Set());
+  const [dismissedJobs,  setDismissedJobs]  = useState(new Set());
+
+  const [allJobsPage,    setAllJobsPage]    = useState(1);
+  const [recPage,        setRecPage]        = useState(1);
+  const [recVisibleCount,setRecVisibleCount]= useState(JOBS_PER_PAGE);
+  const [savedPage,      setSavedPage]      = useState(1);
+
+  const toggleSaveMutation = useToggleSavedJob();
+
+  const {
+    allJobs, filteredRecs, savedJobsData, meta, availableSkills,
+    allJobsLoading, recLoading, savedJobsLoading,
+    allJobsError, recError,
+    refetchAllJobs, refetchSavedJobs, updateFilter, filters,
+  } = useJobsSection(learningPathId);
+
+  // Initialize savedJobs Set from savedJobsData safely
+  const savedJobIdsStr = savedJobsData ? savedJobsData.map(j => j.id || j.jobId).join(',') : '';
+  
+  useEffect(() => {
+    if (savedJobsData) {
+      setSavedJobs(new Set(savedJobsData.map(j => j.id || j.jobId)));
+    }
+  }, [savedJobIdsStr]);
+  // ── Pagination ───────────────────────────────────────
+  const allJobsTotalPages = Math.ceil(allJobs.length / JOBS_PER_PAGE);
+  const recTotalPages     = Math.ceil(filteredRecs.length / JOBS_PER_PAGE);
+  const savedTotalPages   = Math.ceil(savedJobsData.length / JOBS_PER_PAGE);
+  const hasMoreRecs       = recVisibleCount < filteredRecs.length;
+
+  const paginatedAllJobs = useMemo(() => {
+    const start = (allJobsPage - 1) * JOBS_PER_PAGE;
+    return allJobs.slice(start, start + JOBS_PER_PAGE);
+  }, [allJobs, allJobsPage]);
+
+  const paginatedRecs = useMemo(() => {
+    const start = (recPage - 1) * JOBS_PER_PAGE;
+    return filteredRecs.slice(start, start + recVisibleCount);
+  }, [filteredRecs, recPage, recVisibleCount]);
+
+  const paginatedSaved = useMemo(() => {
+    const start = (savedPage - 1) * JOBS_PER_PAGE;
+    return savedJobsData.slice(start, start + JOBS_PER_PAGE);
+  }, [savedJobsData, savedPage]);
+
+  // ── Feedback ─────────────────────────────────────────
+  const { track } = useFeedback(userSkills);
+
+  const handleImpression = useCallback((job) => track(job, 'impression', { userId: currentUserId }), [track, currentUserId]);
+  const handleCardClick  = useCallback((job) => {
+    track(job, 'impression', { userId: currentUserId });
+    track(job, 'click',      { userId: currentUserId });
+    setSelectedJob(job);
+  }, [track, currentUserId]);
+  const handleApply      = useCallback((job) => { track(job, 'apply', { userId: currentUserId }); if (job.applyLink) window.open(job.applyLink, '_blank', 'noopener,noreferrer'); }, [track, currentUserId]);
+
+  const handleSave = useCallback((job) => {
+    const jobId = job.jobId || job.id;
+    setSavedJobs((prev) => {
+      const next = new Set(prev);
+      if (next.has(jobId)) { 
+        next.delete(jobId); 
+      } else { 
+        next.add(jobId); 
+        track(job, 'save', { userId: currentUserId }); 
+      }
+      return next;
+    });
+    // Trigger actual API save/unsave
+    toggleSaveMutation.mutate(jobId);
+  }, [track, currentUserId, toggleSaveMutation]);
+
+  const handleDismiss = useCallback((job) => {
+    const jobId = job.jobId || job.id;
+    setDismissedJobs((prev) => new Set(prev).add(jobId));
+    track(job, 'dismiss', { userId: currentUserId });
+  }, [track, currentUserId]);
+
+  // ── Tab Handlers ──────────────────────────────────────
+  const handleTabChange = useCallback((tab) => {
+    setActiveTab(tab);
+    if (tab === 'all' && allJobs.length === 0) refetchAllJobs();
+    if (tab === 'saved' && savedJobsData.length === 0) refetchSavedJobs();
+    setAllJobsPage(1);
+    setRecPage(1);
+    setSavedPage(1);
+    setRecVisibleCount(JOBS_PER_PAGE);
+    setDismissedJobs(new Set());
+  }, [allJobs.length, savedJobsData.length, refetchAllJobs, refetchSavedJobs]);
+
+  const handleLoadMore = useCallback(() => setRecVisibleCount((prev) => prev + JOBS_PER_PAGE), []);
+
+  // ── Derived ───────────────────────────────────────────
+  const displayedJobs = activeTab === 'all' ? paginatedAllJobs : activeTab === 'saved' ? paginatedSaved : paginatedRecs;
+  const isLoading     = activeTab === 'all' ? allJobsLoading : activeTab === 'saved' ? savedJobsLoading : recLoading;
+  const errorMsg      = activeTab === 'all' ? allJobsError   : activeTab === 'saved' ? null : recError;
+  const currentPage   = activeTab === 'all' ? allJobsPage    : activeTab === 'saved' ? savedPage : recPage;
+  const totalPages    = activeTab === 'all' ? allJobsTotalPages : activeTab === 'saved' ? savedTotalPages : recTotalPages;
+
+  const visibleJobs = useMemo(
+    () => displayedJobs.filter((job) => !dismissedJobs.has(job.jobId || job.id)),
+    [displayedJobs, dismissedJobs]
+  );
+
+  // ── Render ────────────────────────────────────────────
+  return (
+    <div className="my-12 flex flex-col gap-6 w-full">
+
+
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-gray-200 pb-2">
-        <button
-          onClick={() => setActiveTab('all')}
-          className={`px-5 py-2.5 rounded-t-lg text-sm font-semibold transition ${activeTab === 'all' ? 'bg-white border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          All Jobs
-        </button>
-        <button
-          onClick={() => setActiveTab('recommended')}
-          className={`px-5 py-2.5 rounded-t-lg text-sm font-semibold transition flex items-center gap-2 ${activeTab === 'recommended' ? 'bg-white border-b-2 border-purple-600 text-purple-600' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <Sparkles className="h-4 w-4" />
-          Recommended for You
-        </button>
+        {[
+          { key: 'all',         label: 'All Jobs',         color: 'blue'   },
+          { key: 'recommended', label: 'AI Recommended',   color: 'purple', icon: <Sparkles className="h-4 w-4" /> },
+          { key: 'saved',       label: 'Saved Jobs',       color: 'blue',   icon: <Bookmark className="h-4 w-4" /> },
+        ].map(({ key, label, color, icon }) => (
+          <button
+            key={key}
+            onClick={() => handleTabChange(key)}
+            className={`px-5 py-2.5 rounded-t-lg text-sm font-semibold transition flex items-center gap-2 ${
+              activeTab === key
+                ? `bg-white border-b-2 border-${color}-600 text-${color}-600`
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {icon}{label}
+          </button>
+        ))}
       </div>
 
-      {/* All Jobs: refresh button */}
-      {activeTab === 'all' && (
+      {/* Refresh button */}
+      {(activeTab === 'all' || activeTab === 'saved') && (
         <div className="flex justify-end">
           <button
-            onClick={fetchAllJobs}
-            disabled={allJobsLoading}
+            onClick={() => activeTab === 'all' ? refetchAllJobs() : refetchSavedJobs()}
+            disabled={activeTab === 'all' ? allJobsLoading : savedJobsLoading}
             className="text-sm text-blue-600 hover:underline disabled:text-gray-400"
           >
-            {allJobsLoading ? 'Loading...' : 'Refresh list'}
+            {(activeTab === 'all' ? allJobsLoading : savedJobsLoading) ? 'Loading...' : 'Refresh list'}
           </button>
         </div>
       )}
 
-      {/* Recommendation Panel */}
-      {activeTab === 'recommended' && <RecommendationPanel meta={meta} totalJobs={filteredRecs.length} />}
-
-      {/* Filter Bar */}
+      {/* Recommendation Panel + Filters */}
       {activeTab === 'recommended' && (
-        <FilterBar filters={filters} onFilterChange={updateFilter} availableSkills={availableSkills} />
+        <>
+          <RecommendationPanel meta={meta} totalJobs={filteredRecs.length} />
+          <FilterBar filters={filters} onFilterChange={updateFilter} availableSkills={availableSkills} />
+        </>
       )}
 
-      {/* Loading, Error, Empty states */}
+      {/* States */}
       {isLoading && (
         <div className="flex justify-center py-12">
           <Loader2 className="animate-spin h-10 w-10 text-blue-500" />
@@ -316,34 +572,122 @@ console.log(scorePercent,'score percent');
       {!isLoading && errorMsg && (
         <div className="bg-red-50 text-red-700 p-4 rounded-xl">❌ {errorMsg}</div>
       )}
-      {!isLoading && !errorMsg && displayedJobs.length === 0 && (
+      {!isLoading && !errorMsg && visibleJobs.length === 0 && (
         <div className="bg-yellow-50 text-yellow-700 p-6 rounded-xl text-center">
-          {activeTab === 'all' ? 'No jobs available.' : 'No matching recommendations.'}
+          {activeTab === 'all' ? 'No jobs available.'
+            : activeTab === 'saved' ? 'No saved jobs yet. Start exploring and save jobs you like!'
+            : dismissedJobs.size > 0 ? 'All recommendations dismissed.'
+            : 'No matching recommendations.'}
         </div>
       )}
 
       {/* Cards Grid */}
-      {!isLoading && displayedJobs.length > 0 && (
+      {!isLoading && visibleJobs.length > 0 && (
         <div className="flex flex-col gap-6 md:grid md:grid-cols-2 lg:grid-cols-3">
-          {displayedJobs.map((job, idx) => (
-            <JobCard
-              key={job.jobId || job.id || idx}
-              job={job}
-              onViewDetails={(jobData) => setSelectedJob(jobData)}
-              showMatchScore={activeTab === 'recommended'}
-            />
-          ))}
+          {visibleJobs.map((job, idx) => {
+            const jobId  = job.jobId || job.id;
+            const isSaved = savedJobs.has(jobId);
+            return (
+              <div key={jobId || idx} className="relative">
+                <JobCard
+                  job={job}
+                  userId={currentUserId}
+                  userSkills={userSkills}
+                  onViewDetails={() => handleCardClick(job)}
+                  showMatchScore={activeTab === 'recommended'}
+                  isSaved={isSaved}
+                  onSave={() => handleSave(job)}
+                  onDismiss={() => handleDismiss(job)}
+                  onApply={() => handleApply(job)}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!isLoading && !errorMsg && visibleJobs.length > 0 && (
+        <div className="flex flex-col items-center gap-4 mt-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(page) => {
+              if (activeTab === 'all') setAllJobsPage(page);
+              else if (activeTab === 'saved') setSavedPage(page);
+              else { setRecPage(page); setRecVisibleCount(JOBS_PER_PAGE); }
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+
+          {activeTab === 'recommended' && hasMoreRecs && (
+            <button
+              onClick={handleLoadMore}
+              className="flex items-center gap-2 px-6 py-3 bg-purple-50 text-purple-700 font-semibold rounded-xl border border-purple-200 hover:bg-purple-100 hover:border-purple-300 transition-all shadow-sm hover:shadow-md"
+            >
+              <Sparkles className="h-4 w-4" />
+              Load More Recommendations
+              <span className="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full">
+                {filteredRecs.length - recVisibleCount} remaining
+              </span>
+            </button>
+          )}
+
+          <div className="text-xs text-gray-500">
+            Showing {visibleJobs.length} of {activeTab === 'all' ? allJobs.length : activeTab === 'saved' ? savedJobsData.length : filteredRecs.length} jobs
+            {dismissedJobs.size > 0 && ` • ${dismissedJobs.size} dismissed`}
+          </div>
         </div>
       )}
 
       {/* Match Details Modal */}
-      <Modal 
-        isOpen={!!selectedJob} 
-        onClose={() => setSelectedJob(null)} 
-        title={selectedJob ? `Match Analysis` : ''}
-        maxWidth="2xl"
-      >
-        {selectedJob && <MatchAnalysis job={selectedJob} userSkills={meta.userSkills || user?.skills || []} onClose={() => setSelectedJob(null)} />}
+      <Modal isOpen={!!selectedJob} onClose={() => setSelectedJob(null)} title="Match Analysis" maxWidth="2xl">
+        {selectedJob && (
+          <div className="space-y-6">
+            <div className="border-b border-gray-100 pb-4">
+              <h2 className="text-xl font-bold text-gray-900">{selectedJob.title}</h2>
+              <p className="text-gray-500 text-sm">{selectedJob.company} • {selectedJob.location}</p>
+            </div>
+
+            <SkillComparisonBadge
+              userSkills={userSkills}
+              jobSkills={selectedJob.skills}
+              matchedSkills={selectedJob.matchDetails?.matchedSkills}
+              missingSkills={selectedJob.matchDetails?.missingSkills}
+            />
+
+            <ModelInsights matchDetails={selectedJob.matchDetails} />
+
+            <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-500 space-y-1">
+              <div className="flex justify-between"><span>AI Score:</span><span className="font-mono font-bold">{selectedJob.score}%</span></div>
+              <div className="flex justify-between"><span>Raw Score:</span><span className="font-mono">{selectedJob.rawScore?.toFixed(4) || 'N/A'}</span></div>
+              <div className="flex justify-between"><span>Rank:</span><span className="font-mono">#{selectedJob.rank}</span></div>
+              {selectedJob.retrievalScore != null && (
+                <div className="flex justify-between"><span>FAISS Similarity:</span><span className="font-mono">{selectedJob.retrievalScore.toFixed(4)}</span></div>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={() => handleApply(selectedJob)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+              >
+                <ExternalLink size={16} /> Apply Now
+              </button>
+              <button
+                onClick={() => handleSave(selectedJob)}
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold transition border ${
+                  savedJobs.has(selectedJob.jobId || selectedJob.id)
+                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <Bookmark size={16} className={savedJobs.has(selectedJob.jobId || selectedJob.id) ? 'fill-blue-500' : ''} />
+                {savedJobs.has(selectedJob.jobId || selectedJob.id) ? 'Saved' : 'Save'}
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

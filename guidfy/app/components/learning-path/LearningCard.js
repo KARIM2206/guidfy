@@ -1,7 +1,6 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Link from 'next/link';
 import Image from 'next/image';
 import {
   Clock,
@@ -10,12 +9,12 @@ import {
   Layers,
   Calendar,
   Award,
-  PlayCircle,
   ChevronRight,
   Users,
   TrendingUp,
+  Loader2,
 } from 'lucide-react';
-import { useLearningPaths } from '@/app/hooks/useLearningPath';
+import { useEnrollStudent } from '@/app/hooks/useLearningPath';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/CONTEXT/AuthProvider';
 
@@ -30,7 +29,6 @@ const cardVariants = {
   },
 };
 
-// خلفية متدرجة احترافية عند التحويم
 const gradientHoverEffect = {
   whileHover: {
     background: 'linear-gradient(145deg, #ffffff 0%, #f9fafb 100%)',
@@ -38,7 +36,19 @@ const gradientHoverEffect = {
   },
 };
 
+import { useAuthStore } from '@/lib/stores/authStore';
+import { toast } from 'react-toastify';
+
 export default function LearningCard({ path }) {
+  const router = useRouter();
+  
+  // ✅ Use useAuthStore directly for reactivity
+  const { user } = useAuthStore();
+  const userId = user?.id ? Number(user.id) : null;
+  
+  // ✅ الـ Hook الصحيح للـ Enrollment
+  const { mutate: enrollStudent, isPending: isEnrolling } = useEnrollStudent();
+
   const {
     id,
     title,
@@ -49,30 +59,50 @@ export default function LearningCard({ path }) {
     roadmaps,
     createdAt,
     isPublished,
-    progress = 4,
-    
     image,
-    // حقول جديدة للتجربة
     enrolledStudents = 0,
     averageProgress = 0,
   } = path;
-  const{user}=useAuth()
-const isEnrolled = path?.enrollments?.some(
-  enrollment => enrollment.userId === Number(user?.id)
-);
-const { enrollLearningPathToStudent }=useLearningPaths();
-console.log(typeof enrollStudentInLearningPath);
+
+  // ✅ التحقق من الـ Enrollment من الـ path prop
+  const userEnrollment = path?.enrollments?.find(
+    (enrollment) => 
+      Number(enrollment.userId) === userId || 
+      Number(enrollment.studentId) === userId
+  );
   
-const handleButtonClick=async () => {
-      if(!isEnrolled){
-     await enrollLearningPathToStudent(id);
+  // ✅ السوبر أدمن معتبر مسجل تلقائياً عشان يقدر يدخل الكورس ويتصفحه
+  const isEnrolled = user?.role === 'SUPER_ADMIN' ? true : !!userEnrollment;
+  
+  // ✅ البروجرس الحقيقي من الـ API (0 لو مش موجود)
+  const progress = path.currentUserProgress ?? userEnrollment?.progress ?? 0;
+
+  const handleButtonClick = (e) => {
+    e.preventDefault();
+
+    if (!isEnrolled) {
+      // ✅ استخدم mutate مع callbacks
+      enrollStudent(id, {
+        onSuccess: () => {
+          toast.success('Successfully enrolled!');
+          router.push(`/learning-paths/${title}`);
+        },
+        onError: (error) => {
+          console.error('Enrollment failed:', error);
+          const msg = error?.message || error?.response?.data?.message || 'Failed to enroll';
+          if (msg.includes('Already enrolled')) {
+             toast.info('You are already enrolled!');
+             router.push(`/learning-paths/${title}`);
+          } else {
+             toast.error(msg + '. Please try again.');
+          }
+        },
+      });
+    } else {
       router.push(`/learning-paths/${title}`);
-      }
-      else{
-        router.push(`/learning-paths/${title}`);
-      }
     }
-const router=useRouter();
+  };
+
   const formattedDate = createdAt
     ? new Date(createdAt).toLocaleDateString('en-GB', {
         day: '2-digit',
@@ -85,18 +115,16 @@ const router=useRouter();
     ? progress > 0
       ? 'Continue Learning'
       : 'Start Learning'
-    : 'Start Learning';
-
+    : 'Enroll Now';
 
   return (
-<div>
+    <div>
       <motion.div
         variants={cardVariants}
         whileHover="hover"
         {...gradientHoverEffect}
         className="group bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden p-5 cursor-pointer relative"
       >
-        {/* صورة مصغرة */}
         {image && (
           <div className="relative h-40 -mx-5 -mt-5 mb-4 overflow-hidden">
             <motion.div
@@ -116,7 +144,6 @@ const router=useRouter();
           </div>
         )}
 
-        {/* الرأس: العنوان + شارات الحالة */}
         <div className="mb-3 flex items-start justify-between gap-2">
           <h3 className="text-lg font-semibold text-gray-800 line-clamp-1 flex-1">
             {title}
@@ -140,12 +167,10 @@ const router=useRouter();
           </div>
         </div>
 
-        {/* الوصف */}
         <p className="text-sm text-gray-600 line-clamp-2 mb-4">
           {description}
         </p>
 
-        {/* إحصائيات المسار */}
         <div className="grid grid-cols-2 gap-3 text-xs text-gray-600 mb-4">
           <div className="flex items-center gap-2">
             <Layers size={14} />
@@ -165,7 +190,6 @@ const router=useRouter();
           </div>
         </div>
 
-        {/* إحصائيات الطلاب (جديدة) */}
         {(enrolledStudents > 0 || averageProgress > 0) && (
           <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
             {enrolledStudents > 0 && (
@@ -183,8 +207,8 @@ const router=useRouter();
           </div>
         )}
 
-        {/* شريط التقدم (للمستخدم الحالي) */}
-        {progress > 0 && (
+        {/* ✅ شريط البروجرس — بيظهر بس لو مسجل */}
+        {isEnrolled && (
           <div className="mb-4">
             <div className="flex justify-between text-xs text-gray-600 mb-1">
               <span>Your progress</span>
@@ -201,7 +225,6 @@ const router=useRouter();
           </div>
         )}
 
-        {/* التذييل: التاريخ + زر البدء */}
         <div className="flex items-center justify-between border-t pt-3">
           {formattedDate && (
             <div className="flex items-center text-xs text-gray-400">
@@ -209,17 +232,28 @@ const router=useRouter();
               {formattedDate}
             </div>
           )}
-           <motion.a
-           href={`/learning-paths/${title}`}
 
-           onClick={handleButtonClick}
-    whileHover={{ scale: 1.05, x: 3 }}
-    whileTap={{ scale: 0.95 }}
-    className="flex items-center gap-1 text-indigo-600 text-sm font-medium"
-  >
-    {buttonText}
-    <ChevronRight size={16} />
-  </motion.a>
+          <motion.button
+            onClick={handleButtonClick}
+            disabled={isEnrolling}
+            whileHover={!isEnrolling ? { scale: 1.05, x: 3 } : {}}
+            whileTap={!isEnrolling ? { scale: 0.95 } : {}}
+            className={`flex items-center gap-1 text-sm font-medium bg-transparent border-none cursor-pointer ${
+              isEnrolling ? 'text-gray-400 cursor-not-allowed' : 'text-indigo-600'
+            }`}
+          >
+            {isEnrolling ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Enrolling...
+              </>
+            ) : (
+              <>
+                {buttonText}
+                <ChevronRight size={16} />
+              </>
+            )}
+          </motion.button>
         </div>
       </motion.div>
     </div>

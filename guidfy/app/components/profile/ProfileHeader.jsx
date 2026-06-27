@@ -27,6 +27,8 @@ export default function ProfileHeader({
   onOpenEditModal,
   onMenuClick,
   isMenuOpen,
+  onGenerateReport,
+  isGenerating,
 }) {
   const [coverHover, setCoverHover] = useState(false);
   const [avatarHover, setAvatarHover] = useState(false);
@@ -205,13 +207,24 @@ export default function ProfileHeader({
             {/* CTA buttons – Edit Profile for owner only */}
             <motion.div variants={stagger.container} initial="hidden" animate="show" className="flex gap-3 pb-1">
               {isOwner && (
-                <motion.button
-                  variants={stagger.item}
-                  onClick={onOpenEditModal}
-                  className="ph-edit-btn ph-glass flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-white/70"
-                >
-                  <Edit3 size={14} /> Edit Profile
-                </motion.button>
+                <>
+                  <motion.button
+                    variants={stagger.item}
+                    onClick={onOpenEditModal}
+                    className="ph-edit-btn ph-glass flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-white/70"
+                  >
+                    <Edit3 size={14} /> Edit Profile
+                  </motion.button>
+                  <motion.button
+                    variants={stagger.item}
+                    onClick={onGenerateReport}
+                    disabled={isGenerating}
+                    className="ph-edit-btn ph-glass flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-white/70 disabled:opacity-50"
+                  >
+                    <Sparkles size={14} className={isGenerating ? "animate-pulse" : ""} /> 
+                    {isGenerating ? "Generating..." : "Generate Career Report"}
+                  </motion.button>
+                </>
               )}
             </motion.div>
           </div>

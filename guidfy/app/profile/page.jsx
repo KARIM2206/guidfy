@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { useProfile } from '../CONTEXT/ProfileContext';
 import { useAuth } from '../CONTEXT/AuthProvider';
+import { useGenerateCareerReport } from '../hooks/useProfileQuery';
+import { toast } from 'react-toastify';
 
 import ProfileSidebar from '../components/profile/ProfileSidebar';
 import ProfileHeader from '../components/profile/ProfileHeader';
@@ -74,6 +76,17 @@ export default function UserProfilePage() {
     isSaving,
     fetchUserContent,
   } = useProfile();
+
+  const { mutateAsync: generateReport, isPending: isGeneratingReport } = useGenerateCareerReport();
+
+  const handleGenerateReport = async () => {
+    try {
+      await generateReport();
+      toast.success('Career report generated! Please check your messages.');
+    } catch (err) {
+      toast.error('Failed to generate career report.');
+    }
+  };
 
   const [activeTab, setActiveTab] = useState('posts');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -150,19 +163,21 @@ export default function UserProfilePage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Profile Header */}
           <ProfileHeader
-  name={userData.name}
-  title={userData.title}
-  bio={userData.bio}
-  avatar={userData.avatar}
-  cover={userData.cover}
-  joinDate={userData?.createdAt}
-  isOwner={userData.id === user?.id}
-  onEditAvatar={handleUploadAvatar}
-  onEditCover={handleUploadCover}
-  onOpenEditModal={() => setEditOpen(true)}
-  onMenuClick={() => setSidebarOpen(true)}
-  isMenuOpen={sidebarOpen}
-/>
+            name={userData.name}
+            title={userData.title}
+            bio={userData.bio}
+            avatar={userData.avatar}
+            cover={userData.cover}
+            joinDate={userData?.createdAt}
+            isOwner={userData.id === user?.id}
+            onEditAvatar={handleUploadAvatar}
+            onEditCover={handleUploadCover}
+            onOpenEditModal={() => setEditOpen(true)}
+            onMenuClick={() => setSidebarOpen(true)}
+            isMenuOpen={sidebarOpen}
+            onGenerateReport={handleGenerateReport}
+            isGenerating={isGeneratingReport}
+          />
 
           
 

@@ -1,39 +1,30 @@
-import api from "./apiCommunity"; // افترض أن api هو instance مهيأ مسبقاً (axios)
+import apiClient from "@/lib/apiClient";
 
 // ═══════════════════════════════════════════════════
 //  USER NOTIFICATIONS
 // ═══════════════════════════════════════════════════
 
-// GET /notifications - جلب إشعارات المستخدم الحالي
 export const getNotifications = (params) =>
-  api.get("/notifications", { params }).then((r) => r.data);
+  apiClient.get("/notifications", { params });
 
-// PATCH /notifications/read-all - تعيين الكل كمقروء
 export const markAllAsRead = () =>
-  api.patch("/notifications/read-all").then((r) => r.data);
+  apiClient.patch("/notifications/read-all");
 
-// PATCH /notifications/:id/read - تعيين إشعار واحد كمقروء
 export const markAsRead = (notificationId) =>
-  api.patch(`/notifications/${notificationId}/read`).then((r) => r.data);
+  apiClient.patch(`/notifications/${notificationId}/read`);
 
-// DELETE /notifications/:id - حذف إشعار (مالك أو أدمن)
 export const deleteNotification = (notificationId) =>
-  api.delete(`/notifications/${notificationId}`).then((r) => r.data);
+  apiClient.delete(`/notifications/${notificationId}`);
 
 // ═══════════════════════════════════════════════════
 //  ADMIN ACTIONS
 // ═══════════════════════════════════════════════════
 
-// POST /notifications - إنشاء إشعار (ADMIN / SUPER_ADMIN)
 export const createNotification = (payload) =>
-  api.post("/notifications", payload).then((r) => r.data);
-// payload: { title, message, type?, link?, image?, data? }
+  apiClient.post("/notifications", payload);
 
-// POST /notifications/send-to-role - إرسال لدور معين (ADMIN+)
 export const sendToRole = (role, payload) =>
-  api.post("/notifications/send-to-role", { role, ...payload }).then((r) => r.data);
-// payload: { title, message, type?, link?, ... }
+  apiClient.post("/notifications/send-to-role", { role, ...payload });
 
-// POST /notifications/broadcast - بث لجميع المستخدمين (SUPER_ADMIN فقط)
 export const broadcastNotification = (payload) =>
-  api.post("/notifications/broadcast", payload).then((r) => r.data);
+  apiClient.post("/notifications/broadcast", payload);

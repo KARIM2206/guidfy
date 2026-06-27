@@ -1,17 +1,13 @@
-import axios from "axios";
+// ✅ استبدال كامل
+// بدل localStorage + Bearer token، نستخدم apiClient اللي بيبعت الـ cookie تلقائي
 
-const api = axios.create({
-  baseURL: "http://localhost:8000/api/student",
-});
+import apiClient from '@/lib/apiClient';
 
-api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
-});
+const api = {
+  get:    (url, config) => apiClient.get(`/student${url}`, config),
+  post:   (url, data, config) => apiClient.post(`/student${url}`, data, config),
+  put:    (url, data, config) => apiClient.put(`/student${url}`, data, config),
+  delete: (url, config) => apiClient.delete(`/student${url}`, config),
+};
 
 export default api;

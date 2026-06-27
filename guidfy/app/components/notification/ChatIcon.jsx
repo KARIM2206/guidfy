@@ -1,37 +1,45 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Send, X, Circle } from 'lucide-react';
-import { useNotifications } from '@/app/CONTEXT/NotificationContext';
 import { useAuth } from '@/app/CONTEXT/AuthProvider';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useInboxQuery, useConversationQuery, useSendMessageMutation } from '@/app/hooks/useChatQueries';
 
 export default function ChatIcon() {
   const [open, setOpen] = useState(false);
   const ref  = useRef(null);
   const router = useRouter();
   const { user } = useAuth();
-  const { inbox, fetchInbox, conversations, fetchConversation, sendMessage, chatLoading } = useNotifications();
+
+  // ── React Query hooks ──
+  const { data: inboxData, isLoading: chatLoading } = useInboxQuery();
+  const inbox = useMemo(() => inboxData?.data || [], [inboxData]);
+
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const chatDashboardPath = user?.role === 'SUPER_ADMIN'
+    ? '/super-admin/dashboard/chat'
+    : user?.role === 'ADMIN'
+    ? '/admin/dashboard/chat'
+    : null; // students go to /chat/:userId directly
 
   const [activeUser, setActiveUser]   = useState(null);
   const [inputVal,   setInputVal]     = useState('');
   const messagesEndRef                = useRef(null);
 
-  const totalUnread = inbox.reduce((s, i) => s + (i.unreadCount || 0), 0);
+  // ── Conversation query (depends on activeUser) ──
+  const { messages: currentMessages } = useConversationQuery(activeUser?.id);
+  const sendMessageMutation = useSendMessageMutation();
+
+  const totalUnread = useMemo(() => inbox.reduce((s, i) => s + (i.unreadCount || 0), 0), [inbox]);
 
   useEffect(() => {
-    if (open) fetchInbox();
-  }, [open]);
-
-  useEffect(() => {
-    if (activeUser) fetchConversation(activeUser.id);
-  }, [activeUser]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [conversations, activeUser]);
+    if (activeUser) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [currentMessages, activeUser]);
 
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -39,13 +47,40 @@ export default function ChatIcon() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!inputVal.trim() || !activeUser) return;
-    await sendMessage(activeUser.id, inputVal.trim());
-    setInputVal('');
-  };
+    try {
+      await sendMessageMutation.mutateAsync({ receiverId: activeUser.id, content: inputVal.trim() });
+      setInputVal('');
+    } catch (err) {
+      console.error('Send error:', err);
+    }
+  }, [inputVal, activeUser, sendMessageMutation]);
 
-  const currentMessages = activeUser ? (conversations[activeUser.id] || []) : [];
+  // For students: clicking a conversation opens the full chat page
+  const handleSelectUser = useCallback((inboxUser) => {
+    if (!isAdmin) {
+      const params = new URLSearchParams({
+        name: inboxUser.name || '',
+        ...(inboxUser.avatar ? { avatar: inboxUser.avatar } : {}),
+        ...(inboxUser.title ? { title: inboxUser.title } : {}),
+      });
+      router.push(`/chat/${inboxUser.id}?${params.toString()}`);
+      setOpen(false);
+    } else {
+      setActiveUser(inboxUser);
+    }
+  }, [isAdmin, router]);
+
+  // Handle "Open full chat" button
+  const handleOpenFull = useCallback(() => {
+    if (chatDashboardPath) {
+      router.push(chatDashboardPath);
+    } else if (activeUser) {
+      router.push(`/chat/${activeUser.id}`);
+    }
+    setOpen(false);
+  }, [chatDashboardPath, activeUser, router]);
 
   const timeStr = (d) => {
     const date = new Date(d);
@@ -104,16 +139,28 @@ export default function ChatIcon() {
                   <MessageSquare size={16} className="text-emerald-600" />
                 )}
                 <span className="font-semibold text-gray-800 text-sm">
-                  {activeUser ? activeUser.name : 'Messages'}
+                  {activeUser ? (
+                    <button 
+                      onClick={() => {
+                        router.push(`/chat/${activeUser.id}`);
+                        setOpen(false);
+                      }}
+                      className="hover:text-emerald-600 hover:underline transition-colors"
+                    >
+                      {activeUser.name}
+                    </button>
+                  ) : 'Messages'}
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                <button
-                  onClick={() => { router.push(`/${user?.role?.toLowerCase().replace('_', '-')}/dashboard/chat`); setOpen(false); }}
-                  className="text-xs text-emerald-600 hover:text-emerald-800 px-2 py-1 rounded-lg hover:bg-emerald-50 transition-colors"
-                >
-                  Open
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={handleOpenFull}
+                    className="text-xs text-emerald-600 hover:text-emerald-800 px-2 py-1 rounded-lg hover:bg-emerald-50 transition-colors"
+                  >
+                    Open
+                  </button>
+                )}
                 <button onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-gray-100">
                   <X size={14} className="text-gray-400" />
                 </button>
@@ -137,9 +184,9 @@ export default function ChatIcon() {
                 )}
                 {inbox.map((item) => (
                   <motion.button
-                    key={item.user.id}
+                    key={item.user?.id || item.id}
                     whileHover={{ backgroundColor: '#f9fafb' }}
-                    onClick={() => setActiveUser(item.user)}
+                    onClick={() => handleSelectUser(item.user || item)}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
                   >
                     <div className="relative">
@@ -166,11 +213,6 @@ export default function ChatIcon() {
               // ── Conversation ───────────────────────────────
               <>
                 <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 bg-gray-50/50">
-                  {chatLoading && (
-                    <div className="flex items-center justify-center py-4">
-                      <div className="w-5 h-5 border-2 border-emerald-300 border-t-emerald-600 rounded-full animate-spin" />
-                    </div>
-                  )}
                   {currentMessages.map((msg) => {
                     const isMe = msg.senderId === user?.id;
                     return (
@@ -204,7 +246,7 @@ export default function ChatIcon() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleSend}
-                    disabled={!inputVal.trim()}
+                    disabled={!inputVal.trim() || sendMessageMutation.isPending}
                     className="p-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 text-white rounded-xl transition-colors"
                   >
                     <Send size={14} />

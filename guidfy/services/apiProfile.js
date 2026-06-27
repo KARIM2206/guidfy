@@ -1,17 +1,7 @@
-import axios from "axios";
+// ✅ استبدال كامل لـ apiProfile.js
+// بدل ما نعمل axios instance جديدة بتقرأ من localStorage،
+// نستخدم apiClient اللي عنده withCredentials: true وبيبعت الـ cookie تلقائي
 
-const api = axios.create({
-  baseURL: "http://localhost:8000/api",
-});
+import apiClient from '@/lib/apiClient';
 
-api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
-});
-
-export default api;
+export default apiClient;

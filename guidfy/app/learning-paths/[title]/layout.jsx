@@ -10,10 +10,7 @@ import { useState, useEffect } from "react";
 import HeaderSection from "@/app/components/learning-path/HeaderSection";
 import { TabsProvider } from "@/app/CONTEXT/LearningProvider";
 import PageContent from "./PageContent";
-import { RoadmapProvider } from "@/app/CONTEXT/RoadmapProvider";
-import { StepProvider } from "@/app/CONTEXT/StepProvider";
 import { LessonProvider } from "@/app/CONTEXT/LessonProvider";
-import { JobProvider } from "@/app/CONTEXT/JobsContext";
 import { ProjectProvider } from "@/app/CONTEXT/ProjectContext";
 
 const Layout = ({ params, children }) => {
@@ -27,29 +24,20 @@ const Layout = ({ params, children }) => {
       color: "#10B981",
     },
     { name: "Jobs", href: "/jobs", icon: Briefcase, color: "#F59E0B" },
-    { name: "Projects", href: "/projects", icon: Folder, color: "#8B5CF6" },
   ];
   return (
-    <RoadmapProvider>
-      <JobProvider>
-        <ProjectProvider>
-      <StepProvider>
-        <LessonProvider>
-
-
-    <TabsProvider>
-      <PageContent
-        title={title}
-        navLinks={navLinks}
-      >
-        {children}
-      </PageContent>
-    </TabsProvider>
-</LessonProvider>
-      </StepProvider>
-      </ProjectProvider>
-      </JobProvider>
-    </RoadmapProvider>
+    <ProjectProvider>
+      <LessonProvider>
+        <TabsProvider>
+          <PageContent
+            title={title}
+            navLinks={navLinks}
+          >
+            {children}
+          </PageContent>
+        </TabsProvider>
+      </LessonProvider>
+    </ProjectProvider>
   );
 };
 

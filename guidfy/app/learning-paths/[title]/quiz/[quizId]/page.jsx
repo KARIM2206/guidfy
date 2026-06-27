@@ -4,34 +4,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { useLessonContext } from '@/app/CONTEXT/LessonProvider';
-// import QuizPlayer from '@/app/components/admin/dashboard/roadmap/lessons/QuizPlayer';
 import { toast } from 'react-toastify';
 import QuizPlayer from '@/app/components/admin/dashboard/roadmap/lessons/Quizplayer';
+import { useQuizById } from '@/app/hooks/useQuiz';
 
 export default function QuizPage() {
   const { quizId } = useParams();
   const router = useRouter();
-  const { fetchQuizById, currentQuiz, quizLoading } = useLessonContext();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (!quizId) return;
-    const loadQuiz = async () => {
-      setLoading(true);
-      try {
-        console.log(quizId);
-        await fetchQuizById(quizId);
-      } catch (err) {
-        setError(err.message || 'Failed to load quiz');
-        toast.error('Could not load quiz');
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadQuiz();
-  }, [quizId, fetchQuizById]);
+  const { data: quizData, isLoading: quizLoading, error: fetchError } = useQuizById(quizId);
+  const currentQuiz = quizData?.data ?? quizData;
 
   const handlePass = () => {
     // بعد اجتياز الكويز، يمكن توجيه المستخدم إلى صفحة الدرس أو إغلاق الصفحة
@@ -44,7 +25,7 @@ export default function QuizPage() {
     router.back();
   };
 
-  if (loading || quizLoading) {
+  if (quizLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
@@ -52,10 +33,10 @@ export default function QuizPage() {
     );
   }
 
-  if (error || !currentQuiz) {
+  if (fetchError || !currentQuiz) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-4">
-        <p className="text-red-600">{error || 'Quiz not found'}</p>
+        <p className="text-red-600">{fetchError?.message || 'Quiz not found'}</p>
         <button
           onClick={() => router.back()}
           className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition"
