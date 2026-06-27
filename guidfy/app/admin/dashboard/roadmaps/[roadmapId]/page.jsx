@@ -1,119 +1,126 @@
-// app/(admin)/roadmaps/[id]/page.jsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Edit, Tag, BarChart, Clock, User, Users } from 'lucide-react';
 
-// Hooks & Context
-import { useRoadmaps } from '@/app/hooks/useRoadmaps';
-import { useSteps } from '@/app/hooks/useStep';
+import { useRoadmapById } from '@/app/hooks/useRoadmaps';
+import {
+  useStepsByRoadmap,
+  useStepById,
+  useCreateStep,
+  useUpdateStep,
+  useDeleteStep,
+} from '@/app/hooks/useStep';
 
-// Components
 import Loader from '@/app/components/ui/Loader';
 import Button from '@/app/components/ui/Button';
-import Modal from '@/app/components/ui/Modal';
 import StepList from '@/app/components/admin/dashboard/roadmap/step/StepList';
 import StepForm from '@/app/components/admin/dashboard/roadmap/step/StepForm';
 import DeleteModel from '@/app/components/admin/dashboard/roadmap/DeleteModel';
 
 export default function RoadmapDetailPage() {
-  const { roadmapId: id } = useParams();
+  const { roadmapId } = useParams();
   const router = useRouter();
 
-  // Roadmap context
-  const { currentRoadmap, fetchRoadmapById, loading: roadmapLoading } = useRoadmaps();
-
-  // Steps context
-  const {
-    steps,
-    currentStep,
-    loading: stepsLoading,
-    fetchStepsByRoadmap,
-    fetchStepById,
-    createStep,
-    editStep,
-    removeStep,
-    refreshTrigger,
-    setRefreshSteps,
-  } = useSteps();
-
-  // Local state
-  const [stepId, setStepId] = useState(null);
+  // ─── UI State ───
   const [stepFormOpen, setStepFormOpen] = useState(false);
   const [editingStep, setEditingStep] = useState({});
   const [deleteModal, setDeleteModal] = useState({ open: false, stepId: null });
+  const [stepId, setStepId] = useState(null);
 
-  // Fetch roadmap details
-  useEffect(() => {
-    if (id || refreshTrigger) fetchRoadmapById(id);
-  }, [id, fetchRoadmapById, refreshTrigger]); // refreshSteps might be needed if roadmap updates
+  // ─── Queries ───
+  const { data: roadmapData, isLoading: roadmapLoading } = useRoadmapById(roadmapId);
+  const { data: stepsData, isLoading: stepsLoading } = useStepsByRoadmap(roadmapId);
+  
+  useStepById(stepId);
 
-  // Fetch steps when id or refreshSteps changes
-  useEffect(() => {
-    if (id) fetchStepsByRoadmap(id);
-  }, [id, fetchStepsByRoadmap, refreshTrigger]);
+  // ─── Mutations ───
+  const createStepMutation = useCreateStep();
+  const updateStepMutation = useUpdateStep();
+  const deleteStepMutation = useDeleteStep();
 
-  // Fetch single step when stepId changes (optional)
-  useEffect(() => {
-    if (stepId) fetchStepById(stepId);
-  }, [stepId, fetchStepById]);
+  // ─── Derived Data ───
+  const currentRoadmap = roadmapData?.data ?? roadmapData;
+  const steps = stepsData ?? [];
 
-  // Handlers
-  const handleAddStep = () => {
+  const isMutating =
+    createStepMutation.isPending ||
+    updateStepMutation.isPending ||
+    deleteStepMutation.isPending;
+
+  // ─── Handlers ───
+  const handleAddStep = useCallback(() => {
     setEditingStep({});
     setStepFormOpen(true);
-  };
+  }, []);
 
-  const handleEditStep = (step) => {
+  const handleEditStep = useCallback((step) => {
     setEditingStep(step);
     setStepFormOpen(true);
-  };
+  }, []);
 
-  const handleDeleteClick = (stepId) => {
+  const handleDeleteClick = useCallback((stepId) => {
     setDeleteModal({ open: true, stepId });
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (deleteModal.stepId) {
       try {
-        await removeStep(deleteModal.stepId);
-        // Steps list will update via context state update
+        // ✅ ابعت roadmapId عشان invalidate يشتغل صح
+        await deleteStepMutation.mutateAsync({ 
+          id: deleteModal.stepId, 
+          roadmapId: roadmapId 
+        });
         setDeleteModal({ open: false, stepId: null });
       } catch (error) {
         console.error('Failed to delete step:', error);
       }
     }
-  };
+  }, [deleteModal.stepId, deleteStepMutation, roadmapId]);
 
-  const handleStepSubmit = async (data) => {
-    if (editingStep?.id) {
-      // Update existing step
-      await editStep(editingStep.id, data);
-    } else {
-      // Create new step
-      await createStep({ ...data, roadmapId: id });
-    }
-    setStepFormOpen(false);
-  };
+  const handleStepSubmit = useCallback(
+    async (formData) => {
+      if (editingStep?.id) {
+        // ✅ Update
+        await updateStepMutation.mutateAsync({ 
+          id: editingStep.id, 
+          data: { ...formData, roadmapId: roadmapId } 
+        });
+      } else {
+        // ✅ Create - roadmapId هنا ضروري
+        await createStepMutation.mutateAsync({ 
+          ...formData, 
+          roadmapId: roadmapId 
+        });
+      }
+      setStepFormOpen(false);
+      setEditingStep({});
+    },
+    [editingStep, roadmapId, createStepMutation, updateStepMutation]
+  );
 
-  // Loading state
+  // ─── Loading State ───
   if (roadmapLoading || !currentRoadmap) {
-    return <Loader />;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader />
+      </div>
+    );
   }
 
   return (
-    <div>
-      {/* Header with back button and title */}
+    <div className="p-4 md:p-6">
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between px-2  mb-6"
+        className="flex items-center justify-between mb-6"
       >
         <div className="flex items-center gap-4">
           <motion.button
-            whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
+            whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => router.back()}
             className="p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-shadow"
@@ -124,7 +131,7 @@ export default function RoadmapDetailPage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
+            className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
           >
             {currentRoadmap.title}
           </motion.h1>
@@ -138,8 +145,6 @@ export default function RoadmapDetailPage() {
             variant="outline"
             onClick={() => router.push('edit')}
             className="gap-2"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
           >
             <Edit size={18} />
             Edit Roadmap
@@ -166,7 +171,6 @@ export default function RoadmapDetailPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Category */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -182,7 +186,6 @@ export default function RoadmapDetailPage() {
             </div>
           </motion.div>
 
-          {/* Level */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -215,7 +218,6 @@ export default function RoadmapDetailPage() {
             </div>
           </motion.div>
 
-          {/* Duration */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -227,11 +229,12 @@ export default function RoadmapDetailPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Duration</p>
-              <p className="font-medium text-gray-800">{currentRoadmap.estimatedDuration} minutes</p>
+              <p className="font-medium text-gray-800">
+                {currentRoadmap.estimatedDuration} minutes
+              </p>
             </div>
           </motion.div>
 
-          {/* Created By */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -243,11 +246,12 @@ export default function RoadmapDetailPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Created By</p>
-              <p className="font-medium text-gray-800">{currentRoadmap.createdBy?.name || 'Unknown'}</p>
+              <p className="font-medium text-gray-800">
+                {currentRoadmap.createdBy?.name || 'Unknown'}
+              </p>
             </div>
           </motion.div>
 
-          {/* Enrolled Students */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -259,7 +263,9 @@ export default function RoadmapDetailPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Enrolled Students</p>
-              <p className="font-medium text-gray-800">{currentRoadmap.enrolledUsers?.length || 0}</p>
+              <p className="font-medium text-gray-800">
+                {currentRoadmap.enrolledUsers?.length || 0}
+              </p>
             </div>
           </motion.div>
         </div>
@@ -267,25 +273,34 @@ export default function RoadmapDetailPage() {
 
       {/* Step List */}
       <StepList
-        steps={steps} // Use steps from context
-        roadmapId={id}
-        stepsLength={currentRoadmap?.steps?.length || 0}
+        steps={steps}
+        roadmapId={roadmapId}
+        stepsLength={steps?.length || 0}
         setStepId={setStepId}
         onAddStep={handleAddStep}
         onEditStep={handleEditStep}
         onDeleteStep={handleDeleteClick}
+        loading={stepsLoading || isMutating}
       />
 
       {/* Step Form Modal */}
       <StepForm
         isOpen={stepFormOpen}
-        onClose={() => setStepFormOpen(false)}
+        onClose={() => {
+          setStepFormOpen(false);
+          setEditingStep({});
+        }}
         onSubmit={handleStepSubmit}
         initialData={editingStep}
+        loading={createStepMutation.isPending || updateStepMutation.isPending}
       />
 
       {/* Delete Confirmation Modal */}
-  <DeleteModel isOpen={deleteModal.open} onClose={() => setDeleteModal({ open: false, stepId: null })} confirmDelete={confirmDelete} />
+      <DeleteModel
+        isOpen={deleteModal.open}
+        onClose={() => setDeleteModal({ open: false, stepId: null })}
+        confirmDelete={confirmDelete}
+      />
     </div>
   );
 }

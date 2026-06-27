@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAuth } from '../CONTEXT/AuthProvider';
+ import { useAuth } from '../CONTEXT/AuthProvider';
+
 import UserMenu from './UserMenu';
 import Image from 'next/image';
 
@@ -20,7 +21,8 @@ const Navbar = () => {
   const [isOpenMenu, setIsOpenMenu] = useState(false);
   const path = usePathname().split('/');
   const currentPath = path[1];
-  const { user, token } = useAuth();
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
   const router = useRouter();
 
   const navLinks = [
@@ -74,12 +76,13 @@ const Navbar = () => {
         {/* Action Buttons */}
         <div className="relative flex items-center z-50 gap-2">
 
-          {token ? (
+          { isAuthenticated? (
             <>
-              {/* Admin & Super Admin Only Section */}
-              {isAdmin && (
-                <div className="flex items-center gap-2">
-                  {/* Dashboard Link */}
+              {/* ── Icons visible for ALL authenticated users ── */}
+              <div className="flex items-center gap-1">
+
+                {/* Dashboard Link — Admin only */}
+                {isAdmin && (
                   <Link
                     href={user?.role === 'ADMIN' ? "/admin/dashboard" : "/super-admin/dashboard"}
                     className="p-2 hover:bg-gray-100 rounded-xl transition-colors group relative"
@@ -90,14 +93,14 @@ const Navbar = () => {
                       className="text-gray-700 group-hover:text-primary transition-colors" 
                     />
                   </Link>
+                )}
 
-                  {/* Notification Bell */}
-                  <NotificationBell />
+                {/* Notification Bell — everyone */}
+                <NotificationBell />
 
-                  {/* Chat Icon */}
-                  <ChatIcon />
-                </div>
-              )}
+                {/* Chat Icon — everyone */}
+                <ChatIcon />
+              </div>
 
               {/* User Menu */}
               <UserMenu name={user?.name} avatar={user?.avatar} />
@@ -153,6 +156,18 @@ const Navbar = () => {
                       </motion.div>
                     );
                   })}
+
+                  {/* Dashboard link in mobile menu for admins */}
+                  {isAdmin && (
+                    <motion.div variants={dropdownItemVariants}>
+                      <Link
+                        href={user?.role === 'ADMIN' ? "/admin/dashboard" : "/super-admin/dashboard"}
+                        className="px-4 py-2 whitespace-nowrap hover:bg-blue-100 flex items-center gap-2 text-gray-700"
+                      >
+                        <LayoutDashboard size={18} /> Dashboard
+                      </Link>
+                    </motion.div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

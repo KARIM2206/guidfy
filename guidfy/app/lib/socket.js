@@ -3,16 +3,14 @@ import { io } from "socket.io-client";
 
 let socket = null;
 
-export const initSocket = (token) => {
-  // لو في socket قديم، نمسحه الأول
+export const initSocket = () => {
   if (socket) {
     socket.disconnect();
     socket = null;
   }
 
+  console.log("CREATING SOCKET");
   socket = io("http://localhost:8000", {
-    auth: { token },
-    autoConnect: false,
     withCredentials: true,
   });
 
@@ -22,13 +20,13 @@ export const initSocket = (token) => {
 export const connectSocket = (userId) => {
   if (!socket) return;
 
-  // امسح listeners القديمة قبل ما تضيف جديدة
   socket.off("connect");
   socket.off("disconnect");
 
   socket.connect();
 
   socket.on("connect", () => {
+    console.log("SOCKET CONNECTED", socket.id);
     console.log("✅ Socket connected:", socket.id);
     socket.emit("register", userId);
   });
@@ -45,3 +43,5 @@ export const disconnectSocket = () => {
     socket = null;
   }
 };
+
+export const getSocket = () => socket;

@@ -36,7 +36,7 @@ export default function ProjectsPage() {
     if (filter === 'all') {
       setFilteredProjects(projects);
     } else {
-      const filtered = projects.filter((proj) => proj.status === filter);
+      const filtered = (projects || []).filter((proj) => proj.status === filter);
       setFilteredProjects(filtered);
     }
   }, [filter, projects]);
@@ -95,14 +95,14 @@ export default function ProjectsPage() {
         openAddModal={openAddModal} 
         filter={filter}
         setFilter={setFilter}
-        isDisabledAdd={adminLearningPaths.length === 0} // ✅ disable add button if no learning paths
+        isDisabledAdd={!adminLearningPaths || adminLearningPaths.length === 0} // ✅ disable add button if no learning paths
       />
 
-      {projects.length === 0 ? (
+      {(!projects || projects.length === 0) ? (
         <EmptyState openAddModal={openAddModal} />
       ) : (
         <ProjectsTable
-          projects={filteredProjects}
+          projects={filteredProjects || []}
           setModalOpen={setModalOpen}
           setModalMode={setModalMode}
           setSelectedProject={setSelectedProject}

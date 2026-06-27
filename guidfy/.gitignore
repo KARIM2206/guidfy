@@ -39,3 +39,10 @@ coverage/
 node_modules
 .env
 .nex
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

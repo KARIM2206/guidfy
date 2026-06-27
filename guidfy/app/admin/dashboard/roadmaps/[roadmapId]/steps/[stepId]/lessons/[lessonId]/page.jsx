@@ -1,7 +1,6 @@
-// app/dashboard/lessons/[lessonId]/page.jsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -10,24 +9,33 @@ import {
   FileText,
   HelpCircle,
   Clock,
-  Award,
   CheckCircle,
   ExternalLink,
   Copy,
   Check,
   Edit,
-  Save,
   X,
   Trash2,
+  Shield,
 } from 'lucide-react';
-import { useLessonContext } from '@/app/CONTEXT/LessonProvider';
 import { useAuth } from '@/app/CONTEXT/AuthProvider';
 import Button from '@/app/components/ui/Button';
+import Modal from '@/app/components/ui/Modal';
 import QuizBuilder from '@/app/components/admin/dashboard/roadmap/lessons/QuizBuilder';
-import LessonForm from '@/app/components/admin/dashboard/roadmap/lessons/LessonForm'; // ✅ Import LessonForm
+import LessonForm from '@/app/components/admin/dashboard/roadmap/lessons/LessonForm';
 import { toast } from 'react-toastify';
 
-// Helper: copy button
+// ✅ React Query hooks — مفيش Context خالص
+import {
+  useLessonById,
+  useDeleteLesson,
+  useUpdateLessonProgress,
+  useUpdateLesson,
+} from '@/app/hooks/useLesson';
+import { useQuizByLessonId, useSubmitQuiz } from '@/app/hooks/useQuiz';
+import { useStepById } from '@/app/hooks/useStep';
+
+// ─── Helper: Copy button ─────────────────────────────────
 const CopyButton = ({ text }) => {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
@@ -50,13 +58,51 @@ const CopyButton = ({ text }) => {
   );
 };
 
+// ─── Delete Confirmation Modal ─────────────────────────────
+const DeleteModel = ({ isOpen, onClose, onConfirm, isPending }) => {
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <div className="flex items-center gap-2 text-red-600">
+          <Trash2 size={20} />
+          <span>Confirm Deletion</span>
+        </div>
+      }
+    >
+      <div className="py-2">
+        <p className="text-gray-600 mb-6">
+          Are you sure you want to delete this lesson? This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button
+            variant="outline"
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={onConfirm}
+            disabled={isPending}
+          >
+            {isPending ? 'Deleting...' : 'Delete'}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
 // ─── Quiz Taker Component (for students) ─────────────────
 const QuizTaker = ({ quiz, onComplete }) => {
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const { submitQuizAttempt } = useLessonContext();
+  
+  const submitQuizMutation = useSubmitQuiz();
 
   const handleAnswerChange = (questionId, optionId) => {
     setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
@@ -69,11 +115,11 @@ const QuizTaker = ({ quiz, onComplete }) => {
     }
     setSubmitting(true);
     try {
-      const res = await submitQuizAttempt(quiz.id, answers);
-      setResult(res.data);
+      const res = await submitQuizMutation.mutateAsync({ quizId: quiz.id, answers });
+      setResult(res.data ?? res);
       setSubmitted(true);
-      if (onComplete) onComplete(res.data);
-      toast.success(res.data.passed ? '🎉 You passed the quiz!' : '❌ You did not pass. Try again?');
+      if (onComplete) onComplete(res.data ?? res);
+      toast.success((res.data?.passed || res.passed) ? '🎉 You passed the quiz!' : '❌ You did not pass. Try again?');
     } catch (err) {
       toast.error(err.message || 'Failed to submit quiz');
     } finally {
@@ -82,21 +128,22 @@ const QuizTaker = ({ quiz, onComplete }) => {
   };
 
   if (submitted && result) {
+    const passed = result.passed ?? result.data?.passed;
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-2xl border border-gray-200 p-6 text-center"
       >
-        <div className={`inline-flex p-3 rounded-full ${result.passed ? 'bg-green-100' : 'bg-red-100'} mb-4`}>
-          {result.passed ? <CheckCircle size={32} className="text-green-600" /> : <X size={32} className="text-red-600" />}
+        <div className={`inline-flex p-3 rounded-full ${passed ? 'bg-green-100' : 'bg-red-100'} mb-4`}>
+          {passed ? <CheckCircle size={32} className="text-green-600" /> : <X size={32} className="text-red-600" />}
         </div>
-        <h3 className="text-2xl font-bold mb-2">{result.passed ? 'Congratulations!' : 'Not this time'}</h3>
+        <h3 className="text-2xl font-bold mb-2">{passed ? 'Congratulations!' : 'Not this time'}</h3>
         <p className="text-gray-600 mb-4">
-          Your score: <span className="font-bold text-blue-600">{result.score}%</span>
+          Your score: <span className="font-bold text-blue-600">{result.score ?? result.data?.score}%</span>
           {quiz.passingScore && ` (Passing: ${quiz.passingScore}%)`}
         </p>
-        {!result.passed && (
+        {!passed && (
           <Button onClick={() => { setSubmitted(false); setAnswers({}); }} variant="outline">
             Try Again
           </Button>
@@ -140,10 +187,10 @@ const QuizTaker = ({ quiz, onComplete }) => {
         <Button
           variant="primary"
           onClick={handleSubmit}
-          disabled={submitting}
+          disabled={submitting || submitQuizMutation.isPending}
           className="px-8"
         >
-          {submitting ? 'Submitting...' : 'Submit Quiz'}
+          {submitting || submitQuizMutation.isPending ? 'Submitting...' : 'Submit Quiz'}
         </Button>
       </div>
     </div>
@@ -155,53 +202,33 @@ export default function LessonPage() {
   const { lessonId } = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
+  
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const isAdmin = user?.role === 'ADMIN' || isSuperAdmin;
 
-  const {
-    currentLesson,
-    fetchLessonById,
-    currentQuiz,
-    fetchQuizByLessonId,
-    quizLoading,
-    editLessonProgress,
-    stepProgress,
-    removeLesson,           // ✅ delete lesson action
-  } = useLessonContext();
+  const { data: lesson, isLoading: isLessonLoading } = useLessonById(lessonId);
+  const { data: step } = useStepById(lesson?.stepId);
+  const { data: quizData, isLoading: isQuizLoading } = useQuizByLessonId(lessonId, {
+    enabled: lesson?.type === 'QUIZ',
+  });
+  
+  const deleteMutation = useDeleteLesson();
+  const progressMutation = useUpdateLessonProgress();
+  const updateLessonMutation = useUpdateLesson();
 
-  const [loading, setLoading] = useState(true);
   const [showQuizBuilder, setShowQuizBuilder] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false); // ✅ edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [completing, setCompleting] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
-  // Fetch lesson and quiz data
-  useEffect(() => {
-    if (!lessonId) return;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const lesson = await fetchLessonById(lessonId);
-        if (lesson?.type === 'QUIZ') {
-          await fetchQuizByLessonId(lessonId);
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error('Failed to load lesson');
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [lessonId, fetchLessonById, fetchQuizByLessonId]);
-
-  const lesson = currentLesson;
-  const isCompleted = stepProgress?.completedLessons?.includes(lessonId);
+  const currentQuiz = quizData?.data ?? quizData ?? lesson?.quiz;
+  const isCompleted = step?.completedLessons?.includes?.(lessonId) || false;
 
   const handleMarkComplete = async () => {
     if (isCompleted) return;
     setCompleting(true);
     try {
-      await editLessonProgress({ lessonId, completed: true });
+      await progressMutation.mutateAsync({ id: lessonId, data: { completed: true } });
       toast.success('Lesson marked as complete!');
     } catch (err) {
       toast.error('Failed to update progress');
@@ -210,23 +237,34 @@ export default function LessonPage() {
     }
   };
 
-  // ✅ Delete lesson handler
-  const handleDeleteLesson = async () => {
-    if (!confirm('Are you sure you want to delete this lesson? This action cannot be undone.')) return;
-    setDeleting(true);
+  // ✅ فتح الـ Modal بدل confirm()
+  const handleOpenDelete = () => {
+    setShowDeleteModal(true);
+  };
+
+  // ✅ الحذف الفعلي لما يدوس Confirm في الـ Modal
+  const handleConfirmDelete = async () => {
     try {
-      await removeLesson(lessonId);
+      await deleteMutation.mutateAsync(lessonId);
       toast.success('Lesson deleted successfully');
-      router.back(); // Navigate back to step page
+      setShowDeleteModal(false);
+      router.back();
     } catch (err) {
-      toast.error(err.message || 'Failed to delete lesson');
-    } finally {
-      setDeleting(false);
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete lesson');
     }
   };
 
-  // Render loading
-  if (loading) {
+  const handleEditLesson = async (formData) => {
+    try {
+      await updateLessonMutation.mutateAsync({ id: lessonId, data: formData });
+      toast.success('Lesson updated successfully');
+      setShowEditModal(false);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to update lesson');
+    }
+  };
+
+  if (isLessonLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
@@ -251,9 +289,7 @@ export default function LessonPage() {
   const TypeIcon = typeConfig[lesson.type]?.icon || FileText;
   const typeLabel = typeConfig[lesson.type]?.label || lesson.type;
 
-  // We need to get stepId for the LessonForm (for creation only, not needed for edit)
-  // For edit, we pass the lesson object; stepId is optional.
-  const stepId = lesson.stepId; // adjust according to your data structure
+  const stepId = lesson.stepId;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 py-8 px-4 sm:px-6 lg:px-8">
@@ -266,27 +302,36 @@ export default function LessonPage() {
           >
             <ArrowLeft size={20} /> Back
           </button>
+          
           {isAdmin && (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowEditModal(true)}
-                className="gap-1"
-                leftIcon={<Edit size={14} />}
-              >
-                Edit Lesson
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={handleDeleteLesson}
-                disabled={deleting}
-                className="gap-1"
-                leftIcon={<Trash2 size={14} />}
-              >
-                {deleting ? 'Deleting...' : 'Delete'}
-              </Button>
+            <div className="flex items-center gap-2">
+              {isSuperAdmin && (
+                <span className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded-md uppercase tracking-wide">
+                  <Shield size={12} /> Super Admin
+                </span>
+              )}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEditModal(true)}
+                  disabled={updateLessonMutation.isPending}
+                  className="gap-1"
+                  leftIcon={<Edit size={14} />}
+                >
+                  {updateLessonMutation.isPending ? 'Saving...' : 'Edit Lesson'}
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={handleOpenDelete}
+                  disabled={deleteMutation.isPending}
+                  className="gap-1"
+                  leftIcon={<Trash2 size={14} />}
+                >
+                  {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                </Button>
+              </div>
             </div>
           )}
         </div>
@@ -321,7 +366,6 @@ export default function LessonPage() {
                 <p className="text-gray-600">{lesson.description}</p>
               </div>
             )}
-            {/* Progress toggle for students */}
             {!isAdmin && (
               <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                 <span className="text-sm text-gray-500">
@@ -332,9 +376,9 @@ export default function LessonPage() {
                     variant="primary"
                     size="sm"
                     onClick={handleMarkComplete}
-                    disabled={completing}
+                    disabled={completing || progressMutation.isPending}
                   >
-                    {completing ? 'Marking...' : 'Mark as Complete'}
+                    {completing || progressMutation.isPending ? 'Marking...' : 'Mark as Complete'}
                   </Button>
                 )}
               </div>
@@ -350,7 +394,6 @@ export default function LessonPage() {
           className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
         >
           <div className="p-6">
-            {/* VIDEO TYPE */}
             {lesson.type === 'VIDEO' && (
               <div className="space-y-4">
                 {lesson.video?.isExternal || lesson.externalLink ? (
@@ -379,42 +422,38 @@ export default function LessonPage() {
               </div>
             )}
 
-            {/* ARTICLE TYPE */}
-          {/* ARTICLE TYPE */}
-{lesson.type === 'ARTICLE' && (
-  <div className="prose prose-blue max-w-none">
-    {lesson.article?.isExternal || lesson.externalLink ? (
-      <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-        <ExternalLink size={16} className="text-gray-400" />
-        <a
-          href={lesson.externalLink || lesson.article?.content}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 truncate flex-1 hover:underline"
-        >
-          {lesson.externalLink || lesson.article?.content}
-        </a>
-        <CopyButton text={lesson.externalLink || lesson.article?.content || ''} />
-      </div>
-    ) : (
-      <div 
-        className="article-content-wrapper relative group"
-        style={{ overflowWrap: 'break-word', wordBreak: 'break-word', whiteSpace: 'normal' }}
-      >
-        <div 
-          dangerouslySetInnerHTML={{ __html: lesson.article?.content || '' }}
-          className="article-content"
-        />
-        {/* Optional tooltip on hover (shows full content) */}
-        <div className="absolute left-0 top-full mt-1 hidden group-hover:block bg-gray-900 text-white text-xs px-3 py-2 rounded-md shadow-lg z-50 whitespace-normal max-w-xs">
-          {lesson.article?.content?.replace(/<[^>]*>/g, '') || 'No content'}
-        </div>
-      </div>
-    )}
-  </div>
-)}
+            {lesson.type === 'ARTICLE' && (
+              <div className="prose prose-blue max-w-none">
+                {lesson.article?.isExternal || lesson.externalLink ? (
+                  <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                    <ExternalLink size={16} className="text-gray-400" />
+                    <a
+                      href={lesson.externalLink || lesson.article?.content}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 truncate flex-1 hover:underline"
+                    >
+                      {lesson.externalLink || lesson.article?.content}
+                    </a>
+                    <CopyButton text={lesson.externalLink || lesson.article?.content || ''} />
+                  </div>
+                ) : (
+                  <div 
+                    className="article-content-wrapper relative group"
+                    style={{ overflowWrap: 'break-word', wordBreak: 'break-word', whiteSpace: 'normal' }}
+                  >
+                    <div 
+                      dangerouslySetInnerHTML={{ __html: lesson.article?.content || '' }}
+                      className="article-content"
+                    />
+                    <div className="absolute left-0 top-full mt-1 hidden group-hover:block bg-gray-900 text-white text-xs px-3 py-2 rounded-md shadow-lg z-50 whitespace-normal max-w-xs">
+                      {lesson.article?.content?.replace(/<[^>]*>/g, '') || 'No content'}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
-            {/* QUIZ TYPE */}
             {lesson.type === 'QUIZ' && (
               <>
                 {isAdmin ? (
@@ -425,15 +464,18 @@ export default function LessonPage() {
                         <Edit size={16} className="mr-1" /> Edit Quiz
                       </Button>
                     </div>
-                    {currentQuiz && (
+                    {isQuizLoading ? (
+                      <p className="text-gray-500">Loading quiz...</p>
+                    ) : currentQuiz ? (
                       <div className="bg-purple-50 p-4 rounded-xl space-y-2">
                         <p><strong>Title:</strong> {currentQuiz.title || 'Untitled'}</p>
                         <p><strong>Time limit:</strong> {currentQuiz.timeLimit || 'No limit'} min</p>
                         <p><strong>Passing score:</strong> {currentQuiz.passingScore || 60}%</p>
                         <p><strong>Questions:</strong> {currentQuiz.questions?.length || 0}</p>
                       </div>
+                    ) : (
+                      <p className="text-gray-500">No quiz available for this lesson.</p>
                     )}
-                    {quizLoading && <p>Loading quiz...</p>}
                   </div>
                 ) : (
                   <div>
@@ -450,7 +492,7 @@ export default function LessonPage() {
         </motion.div>
       </div>
 
-      {/* Quiz Builder Modal (admin only) */}
+      {/* Quiz Builder Modal */}
       {isAdmin && showQuizBuilder && lesson.type === 'QUIZ' && (
         <QuizBuilder
           isOpen={showQuizBuilder}
@@ -463,15 +505,21 @@ export default function LessonPage() {
       {isAdmin && showEditModal && (
         <LessonForm
           isOpen={showEditModal}
-          onClose={() => {
-            setShowEditModal(false);
-            // Refresh lesson data after edit
-            fetchLessonById(lessonId);
-          }}
-          stepId={stepId}   // may be optional, but edit doesn't need it
-          lesson={lesson}   // pass existing lesson for edit
+          onClose={() => setShowEditModal(false)}
+          stepId={stepId} 
+          lesson={lesson}
+          onSubmit={handleEditLesson}
+          isSubmitting={updateLessonMutation.isPending}
         />
       )}
+
+      {/* ✅ Delete Confirmation Modal */}
+      <DeleteModel
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        isPending={deleteMutation.isPending}
+      />
     </div>
   );
 }

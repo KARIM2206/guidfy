@@ -1,83 +1,128 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquare, Send, Search, Circle,
-  ArrowLeft, MoreVertical, Phone, Video,
+  ArrowLeft, MoreVertical,
 } from 'lucide-react';
-import { useNotifications } from '@/app/CONTEXT/NotificationContext';
 import { useAuth } from '@/app/CONTEXT/AuthProvider';
 import Image from 'next/image';
 import { getAllUsers } from '@/services/auth';
+import { useInboxQuery, useConversationQuery, useSendMessageMutation } from '@/app/hooks/useChatQueries';
+import { useSocket } from '@/app/hooks/useSocket';
 
 export default function ChatPage() {
-  const { user ,token} = useAuth();
-  const {
-    inbox, fetchInbox,
-    conversations, fetchConversation,
-    sendMessage, chatLoading,
-  } = useNotifications();
-const [allUsers, setAllUsers] = useState([]);
- const [roleFilter, setRoleFilter] = useState('');
-  const [activeUser,   setActiveUser]   = useState(null);
-  const [inputVal,     setInputVal]     = useState('');
-  const [searchQuery,  setSearchQuery]  = useState('');
-  const [mobileView,   setMobileView]   = useState('list'); // 'list' | 'chat'
+  const { user, token } = useAuth();
+
+  // ── Initialize socket for real-time updates ──
+  useSocket();
+
+  // ── React Query hooks ──
+  const { data: inboxData, isLoading: inboxLoading } = useInboxQuery();
+  const inbox = inboxData?.data || [];
+
+  const [allUsers, setAllUsers] = useState([]);
+  const [activeUser, setActiveUser] = useState(null);
+  const [inputVal, setInputVal] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [mobileView, setMobileView] = useState('list'); // 'list' | 'chat'
   const messagesEndRef = useRef(null);
 
-  useEffect(() => { fetchInbox(); }, []);
-useEffect(() => {
-  if (!token || !user) return; // 🔥 الحل هنا
+  // ── Conversation query (depends on activeUser) ──
+  const { messages: currentMessages, isLoading: conversationLoading } = useConversationQuery(activeUser?.id);
+  const sendMessage = useSendMessageMutation();
 
-  const fetchUsers = async () => {
-    try {
-      const res = await getAllUsers({ token });
+  // ── Fetch admin/super-admin users ──
+  useEffect(() => {
+    if (!token || !user) return;
 
-      const filtered = res.data.filter(u =>
-        ['ADMIN', 'SUPER_ADMIN'].includes(u.role) &&
-        u.id !== user.id
-      );
+    const fetchUsers = async () => {
+      try {
+        const res = await getAllUsers({ token });
+        const filtered = res.data.filter(u =>
+          ['ADMIN', 'SUPER_ADMIN'].includes(u.role) &&
+          u.id !== user.id
+        );
+        setAllUsers(filtered);
+      } catch (err) {
+        console.log(err);
+      }
+    };
 
-      setAllUsers(filtered);
-    } catch (err) {
-      console.log(err);
-    }
-  };
+    fetchUsers();
+  }, [token, user]);
 
-  fetchUsers();
-}, [token, user]);
-
+  // ── Select user → switch to chat view ──
   useEffect(() => {
     if (activeUser) {
-      fetchConversation(activeUser.id);
       setMobileView('chat');
     }
   }, [activeUser]);
 
+  // ── Scroll to bottom on new messages ──
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [conversations, activeUser]);
+  }, [currentMessages]);
 
-  const handleSend = async () => {
+  // ── Merge admin users with inbox data ──
+  const mergedUsers = useMemo(() => {
+    const merged = inbox.map(item => ({
+      user: item.user,
+      lastMessage: item.lastMessage,
+      unreadCount: item.unreadCount || 0,
+    }));
+
+    allUsers.forEach(adminUser => {
+      if (!merged.find(item => item.user?.id === adminUser.id)) {
+        merged.push({
+          user: adminUser,
+          lastMessage: null,
+          unreadCount: 0,
+        });
+      }
+    });
+
+    return merged.sort((a, b) => {
+      const dateA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt) : new Date(0);
+      const dateB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt) : new Date(0);
+      return dateB - dateA;
+    });
+  }, [allUsers, inbox]);
+
+  const filteredInbox = useMemo(() => {
+    return mergedUsers.filter(i =>
+      i.user.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [mergedUsers, searchQuery]);
+
+  // ── Group messages by date ──
+  const groupedMessages = useMemo(() => {
+    return currentMessages.reduce((acc, msg) => {
+      const date = new Date(msg.createdAt).toDateString();
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(msg);
+      return acc;
+    }, {});
+  }, [currentMessages]);
+
+  // ── Send handler ──
+  const handleSend = useCallback(async () => {
     if (!inputVal.trim() || !activeUser) return;
-    await sendMessage(activeUser.id, inputVal.trim());
-    setInputVal('');
-  };
+    try {
+      await sendMessage.mutateAsync({ receiverId: activeUser.id, content: inputVal.trim() });
+      setInputVal('');
+    } catch (err) {
+      console.error('Send error:', err);
+    }
+  }, [inputVal, activeUser, sendMessage]);
 
-  const currentMessages = activeUser ? (conversations[activeUser.id] || []) : [];
-  const mergedUsers = allUsers.map(userItem => {
-  const existing = inbox.find(i => i.user.id === userItem.id);
-
-  return existing || {
-    user: userItem,
-    lastMessage: null,
-    unreadCount: 0,
-  };
-});
-  const filteredInbox = mergedUsers.filter(i =>
-    i.user.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }, [handleSend]);
 
   const timeStr = (d) => new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const dateStr = (d) => {
@@ -96,14 +141,6 @@ useEffect(() => {
       }
     </div>
   );
-
-  // Group messages by date
-  const groupedMessages = currentMessages.reduce((acc, msg) => {
-    const date = new Date(msg.createdAt).toDateString();
-    if (!acc[date]) acc[date] = [];
-    acc[date].push(msg);
-    return acc;
-  }, {});
 
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden">
@@ -130,12 +167,12 @@ useEffect(() => {
 
         {/* Inbox List */}
         <div className="flex-1 overflow-y-auto">
-          {chatLoading && inbox.length === 0 && (
+          {inboxLoading && filteredInbox.length === 0 && (
             <div className="flex items-center justify-center py-12">
               <div className="w-7 h-7 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
             </div>
           )}
-          {!chatLoading && filteredInbox.length === 0 && (
+          {!inboxLoading && filteredInbox.length === 0 && (
             <div className="text-center py-16 px-4">
               <MessageSquare size={40} className="mx-auto text-gray-200 mb-3" />
               <p className="text-sm font-medium text-gray-400">No conversations</p>
@@ -165,7 +202,7 @@ useEffect(() => {
                         {item.user.name}
                       </p>
                       <span className="text-[10px] text-gray-400 flex-shrink-0 ml-1">
-                        {dateStr(item.lastMessage?.createdAt)}
+                        {item.lastMessage?.createdAt ? dateStr(item.lastMessage.createdAt) : ''}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -241,7 +278,7 @@ useEffect(() => {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-gradient-to-b from-gray-50 to-white">
-              {chatLoading && currentMessages.length === 0 && (
+              {conversationLoading && currentMessages.length === 0 && (
                 <div className="flex items-center justify-center py-8">
                   <div className="w-7 h-7 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
                 </div>
@@ -302,12 +339,7 @@ useEffect(() => {
                   <textarea
                     value={inputVal}
                     onChange={(e) => setInputVal(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
+                    onKeyDown={handleKeyDown}
                     placeholder="Type a message... (Enter to send)"
                     rows={1}
                     className="w-full px-4 py-3 text-sm bg-transparent focus:outline-none resize-none max-h-28 leading-relaxed"
@@ -318,10 +350,14 @@ useEffect(() => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleSend}
-                  disabled={!inputVal.trim()}
+                  disabled={!inputVal.trim() || sendMessage.isPending}
                   className="p-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:cursor-not-allowed text-white rounded-2xl transition-colors shadow-md flex-shrink-0"
                 >
-                  <Send size={18} />
+                  {sendMessage.isPending ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Send size={18} />
+                  )}
                 </motion.button>
               </div>
               <p className="text-[10px] text-gray-300 mt-1.5 ml-1">Shift+Enter for new line</p>
