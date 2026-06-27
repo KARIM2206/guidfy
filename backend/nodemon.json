@@ -1,0 +1,9 @@
+{
+  "ignore": [
+    "ai_service/data/*",
+    "ai_service/logs/*",
+    "ai_service/models/*",
+    "ai_service/__pycache__/*",
+    "venv/*"
+  ]
+}

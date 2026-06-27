@@ -1,6 +1,5 @@
-// learningPathController.js
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+
+const prisma = require("../../prismaClient");
 const errorHandler = require("../../utils/errorHandler");
 const { getRecommendedPath } = require("../../services/learningPathService");
 const stringSimilarity = require("string-similarity");
@@ -12,6 +11,7 @@ const path = require("path");
 const { get } = require("http");
 const e = require("express");
 const { default: axios } = require("axios");
+const { log } = require("console");
 
 const addLearningPath = async (req, res, next) => {
   const { title, description, estimatedDuration } = req.body;
@@ -57,14 +57,13 @@ const getAllLearningPaths = async (req, res, next) => {
 
   const { search, topic, level, duration, special } = req.query;
 
-  let where = {};
+  let where = { isPublished: true }; // ✅ ALWAYS only show published paths in the student grid!
   let whereEnrollments = {};
 
   if (role === 'STUDENT') {
-    where.isPublished = true;
     whereEnrollments.userId = userId;
-  } else if (role === 'SUPER_ADMIN') {
-    // بدون شروط إضافية
+  } else if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+    // Admins see all enrollments, but still only published paths
   }
 
   // البحث النصي
@@ -96,7 +95,17 @@ const getAllLearningPaths = async (req, res, next) => {
       where,
       include: {
         roadmaps: {
-          include: { roadmap: true },
+          include: { 
+            roadmap: {
+              include: {
+                steps: {
+                  include: {
+                    lessons: { select: { id: true } }
+                  }
+                }
+              }
+            } 
+          },
           orderBy: { order: 'asc' },
         },
         assignedAdmins: {
@@ -115,10 +124,141 @@ const getAllLearningPaths = async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
+    // ── Compute user progress for Learning Paths ──
+    let userCompletedLessonIds = new Set();
+    const userProgress = await prisma.userLessonProgress.findMany({
+      where: { userId, completed: true }
+    });
+    userProgress.forEach(p => {
+      userCompletedLessonIds.add(p.lessonId);
+    });
+
+    const formattedPaths = learningPaths.map(path => {
+      let pathProgress = 0;
+      if (path.roadmaps && path.roadmaps.length > 0) {
+        let publishedRoadmapsCount = 0;
+        let totalRoadmapPercentage = 0;
+
+        path.roadmaps.forEach(r => {
+          if (r.roadmap && r.roadmap.isPublished) {
+            publishedRoadmapsCount++;
+            let stepsCount = 0;
+            let totalStepsPercentage = 0;
+
+            if (r.roadmap.steps) {
+              stepsCount = r.roadmap.steps.length;
+              r.roadmap.steps.forEach(step => {
+                let stepPercentage = 0;
+                if (step.lessons && step.lessons.length > 0) {
+                  let totalLessons = step.lessons.length;
+                  let completedLessons = 0;
+                  step.lessons.forEach(lesson => {
+                    if (userCompletedLessonIds.has(lesson.id)) completedLessons++;
+                  });
+                  stepPercentage = Math.round((completedLessons / totalLessons) * 100);
+                }
+                totalStepsPercentage += stepPercentage;
+              });
+            }
+
+            let roadmapPercentage = stepsCount > 0 ? Math.round(totalStepsPercentage / stepsCount) : 0;
+            totalRoadmapPercentage += roadmapPercentage;
+          }
+        });
+
+        if (publishedRoadmapsCount > 0) {
+          pathProgress = Math.round(totalRoadmapPercentage / publishedRoadmapsCount);
+        }
+      }
+
+      const formattedEnrollments = (path.enrollments || []).map(e => ({
+        ...e,
+        // Only set progress if it's the current user's enrollment
+        ...(e.userId === userId ? { progress: pathProgress } : {})
+      }));
+
+      // Remove nested steps/lessons before sending to client to save bandwidth
+      const cleanedRoadmaps = path.roadmaps.map(r => {
+        if (r.roadmap) {
+          delete r.roadmap.steps;
+        }
+        return r;
+      });
+
+      return {
+        ...path,
+        currentUserProgress: pathProgress,
+        roadmaps: cleanedRoadmaps,
+        enrollments: formattedEnrollments
+      };
+    });
+
+    res.json({
+      success: true,
+      data: formattedPaths,
+      message: 'Learning Paths fetched successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================
+// Get All Learning Paths (For Super Admin)
+// ==========================
+const getAllLearningPathsSuperAdmin = async (req, res, next) => {
+  try {
+    const { search, topic, duration } = req.query;
+    let where = {};
+
+    // البحث النصي
+    const searchText = search || topic;
+    if (searchText) {
+      where.OR = [
+        { title: { contains: searchText } },
+        { description: { contains: searchText } }
+      ];
+    }
+
+    if (duration && duration !== 'Any Duration') {
+      const match = duration.match(/(\d+)-(\d+)\s*hrs/);
+      if (match) {
+        const minHours = parseInt(match[1], 10);
+        const maxHours = parseInt(match[2], 10);
+        where.estimatedDuration = {
+          gte: minHours,
+          lte: maxHours,
+        };
+      }
+    }
+
+    const learningPaths = await prisma.learningPath.findMany({
+      where,
+      include: {
+        roadmaps: {
+          include: { roadmap: true },
+          orderBy: { order: 'asc' },
+        },
+        assignedAdmins: {
+          select: {
+            admin: true,
+            adminId: true,
+          },
+        },
+        permissions: true,
+        createdBy: true,
+        projects: true,
+        _count: {
+          select: { enrollments: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
     res.json({
       success: true,
       data: learningPaths,
-      message: 'Learning Paths fetched successfully',
+      message: 'All Learning Paths fetched successfully for Super Admin',
     });
   } catch (error) {
     next(error);
@@ -143,7 +283,17 @@ const getSingleLearningPath = async (req, res, next) => {
       where: { id: Number(id) },
       include: {
         roadmaps: {
-          include: { roadmap: true },
+          include: { 
+            roadmap: {
+              include: {
+                steps: {
+                  include: {
+                    lessons: { select: { id: true } }
+                  }
+                }
+              }
+            } 
+          },
           orderBy: { order: "asc" },
         },
         createdBy: true,
@@ -154,6 +304,64 @@ const getSingleLearningPath = async (req, res, next) => {
     });
 
     if (!learningPath) return next(errorHandler("Learning Path not found", 404));
+
+    // ── Compute user progress for Learning Path ──
+    let pathProgress = 0;
+    if (learningPath.roadmaps && learningPath.roadmaps.length > 0) {
+      const userProgress = await prisma.userLessonProgress.findMany({
+        where: { userId: Number(req.user.id), completed: true }
+      });
+      const userCompletedLessonIds = new Set(userProgress.map(p => p.lessonId));
+      
+      let publishedRoadmapsCount = 0;
+      let totalRoadmapPercentage = 0;
+
+      learningPath.roadmaps.forEach(r => {
+        if (r.roadmap && r.roadmap.isPublished) {
+          publishedRoadmapsCount++;
+          let stepsCount = 0;
+          let totalStepsPercentage = 0;
+
+          if (r.roadmap.steps) {
+            stepsCount = r.roadmap.steps.length;
+            r.roadmap.steps.forEach(step => {
+              let stepPercentage = 0;
+              if (step.lessons && step.lessons.length > 0) {
+                let totalLessons = step.lessons.length;
+                let completedLessons = 0;
+                step.lessons.forEach(lesson => {
+                  if (userCompletedLessonIds.has(lesson.id)) completedLessons++;
+                });
+                stepPercentage = Math.round((completedLessons / totalLessons) * 100);
+              }
+              totalStepsPercentage += stepPercentage;
+            });
+          }
+
+          let roadmapPercentage = stepsCount > 0 ? Math.round(totalStepsPercentage / stepsCount) : 0;
+          totalRoadmapPercentage += roadmapPercentage;
+        }
+      });
+
+      if (publishedRoadmapsCount > 0) {
+        pathProgress = Math.round(totalRoadmapPercentage / publishedRoadmapsCount);
+      }
+    }
+
+    const formattedEnrollments = (learningPath.enrollments || []).map(e => ({
+      ...e,
+      // Only set progress if it's the current user's enrollment
+      ...(e.userId === Number(req.user.id) ? { progress: pathProgress } : {})
+    }));
+
+    learningPath.enrollments = formattedEnrollments;
+    learningPath.currentUserProgress = pathProgress;
+
+    // Clean up
+    learningPath.roadmaps.forEach(r => {
+      if (r.roadmap) delete r.roadmap.steps;
+    });
+
     res.json({ success: true, data: learningPath });
   } catch (error) {
     next(error);
@@ -165,12 +373,13 @@ const getSingleLearningPathByTitle = async (req, res, next) => {
   try {
     const { title } = req.params;
     const normalizedTitle = title.toLowerCase();
+    
+    let whereCondition = { title: normalizedTitle, isPublished: true };
+    let fuzzyWhereCondition = { isPublished: true };
 
     // نحاول الأول نجيب match مباشر
     let learningPath = await prisma.learningPath.findFirst({
-      where: {
-        title: normalizedTitle,
-      },
+      where: whereCondition,
       include: {
         roadmaps: {
           where: { roadmap: { isPublished: true } },
@@ -193,8 +402,8 @@ const getSingleLearningPathByTitle = async (req, res, next) => {
 
     // لو ملقيناش match مباشر نعمل fuzzy search
     if (!learningPath) {
-
       const allPaths = await prisma.learningPath.findMany({
+        where: fuzzyWhereCondition,
         select: { id: true, title: true },
       });
 
@@ -214,7 +423,7 @@ const getSingleLearningPathByTitle = async (req, res, next) => {
       }
 
       // لو نسبة التشابه كويسة
-      if (highestScore > 0.4) {
+      if (highestScore > 0.3) {
         learningPath = await prisma.learningPath.findFirst({
           where: { id: bestMatch.id },
           include: {
@@ -282,8 +491,6 @@ const updateLearningPath = async (req, res, next) => {
       data: {
         title,
         description,
-        jobs: parseInt(jobs) || 0,
-        projects: parseInt(projects) || 0,
         estimatedDuration: Number(estimatedDuration),
         image: newImagePath,
       },
@@ -395,42 +602,50 @@ const assignAdminsToLearningPath = async (req, res, next) => {
   }
 };
 
- const getLearningPathsForAdmin = async (req, res, next) => {
+const getLearningPathsForAdmin = async (req, res, next) => {
   try {
-  const adminId=parseInt(req.user.id)
- const {section}=req.query
+    const adminId = parseInt(req.user.id);
+    const { section } = req.query;
+    const role = req.user.role; // ✅ Get role
+
     if (!adminId || isNaN(adminId)) {
       return next(errorHandler("Valid Admin ID is required", 400));
     }
 
-    // جلب جميع الليرننج باس اللي مخصصه للادمن ده
-const learningPaths = await prisma.learningPath.findMany({
-  
-  where: {
-    permissions: {
-      some: {
-        userId: parseInt(req.user.id),
-        section:section
-      },
+    let whereCondition = {};
+    if (role !== 'SUPER_ADMIN') {
+      whereCondition = {
+        permissions: {
+          some: {
+            userId: adminId,
+            section: section
+          },
+        },
+      };
+    }
 
-    },
-  },
-  select: {
-    id: true,
-    title: true,
-    isPublished: true,
-    assignedAdmins: {
+    // جلب الليرننج باس اللي مخصصه للادمن ده أو كل حاجة لو سوبر أدمن
+    const learningPaths = await prisma.learningPath.findMany({
+      where: whereCondition,
       select: {
-        adminId: true,
-        assignedAt: true,
+        id: true,
+        title: true,
+        isPublished: true,
+        assignedAdmins: {
+          select: {
+            adminId: true,
+            assignedAt: true,
+          },
+        },
+        permissions: true,
+        _count: {
+          select: { jobsList: true }
+        },
       },
-    },
-    permissions: true,
-  },
-  orderBy: {
-    createdAt: "desc",
-  },
-});
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
 
     return res.status(200).json({
       success: true,
@@ -445,105 +660,104 @@ const assignAdminsToSection = async (req, res, next) => {
   try {
     const learningPathId = Number(req.params.learningPathId);
     const { section, adminIds } = req.body;
-
     const sectionUpper = section.toUpperCase();
 
-    // 🔒 فقط SUPER_ADMIN
     if (req.user.role !== "SUPER_ADMIN") {
-      return res.status(403).json({
-        message: "Only SUPER_ADMIN can assign admins",
-      });
+      return res.status(403).json({ message: "Only SUPER_ADMIN can assign admins" });
     }
+
+    const normalizedAdminIds = Array.isArray(adminIds)
+      ? adminIds.map((id) => Number(id)).filter((id) => !Number.isNaN(id))
+      : [];
 
     // 🔥 هات القديم
     const oldPermissions = await prisma.learningPathPermission.findMany({
-      where: {
-        learningPathId,
-        section: sectionUpper,
-      },
+      where: { learningPathId, section: sectionUpper },
     });
-
-    const oldAdminIds = oldPermissions.map(p => p.userId);
+    const oldAdminIds = oldPermissions.map((p) => p.userId);
 
     // 🔥 diff
-    const addedAdmins = adminIds.filter(id => !oldAdminIds.includes(id));
-    const removedAdmins = oldAdminIds.filter(id => !adminIds.includes(id));
+    const addedAdmins = normalizedAdminIds.filter((id) => !oldAdminIds.includes(id));
+    const removedAdmins = oldAdminIds.filter((id) => !normalizedAdminIds.includes(id));
 
     // 🔹 delete القديم
     await prisma.learningPathPermission.deleteMany({
-      where: {
-        learningPathId,
-        section: sectionUpper,
-      },
+      where: { learningPathId, section: sectionUpper },
     });
 
     // 🔹 create الجديد
-    const permissions = adminIds.map((adminId) => ({
-      userId: adminId,
-      learningPathId,
-      section: sectionUpper,
-    }));
-
     await prisma.learningPathPermission.createMany({
-      data: permissions,
+      data: normalizedAdminIds.map((adminId) => ({
+        userId: adminId,
+        learningPathId,
+        section: sectionUpper,
+      })),
       skipDuplicates: true,
     });
 
-    // 🔔 Notification helper
-    const sendNotification = async (userIds, message, metadata) => {
-      const io = req.app.get("io");
+    // ✅ ارجع الـ LearningPath مع permissions
+    const updatedLearningPath = await prisma.learningPath.findUnique({
+      where: { id: learningPathId },
+      include: {
+        permissions: {
+          include: {
+            user: {
+              select: { id: true, name: true, email: true, role: true },
+            },
+          },
+        },
+        roadmaps: true,
+        createdBy: true,
+      },
+    });
 
+    // ✅ حوّل permissions لـ assignedAdmins format
+    const formattedLearningPath = {
+      ...updatedLearningPath,
+      assignedAdmins: updatedLearningPath.permissions
+        .filter((p) => p.section === sectionUpper)
+        .map((p) => ({
+          adminId: p.userId,
+          admin: p.user,
+        })),
+    };
+
+    // 🔔 Notifications
+    const io = req.app.get("io");
+    const sendNotification = async (userIds, message, metadata) => {
       for (const userId of [...new Set(userIds)]) {
         const notification = await prisma.notification.create({
-          data: {
-            userId,
-            message,
-            type: "SYSTEM",
-            metadata,
-          },
+          data: { userId, message, type: "SYSTEM", metadata },
         });
-
         io?.to(`user_${userId}`).emit("new_notification", notification);
       }
     };
 
-    // 🔥 get learningPath title
-    const learningPath = await prisma.learningPath.findUnique({
+    const lp = await prisma.learningPath.findUnique({
       where: { id: learningPathId },
       select: { title: true },
     });
 
-    // ✅ notify added
     if (addedAdmins.length > 0) {
       await sendNotification(
         addedAdmins,
-        `🎯 You have been assigned to ${sectionUpper} section in "${learningPath?.title}"`,
-        {
-          type: "ASSIGN_SECTION",
-          section: sectionUpper,
-          learningPathId,
-          roadmapId: null,
-        }
+        `🎯 Assigned to ${sectionUpper} in "${lp?.title}"`,
+        { type: "ASSIGN_SECTION", section: sectionUpper, learningPathId }
       );
     }
 
-    // ❌ notify removed
     if (removedAdmins.length > 0) {
       await sendNotification(
         removedAdmins,
-        `❌ You have been removed from ${sectionUpper} section in "${learningPath?.title}"`,
-        {
-          type: "REMOVE_SECTION",
-          section: sectionUpper,
-          learningPathId,
-         
-        }
+        `❌ Removed from ${sectionUpper} in "${lp?.title}"`,
+        { type: "REMOVE_SECTION", section: sectionUpper, learningPathId }
       );
     }
 
     res.json({
-      message: "Admins assigned successfully",
       success: true,
+      message: "Admins assigned successfully",
+      data: formattedLearningPath,
       addedAdmins,
       removedAdmins,
     });
@@ -559,14 +773,16 @@ const assignAdminsToSection = async (req, res, next) => {
 async function recommendLearningPath(req, res, next) {
   try {
     const { experience, skills, interest, hours_per_day, target_goal } = req.body;
-    const userId = req.user.id;
+    const userId = Number(req.user.id);
+    const safeSkills = Array.isArray(skills) ? skills : [];
+    const safeHours = Number(hours_per_day) || 0;
 
     // 1️⃣ اطلب recommendation من الـ AI
     const flaskData = await getRecommendedPath({
-      experience,
-      skills,
-      interest,
-      hours_per_day
+      experience: experience || '',
+      skills: safeSkills,
+      interest: interest || '',
+      hours_per_day: safeHours
     });
 
     const aiPath = flaskData.recommended_path;
@@ -579,7 +795,7 @@ async function recommendLearningPath(req, res, next) {
         title: true
       }
     });
-console.log('paths in recommendLearningPath', paths);
+    console.log('paths in recommendLearningPath', paths);
 
     let matchedPath = null;
 
@@ -591,21 +807,26 @@ console.log('paths in recommendLearningPath', paths);
       const bestMatch = match.bestMatch;
 
       // threshold للتأكد أن التشابه مقبول
-      if (bestMatch.rating > 0.4) {
+      if (bestMatch.rating > 0.3) {
         matchedPath = paths.find(p => p.title === bestMatch.target);
       }
     }
-
+    if (!matchedPath) {
+      matchedPath = paths.find(p =>
+        p.title.toLowerCase().includes(aiPath.toLowerCase()) ||
+        aiPath.toLowerCase().includes(p.title.toLowerCase())
+      );
+    }
     console.log("AI path:", aiPath);
     console.log("Matched path:", matchedPath);
 
     // 3️⃣ حفظ recommendation
     const saved = await prisma.learningPathRecommendation.create({
       data: {
-        experience,
-        skills,
-        interest,
-        hoursPerDay: hours_per_day,
+        experience: experience || 'Beginner',
+        skills: safeSkills,
+        interest: interest || '',
+        hoursPerDay: safeHours,
         targetGoal: target_goal ?? null,
 
         recommendedPath: aiPath,
@@ -663,14 +884,12 @@ async function getMyRecommendations(req, res, next) {
 
     // لو الـ learningPathId null نحاول نلاقي بديل من topPaths
     if (!recommendation.learningPath && recommendation.topPaths?.length) {
-
       const possiblePaths = recommendation.topPaths.map(p => p.path);
 
-      const matchedPath = await prisma.learningPath.findFirst({
-        where: {
-          title: { in: possiblePaths },
-          isPublished: true
-        },
+      // جيب كل الـ published paths وعمل الـ matching في JavaScript
+      // عشان SQLite مش بيدعم mode: 'insensitive' في Prisma
+      const allPaths = await prisma.learningPath.findMany({
+        where: { isPublished: true },
         select: {
           id: true,
           title: true,
@@ -680,6 +899,13 @@ async function getMyRecommendations(req, res, next) {
           isPublished: true
         }
       });
+
+      const matchedPath = allPaths.find(p =>
+        possiblePaths.some(possible =>
+          p.title.toLowerCase().includes(possible.toLowerCase()) ||
+          possible.toLowerCase().includes(p.title.toLowerCase())
+        )
+      );
 
       if (matchedPath) {
         recommendation.learningPath = matchedPath;
@@ -701,6 +927,7 @@ async function getMyRecommendations(req, res, next) {
 module.exports = {
   addLearningPath,
   getAllLearningPaths,
+  getAllLearningPathsSuperAdmin,
   getSingleLearningPath,
   updateLearningPath,
   deleteLearningPath,

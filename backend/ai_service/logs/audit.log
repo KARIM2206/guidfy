@@ -1,0 +1,7 @@
+[2026-06-26T12:00:48.123Z] Admin ID: 3 | IP: ::1 | Result: failed | Duration: 0m 8s
+[2026-06-26T12:14:22.381Z] Admin ID: 3 | IP: ::1 | Result: failed | Duration: 0m 1s
+[2026-06-26T12:16:24.450Z] Admin ID: 3 | IP: ::1 | Result: failed | Duration: 0m 1s
+[2026-06-26T12:23:48.330Z] Admin ID: 3 | IP: ::1 | Result: success | Duration: 0m 5s
+[2026-06-26T12:24:33.408Z] Admin ID: 3 | IP: ::1 | Result: success | Duration: 0m 9s
+[2026-06-27T16:23:18.436Z] Admin ID: 3 | IP: ::1 | Result: failed | Duration: 0m 2s
+[2026-06-27T16:46:30.993Z] Admin ID: 3 | IP: ::1 | Result: success | Duration: 0m 17s

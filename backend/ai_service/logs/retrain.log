@@ -1,0 +1,479 @@
+[2026-06-26T12:00:39.758Z] === RETRAINING STARTED ===
+[2026-06-26T12:00:39.773Z] Initiated by Admin: 3
+[2026-06-26T12:00:40.974Z] [STDOUT] > backend@1.0.0 retrain
+> node scripts/exportFeedbackForRetrain.js && python ai_service/retrain.py
+[2026-06-26T12:00:41.256Z] [STDOUT] [Export] Fetching feedback from database...
+[2026-06-26T12:00:41.307Z] [STDOUT] ✅ Prisma connected successfully
+[2026-06-26T12:00:41.341Z] [STDOUT] [Export] Found 154 feedback records
+[2026-06-26T12:00:41.342Z] [STDERR] [Export] Skipped 67 corrupt rows (freshness=0 or null)
+[2026-06-26T12:00:41.345Z] [STDOUT] [Export] Exporting 87 clean rows...
+[2026-06-26T12:00:41.365Z] [STDOUT] [Export] Written 87 events to C:\final-project\ai_service\data\feedback_log.jsonl
+[2026-06-26T12:00:41.365Z] [STDOUT] [Export] Feature Statistics:
+[2026-06-26T12:00:41.369Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[2026-06-26T12:00:41.372Z] [STDOUT] retrieval_score           ALL NULL  (missing: 100.0%)
+[2026-06-26T12:00:41.374Z] [STDOUT] skill_overlap             mean=0.170  min=0.000  max=0.300  var=0.008  missing=0.0%
+[2026-06-26T12:00:41.374Z] [STDOUT] exp_match                 ALL NULL  (missing: 100.0%)
+[2026-06-26T12:00:41.375Z] [STDOUT] freshness                 mean=0.975  min=0.922  max=0.988  var=0.000  missing=0.0%
+  career_alignment          ALL NULL  (missing: 100.0%)
+  learning_gap_score        ALL NULL  (missing: 100.0%)
+  lp_alignment              mean=0.234  min=0.000  max=0.900  var=0.047  missing=0.0%
+  user_skill_density        ALL NULL  (missing: 100.0%)
+[2026-06-26T12:00:41.375Z] [STDOUT] job_skill_difficulty      ALL NULL  (missing: 100.0%)
+──────────────────────────────────────────────────────────────────────
+[Export] Done. Total exported: 87 / 154
+[2026-06-26T12:00:47.982Z] [STDERR] Traceback (most recent call last):
+[2026-06-26T12:00:47.984Z] [STDERR] File "C:\final-project\backend\ai_service\retrain.py", line 14, in <module>
+    import lightgbm as lgb
+[2026-06-26T12:00:47.984Z] [STDERR] ModuleNotFoundError: No module named 'lightgbm'
+[2026-06-26T12:00:48.121Z] === RETRAINING FAILED with code 1 in 0m 8s ===
+[2026-06-26T12:14:20.538Z] === RETRAINING STARTED ===
+[2026-06-26T12:14:20.548Z] Initiated by Admin: 3
+[2026-06-26T12:14:21.790Z] [STDOUT] > backend@1.0.0 retrain
+> node scripts/exportFeedbackForRetrain.js && venv/Scripts/python ai_service/retrain.py
+[2026-06-26T12:14:22.177Z] [STDOUT] [Export] Fetching feedback from database...
+[2026-06-26T12:14:22.210Z] [STDOUT] ✅ Prisma connected successfully
+[2026-06-26T12:14:22.234Z] [STDOUT] [Export] Found 154 feedback records
+[2026-06-26T12:14:22.234Z] [STDERR] [Export] Skipped 67 corrupt rows (freshness=0 or null)
+[2026-06-26T12:14:22.235Z] [STDOUT] [Export] Exporting 87 clean rows...
+[2026-06-26T12:14:22.241Z] [STDOUT] [Export] Written 87 events to C:\final-project\ai_service\data\feedback_log.jsonl
+[2026-06-26T12:14:22.241Z] [STDOUT] [Export] Feature Statistics:
+──────────────────────────────────────────────────────────────────────
+[2026-06-26T12:14:22.241Z] [STDOUT] retrieval_score           ALL NULL  (missing: 100.0%)
+[2026-06-26T12:14:22.242Z] [STDOUT] skill_overlap             mean=0.170  min=0.000  max=0.300  var=0.008  missing=0.0%
+[2026-06-26T12:14:22.243Z] [STDOUT] exp_match                 ALL NULL  (missing: 100.0%)
+[2026-06-26T12:14:22.244Z] [STDOUT] freshness                 mean=0.975  min=0.922  max=0.988  var=0.000  missing=0.0%
+[2026-06-26T12:14:22.248Z] [STDOUT] career_alignment          ALL NULL  (missing: 100.0%)
+[2026-06-26T12:14:22.249Z] [STDOUT] learning_gap_score        ALL NULL  (missing: 100.0%)
+[2026-06-26T12:14:22.251Z] [STDOUT] lp_alignment              mean=0.234  min=0.000  max=0.900  var=0.047  missing=0.0%
+[2026-06-26T12:14:22.251Z] [STDOUT] user_skill_density        ALL NULL  (missing: 100.0%)
+[2026-06-26T12:14:22.251Z] [STDOUT] job_skill_difficulty      ALL NULL  (missing: 100.0%)
+[2026-06-26T12:14:22.252Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[2026-06-26T12:14:22.253Z] [STDOUT] [Export] Done. Total exported: 87 / 154
+[2026-06-26T12:14:22.348Z] [STDERR] 'venv' is not recognized as an internal or external command,
+operable program or batch file.
+[2026-06-26T12:14:22.376Z] === RETRAINING FAILED with code 1 in 0m 1s ===
+[2026-06-26T12:16:23.184Z] === RETRAINING STARTED ===
+[2026-06-26T12:16:23.192Z] Initiated by Admin: 3
+[2026-06-26T12:16:24.118Z] [STDOUT] > backend@1.0.0 retrain
+> node scripts/exportFeedbackForRetrain.js && venv/Scripts/python ai_service/retrain.py
+[2026-06-26T12:16:24.330Z] [STDOUT] [Export] Fetching feedback from database...
+[2026-06-26T12:16:24.359Z] [STDOUT] ✅ Prisma connected successfully
+[2026-06-26T12:16:24.373Z] [STDOUT] [Export] Found 154 feedback records
+[2026-06-26T12:16:24.373Z] [STDERR] [Export] Skipped 67 corrupt rows (freshness=0 or null)
+[2026-06-26T12:16:24.374Z] [STDOUT] [Export] Exporting 87 clean rows...
+[2026-06-26T12:16:24.379Z] [STDOUT] [Export] Written 87 events to C:\final-project\ai_service\data\feedback_log.jsonl
+[2026-06-26T12:16:24.380Z] [STDOUT] [Export] Feature Statistics:
+[2026-06-26T12:16:24.382Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[2026-06-26T12:16:24.384Z] [STDOUT] retrieval_score           ALL NULL  (missing: 100.0%)
+[2026-06-26T12:16:24.385Z] [STDOUT] skill_overlap             mean=0.170  min=0.000  max=0.300  var=0.008  missing=0.0%
+[2026-06-26T12:16:24.385Z] [STDOUT] exp_match                 ALL NULL  (missing: 100.0%)
+[2026-06-26T12:16:24.385Z] [STDOUT] freshness                 mean=0.975  min=0.922  max=0.988  var=0.000  missing=0.0%
+[2026-06-26T12:16:24.386Z] [STDOUT] career_alignment          ALL NULL  (missing: 100.0%)
+[2026-06-26T12:16:24.388Z] [STDOUT] learning_gap_score        ALL NULL  (missing: 100.0%)
+[2026-06-26T12:16:24.389Z] [STDOUT] lp_alignment              mean=0.234  min=0.000  max=0.900  var=0.047  missing=0.0%
+[2026-06-26T12:16:24.389Z] [STDOUT] user_skill_density        ALL NULL  (missing: 100.0%)
+[2026-06-26T12:16:24.389Z] [STDOUT] job_skill_difficulty      ALL NULL  (missing: 100.0%)
+[2026-06-26T12:16:24.390Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[2026-06-26T12:16:24.390Z] [STDOUT] [Export] Done. Total exported: 87 / 154
+[2026-06-26T12:16:24.418Z] [STDERR] 'venv' is not recognized as an internal or external command,
+operable program or batch file.
+[2026-06-26T12:16:24.445Z] === RETRAINING FAILED with code 1 in 0m 1s ===
+[2026-06-26T12:19:20.805Z] === RETRAINING STARTED ===
+[2026-06-26T12:19:20.818Z] Initiated by Admin: 3
+[2026-06-26T12:19:21.697Z] [STDOUT] > backend@1.0.0 retrain
+> node scripts/exportFeedbackForRetrain.js && venv\Scripts\python ai_service/retrain.py
+[2026-06-26T12:19:21.918Z] [STDOUT] [Export] Fetching feedback from database...
+[2026-06-26T12:19:21.952Z] [STDOUT] ✅ Prisma connected successfully
+[2026-06-26T12:19:21.967Z] [STDOUT] [Export] Found 154 feedback records
+[2026-06-26T12:19:21.967Z] [STDERR] [Export] Skipped 67 corrupt rows (freshness=0 or null)
+[2026-06-26T12:19:21.967Z] [STDOUT] [Export] Exporting 87 clean rows...
+[2026-06-26T12:19:21.972Z] [STDOUT] [Export] Written 87 events to C:\final-project\ai_service\data\feedback_log.jsonl
+
+[Export] Feature Statistics:
+[2026-06-26T12:19:21.973Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[2026-06-26T12:19:21.977Z] [STDOUT] retrieval_score           ALL NULL  (missing: 100.0%)
+[2026-06-26T12:19:21.978Z] [STDOUT] skill_overlap             mean=0.170  min=0.000  max=0.300  var=0.008  missing=0.0%
+[2026-06-26T12:19:21.978Z] [STDOUT] exp_match                 ALL NULL  (missing: 100.0%)
+[2026-06-26T12:19:21.979Z] [STDOUT] freshness                 mean=0.975  min=0.922  max=0.988  var=0.000  missing=0.0%
+[2026-06-26T12:19:21.980Z] [STDOUT] career_alignment          ALL NULL  (missing: 100.0%)
+[2026-06-26T12:19:21.980Z] [STDOUT] learning_gap_score        ALL NULL  (missing: 100.0%)
+[2026-06-26T12:19:21.981Z] [STDOUT] lp_alignment              mean=0.234  min=0.000  max=0.900  var=0.047  missing=0.0%
+[2026-06-26T12:19:21.981Z] [STDOUT] user_skill_density        ALL NULL  (missing: 100.0%)
+  job_skill_difficulty      ALL NULL  (missing: 100.0%)
+──────────────────────────────────────────────────────────────────────
+[Export] Done. Total exported: 87 / 154
+[2026-06-26T12:19:25.878Z] [STDERR] 2026-06-26 15:19:25,871 INFO ============================================================
+2026-06-26 15:19:25,871 INFO Starting Retrain v4.1
+2026-06-26 15:19:25,871 INFO ============================================================
+[2026-06-26T12:19:26.031Z] [STDERR] 2026-06-26 15:19:26,031 WARNING Skipped 47 corrupt rows (freshness=0 or null)
+[2026-06-26T12:19:26.044Z] [STDERR] 2026-06-26 15:19:26,044 WARNING Extra features in data (will be ignored): ['job_id', 'label', 'user_id']
+[2026-06-26T12:19:26.055Z] [STDERR] 2026-06-26 15:19:26,055 INFO Feature statistics:
+[2026-06-26T12:19:26.058Z] [STDERR] 2026-06-26 15:19:26,059 INFO   retrieval_score           mean=0.271  std=0.865  missing=0.0%
+[2026-06-26T12:19:26.061Z] [STDERR] 2026-06-26 15:19:26,061 INFO   skill_overlap             mean=0.452  std=0.288  missing=0.0%
+[2026-06-26T12:19:26.063Z] [STDERR] 2026-06-26 15:19:26,063 INFO   exp_match                 mean=0.178  std=0.382  missing=5.1%
+[2026-06-26T12:19:26.065Z] [STDERR] 2026-06-26 15:19:26,065 INFO   freshness                 mean=0.614  std=0.246  missing=0.0%
+[2026-06-26T12:19:26.067Z] [STDERR] 2026-06-26 15:19:26,067 INFO   career_alignment          mean=0.494  std=0.211  missing=0.0%
+[2026-06-26T12:19:26.069Z] [STDERR] 2026-06-26 15:19:26,069 INFO   learning_gap_score        mean=0.450  std=0.259  missing=0.0%
+[2026-06-26T12:19:26.070Z] [STDERR] 2026-06-26 15:19:26,070 INFO   lp_alignment              mean=0.510  std=0.221  missing=0.0%
+[2026-06-26T12:19:26.071Z] [STDERR] 2026-06-26 15:19:26,072 INFO   user_skill_density        mean=0.482  std=0.126  missing=5.1%
+[2026-06-26T12:19:26.076Z] [STDERR] 2026-06-26 15:19:26,076 INFO   job_skill_difficulty      mean=0.424  std=0.154  missing=5.1%
+[2026-06-26T12:19:26.079Z] [STDERR] 2026-06-26 15:19:26,079 INFO Label distribution:
+label
+0    399
+1    460
+2    302
+3    197
+4     49
+Name: count, dtype: int64
+[2026-06-26T12:19:26.082Z] [STDERR] 2026-06-26 15:19:26,082 INFO Feedback events loaded: 1,407
+[2026-06-26T12:19:26.083Z] [STDERR] 2026-06-26 15:19:26,083 WARNING No feature store found � training on feedback only
+[2026-06-26T12:19:26.084Z] [STDERR] 2026-06-26 15:19:26,084 INFO Combined training data: 1,407 rows
+[2026-06-26T12:19:26.087Z] [STDERR] 2026-06-26 15:19:26,086 WARNING Only 4 users � using all data for training, no test split
+[2026-06-26T12:19:26.095Z] [STDERR] 2026-06-26 15:19:26,094 INFO Training LambdaMART Ranker with dynamic local scale adjustments...
+[2026-06-26T12:19:26.099Z] [STDERR] C:\final-project\backend\venv\lib\site-packages\lightgbm\sklearn.py:861: UserWarning: Found 'ndcg_eval_at' in params. Will use it instead of 'eval_at' argument
+  _log_warning(f"Found '{alias}' in params. Will use it instead of 'eval_at' argument")
+[2026-06-26T12:19:28.784Z] [STDERR] C:\final-project\backend\venv\lib\site-packages\lightgbm\sklearn.py:861: UserWarning: Found 'ndcg_eval_at' in params. Will use it instead of 'eval_at' argument
+  _log_warning(f"Found '{alias}' in params. Will use it instead of 'eval_at' argument")
+[2026-06-26T12:19:28.794Z] [STDERR] 2026-06-26 15:19:28,794 INFO New model NDCG@5:  1.0000
+[2026-06-26T12:19:28.794Z] [STDERR] 2026-06-26 15:19:28,794 INFO New model NDCG@10: 1.0000
+2026-06-26 15:19:28,794 INFO New model MAP@10:  1.0000
+2026-06-26 15:19:28,794 INFO New model MRR@10:  1.0000
+[2026-06-26T12:19:28.828Z] [STDERR] 2026-06-26 15:19:28,828 INFO Old model NDCG@5:  1.0000
+[2026-06-26T12:19:28.828Z] [STDERR] 2026-06-26 15:19:28,828 INFO Old model NDCG@10: 1.0000
+2026-06-26 15:19:28,828 INFO Old model MAP@10:  1.0000
+[2026-06-26T12:19:28.828Z] [STDERR] 2026-06-26 15:19:28,828 INFO Old model MRR@10:  1.0000
+[2026-06-26T12:19:28.831Z] [STDERR] 2026-06-26 15:19:28,831 INFO Backup saved: lambdamart_model_backup_20260626_151928.txt
+[2026-06-26T12:19:28.841Z] [STDERR] 2026-06-26 15:19:28,839 INFO \u2705 New model saved  (NDCG@10: 1.0000 \u2192 1.0000)
+[2026-06-26T12:19:28.842Z] [STDERR] 2026-06-26 15:19:28,842 INFO model_meta.json saved (9 features)
+[2026-06-26T12:19:28.843Z] [STDERR] 2026-06-26 15:19:28,843 INFO Feature Importance:
+[2026-06-26T12:19:28.843Z] [STDERR] 2026-06-26 15:19:28,843 INFO   lp_alignment              170.0
+[2026-06-26T12:19:28.843Z] [STDERR] 2026-06-26 15:19:28,843 INFO   career_alignment          156.0
+[2026-06-26T12:19:28.843Z] [STDERR] 2026-06-26 15:19:28,843 INFO   retrieval_score           153.0
+[2026-06-26T12:19:28.843Z] [STDERR] 2026-06-26 15:19:28,843 INFO   learning_gap_score        141.0
+[2026-06-26T12:19:28.843Z] [STDERR] 2026-06-26 15:19:28,844 INFO   freshness                 114.0
+[2026-06-26T12:19:28.844Z] [STDERR] 2026-06-26 15:19:28,844 INFO   user_skill_density        91.0
+[2026-06-26T12:19:28.844Z] [STDERR] 2026-06-26 15:19:28,844 INFO   job_skill_difficulty      41.0
+2026-06-26 15:19:28,844 INFO   exp_match                 18.0
+[2026-06-26T12:19:28.843Z] [STDERR] 2026-06-26 15:19:28,843 INFO   skill_overlap             152.0
+[2026-06-26T12:19:28.844Z] [STDERR] 2026-06-26 15:19:28,844 INFO ============================================================
+[2026-06-26T12:19:28.844Z] [STDERR] 2026-06-26 15:19:28,844 INFO Retrain Complete
+[2026-06-26T12:19:28.844Z] [STDERR] 2026-06-26 15:19:28,844 INFO {
+  "status": "improved",
+  "old_ndcg_at_5": 1.0,
+  "new_ndcg_at_5": 1.0,
+  "old_ndcg_at_10": 1.0,
+  "new_ndcg_at_10": 1.0,
+  "old_map_at_10": 1.0,
+  "new_map_at_10": 1.0,
+  "old_mrr_at_10": 1.0,
+  "new_mrr_at_10": 1.0,
+  "feedback_used": 1407,
+  "total_rows": 1407,
+  "timestamp": "20260626_151928",
+  "features": [
+    "retrieval_score",
+    "skill_overlap",
+    "exp_match",
+    "freshness",
+    "career_alignment",
+    "learning_gap_score",
+    "lp_alignment",
+    "user_skill_density",
+    "job_skill_difficulty"
+  ]
+}
+[2026-06-26T12:19:28.845Z] [STDOUT] [50]	valid_0's ndcg@5: 0.884764	valid_0's ndcg@10: 0.904404
+[100]	valid_0's ndcg@5: 0.979059	valid_0's ndcg@10: 0.967167
+[2026-06-26T12:23:42.903Z] === RETRAINING STARTED ===
+[2026-06-26T12:23:42.910Z] Initiated by Admin: 3
+[2026-06-26T12:23:43.774Z] [STDOUT] > backend@1.0.0 retrain
+> node scripts/exportFeedbackForRetrain.js && venv\Scripts\python ai_service/retrain.py
+[2026-06-26T12:23:43.990Z] [STDOUT] ✅ Prisma connected successfully
+[2026-06-26T12:23:43.995Z] [STDOUT] [Export] Fetching feedback from database (lastId: 0)...
+[2026-06-26T12:23:44.009Z] [STDOUT] [Export] Found 154 new feedback records
+[2026-06-26T12:23:44.010Z] [STDERR] [Export] Skipped 67 corrupt rows (freshness=0 or null)
+[2026-06-26T12:23:44.010Z] [STDOUT] [Export] Exporting 87 clean rows...
+[2026-06-26T12:23:44.017Z] [STDOUT] [Export] Written 87 events to C:\final-project\ai_service\data\incremental_feedback.jsonl and appended to C:\final-project\ai_service\data\feedback_log.jsonl
+[2026-06-26T12:23:44.017Z] [STDOUT] [Export] Feature Statistics:
+──────────────────────────────────────────────────────────────────────
+[2026-06-26T12:23:44.018Z] [STDOUT] retrieval_score           ALL NULL  (missing: 100.0%)
+[2026-06-26T12:23:44.018Z] [STDOUT] skill_overlap             mean=0.170  min=0.000  max=0.300  var=0.008  missing=0.0%
+  exp_match                 ALL NULL  (missing: 100.0%)
+[2026-06-26T12:23:44.018Z] [STDOUT] freshness                 mean=0.975  min=0.922  max=0.988  var=0.000  missing=0.0%
+  career_alignment          ALL NULL  (missing: 100.0%)
+  learning_gap_score        ALL NULL  (missing: 100.0%)
+[2026-06-26T12:23:44.019Z] [STDOUT] lp_alignment              mean=0.234  min=0.000  max=0.900  var=0.047  missing=0.0%
+  user_skill_density        ALL NULL  (missing: 100.0%)
+  job_skill_difficulty      ALL NULL  (missing: 100.0%)
+──────────────────────────────────────────────────────────────────────
+[Export] Done. Total exported: 87 / 154
+[2026-06-26T12:23:47.893Z] [STDERR] 2026-06-26 15:23:47,892 INFO ============================================================
+[2026-06-26T12:23:47.895Z] [STDERR] 2026-06-26 15:23:47,892 INFO Starting Retrain v4.1
+[2026-06-26T12:23:47.895Z] [STDERR] 2026-06-26 15:23:47,895 INFO ============================================================
+[2026-06-26T12:23:47.905Z] [STDERR] 2026-06-26 15:23:47,904 ERROR No valid feedback data found. Aborting retrain.
+[2026-06-26T12:23:48.318Z] === RETRAINING COMPLETED SUCCESSFULLY in 0m 5s ===
+[2026-06-26T12:24:24.062Z] === RETRAINING STARTED ===
+[2026-06-26T12:24:24.071Z] Initiated by Admin: 3
+[2026-06-26T12:24:25.233Z] [STDOUT] > backend@1.0.0 retrain
+> node scripts/exportFeedbackForRetrain.js && venv\Scripts\python ai_service/retrain.py
+[2026-06-26T12:24:25.498Z] [STDOUT] ✅ Prisma connected successfully
+[2026-06-26T12:24:25.506Z] [STDOUT] [Export] Fetching feedback from database (lastId: 0)...
+[2026-06-26T12:24:25.580Z] [STDOUT] [Export] Found 154 new feedback records
+[2026-06-26T12:24:25.582Z] [STDERR] [Export] Skipped 67 corrupt rows (freshness=0 or null)
+[2026-06-26T12:24:25.582Z] [STDOUT] [Export] Exporting 87 clean rows...
+[2026-06-26T12:24:25.593Z] [STDOUT] [Export] Written 87 events to C:\final-project\ai_service\data\incremental_feedback.jsonl and appended to C:\final-project\ai_service\data\feedback_log.jsonl
+[2026-06-26T12:24:25.594Z] [STDOUT] [Export] Feature Statistics:
+[2026-06-26T12:24:25.595Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[2026-06-26T12:24:25.596Z] [STDOUT] retrieval_score           ALL NULL  (missing: 100.0%)
+[2026-06-26T12:24:25.597Z] [STDOUT] skill_overlap             mean=0.170  min=0.000  max=0.300  var=0.008  missing=0.0%
+[2026-06-26T12:24:25.597Z] [STDOUT] exp_match                 ALL NULL  (missing: 100.0%)
+[2026-06-26T12:24:25.598Z] [STDOUT] freshness                 mean=0.975  min=0.922  max=0.988  var=0.000  missing=0.0%
+[2026-06-26T12:24:25.600Z] [STDOUT] career_alignment          ALL NULL  (missing: 100.0%)
+[2026-06-26T12:24:25.604Z] [STDOUT] learning_gap_score        ALL NULL  (missing: 100.0%)
+[2026-06-26T12:24:25.606Z] [STDOUT] lp_alignment              mean=0.234  min=0.000  max=0.900  var=0.047  missing=0.0%
+[2026-06-26T12:24:25.606Z] [STDOUT] user_skill_density        ALL NULL  (missing: 100.0%)
+[2026-06-26T12:24:25.606Z] [STDOUT] job_skill_difficulty      ALL NULL  (missing: 100.0%)
+[2026-06-26T12:24:25.608Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[2026-06-26T12:24:25.610Z] [STDOUT] [Export] Done. Total exported: 87 / 154
+[2026-06-26T12:24:33.046Z] [STDERR] 2026-06-26 15:24:33,045 INFO ============================================================
+[2026-06-26T12:24:33.047Z] [STDERR] 2026-06-26 15:24:33,046 INFO Starting Retrain v4.1
+[2026-06-26T12:24:33.048Z] [STDERR] 2026-06-26 15:24:33,047 INFO ============================================================
+[2026-06-26T12:24:33.058Z] [STDERR] 2026-06-26 15:24:33,058 ERROR No valid feedback data found. Aborting retrain.
+[2026-06-26T12:24:33.397Z] === RETRAINING COMPLETED SUCCESSFULLY in 0m 9s ===
+[2026-06-26T12:28:39.205Z] === RETRAINING STARTED ===
+[2026-06-26T12:28:39.209Z] Initiated by Admin: 3
+[2026-06-26T12:28:40.466Z] [STDOUT] > backend@1.0.0 retrain
+> node scripts/exportFeedbackForRetrain.js && venv\Scripts\python ai_service/retrain.py
+[2026-06-26T12:28:40.755Z] [STDOUT] ✅ Prisma connected successfully
+[2026-06-26T12:28:40.760Z] [STDOUT] [Export] Fetching feedback from database (lastId: 0)...
+[2026-06-26T12:28:40.778Z] [STDOUT] [Export] Found 154 new feedback records
+[2026-06-26T12:28:40.778Z] [STDERR] [Export] Skipped 67 corrupt rows (freshness=0 or null)
+[2026-06-26T12:28:40.779Z] [STDOUT] [Export] Exporting 87 clean rows...
+[2026-06-26T12:28:40.788Z] [STDOUT] [Export] Written 87 events to C:\final-project\backend\ai_service\data\incremental_feedback.jsonl and appended to C:\final-project\backend\ai_service\data\feedback_log.jsonl
+[2026-06-26T12:28:40.788Z] [STDOUT] [Export] Feature Statistics:
+[2026-06-26T12:28:40.789Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[2026-06-26T12:28:40.790Z] [STDOUT] retrieval_score           ALL NULL  (missing: 100.0%)
+[2026-06-26T12:28:40.791Z] [STDOUT] skill_overlap             mean=0.170  min=0.000  max=0.300  var=0.008  missing=0.0%
+[2026-06-26T12:28:40.792Z] [STDOUT] exp_match                 ALL NULL  (missing: 100.0%)
+[2026-06-26T12:28:40.793Z] [STDOUT] freshness                 mean=0.975  min=0.922  max=0.988  var=0.000  missing=0.0%
+[2026-06-26T12:28:40.794Z] [STDOUT] career_alignment          ALL NULL  (missing: 100.0%)
+[2026-06-26T12:28:40.794Z] [STDOUT] learning_gap_score        ALL NULL  (missing: 100.0%)
+[2026-06-26T12:28:40.795Z] [STDOUT] lp_alignment              mean=0.234  min=0.000  max=0.900  var=0.047  missing=0.0%
+[2026-06-26T12:28:40.795Z] [STDOUT] user_skill_density        ALL NULL  (missing: 100.0%)
+[2026-06-26T12:28:40.796Z] [STDOUT] job_skill_difficulty      ALL NULL  (missing: 100.0%)
+[2026-06-26T12:28:40.796Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[Export] Done. Total exported: 87 / 154
+[2026-06-27T16:23:15.581Z] === RETRAINING STARTED ===
+[2026-06-27T16:23:15.586Z] Initiated by Admin: 3
+[2026-06-27T16:23:17.176Z] [STDOUT] > backend@1.0.0 retrain
+> node scripts/exportFeedbackForRetrain.js && venv\Scripts\python ai_service/retrain.py
+[2026-06-27T16:23:17.473Z] [STDOUT] ✅ Prisma connected successfully
+[2026-06-27T16:23:17.485Z] [STDOUT] [Export] Fetching ALL feedback from database...
+[2026-06-27T16:23:17.534Z] [STDOUT] [Export] Found 768 feedback records
+[2026-06-27T16:23:17.535Z] [STDOUT] [Export] Exporting 768 clean rows...
+[2026-06-27T16:23:17.555Z] [STDOUT] [Export] Written 768 events to C:\final-project\backend\ai_service\data\feedback_log.jsonl
+[2026-06-27T16:23:17.556Z] [STDOUT] [Export] Feature Statistics:
+──────────────────────────────────────────────────────────────────────
+[2026-06-27T16:23:17.558Z] [STDOUT] skill_overlap             mean=0.515  min=0.001  max=0.999  var=0.063  missing=0.0%
+[2026-06-27T16:23:17.559Z] [STDOUT] freshness                 mean=0.620  min=0.052  max=0.998  var=0.058  missing=0.0%
+[2026-06-27T16:23:17.559Z] [STDOUT] career_alignment          ALL NULL  (missing: 100.0%)
+  learning_gap_score        ALL NULL  (missing: 100.0%)
+[2026-06-27T16:23:17.556Z] [STDOUT] retrieval_score           ALL NULL  (missing: 100.0%)
+[2026-06-27T16:23:17.561Z] [STDOUT] lp_alignment              mean=0.505  min=0.000  max=0.999  var=0.078  missing=0.0%
+[2026-06-27T16:23:17.564Z] [STDOUT] user_skill_density        ALL NULL  (missing: 100.0%)
+  job_skill_difficulty      ALL NULL  (missing: 100.0%)
+──────────────────────────────────────────────────────────────────────
+[Export] Done. Total exported: 768 / 768
+[2026-06-27T16:23:17.558Z] [STDOUT] exp_match                 mean=0.513  min=0.000  max=1.000  var=0.250  missing=0.0%
+[2026-06-27T16:23:18.431Z] === RETRAINING FAILED with code 1 in 0m 2s ===
+[2026-06-27T16:26:36.471Z] === RETRAINING STARTED ===
+[2026-06-27T16:26:36.482Z] Initiated by Admin: 3
+[2026-06-27T16:26:38.020Z] [STDOUT] > backend@1.0.0 retrain
+> node scripts/exportFeedbackForRetrain.js && venv\Scripts\python ai_service/retrain.py
+[2026-06-27T16:26:38.483Z] [STDOUT] ✅ Prisma connected successfully
+[2026-06-27T16:26:38.504Z] [STDOUT] [Export] Fetching ALL feedback from database...
+[2026-06-27T16:26:38.594Z] [STDOUT] [Export] Found 777 feedback records
+[2026-06-27T16:26:38.600Z] [STDOUT] [Export] Exporting 777 clean rows...
+[2026-06-27T16:26:38.653Z] [STDOUT] [Export] Written 777 events to C:\final-project\backend\ai_service\data\feedback_log.jsonl
+[2026-06-27T16:26:38.653Z] [STDOUT] [Export] Feature Statistics:
+[2026-06-27T16:26:38.654Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[2026-06-27T16:26:38.655Z] [STDOUT] retrieval_score           mean=0.818  min=0.500  max=1.000  var=0.024  missing=0.0%
+[2026-06-27T16:26:38.656Z] [STDOUT] skill_overlap             mean=0.512  min=0.001  max=0.999  var=0.063  missing=0.0%
+[2026-06-27T16:26:38.658Z] [STDOUT] freshness                 mean=0.624  min=0.052  max=0.998  var=0.059  missing=0.0%
+[2026-06-27T16:26:38.657Z] [STDOUT] exp_match                 mean=0.507  min=0.000  max=1.000  var=0.250  missing=0.0%
+[2026-06-27T16:26:38.659Z] [STDOUT] career_alignment          mean=0.500  min=0.000  max=0.991  var=0.070  missing=0.0%
+[2026-06-27T16:26:38.660Z] [STDOUT] learning_gap_score        mean=0.379  min=0.002  max=0.997  var=0.056  missing=0.0%
+[2026-06-27T16:26:38.662Z] [STDOUT] lp_alignment              mean=0.501  min=0.000  max=0.999  var=0.078  missing=0.0%
+[2026-06-27T16:26:38.664Z] [STDOUT] job_skill_difficulty      mean=0.718  min=0.400  max=0.900  var=0.024  missing=0.0%
+[2026-06-27T16:26:38.663Z] [STDOUT] user_skill_density        mean=0.618  min=0.300  max=0.800  var=0.024  missing=0.0%
+[2026-06-27T16:26:38.664Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[Export] Done. Total exported: 777 / 777
+[2026-06-27T16:27:59.408Z] === RETRAINING STARTED ===
+[2026-06-27T16:27:59.473Z] Initiated by Admin: 3
+[2026-06-27T16:28:01.937Z] [STDOUT] > backend@1.0.0 retrain
+> node scripts/exportFeedbackForRetrain.js && venv\Scripts\python ai_service/retrain.py
+[2026-06-27T16:28:02.371Z] [STDOUT] ✅ Prisma connected successfully
+[2026-06-27T16:28:02.381Z] [STDOUT] [Export] Fetching ALL feedback from database...
+[2026-06-27T16:28:02.487Z] [STDOUT] [Export] Found 777 feedback records
+[2026-06-27T16:28:02.490Z] [STDOUT] [Export] Exporting 777 clean rows...
+[2026-06-27T16:28:02.554Z] [STDOUT] [Export] Written 777 events to C:\final-project\backend\ai_service\data\feedback_log.jsonl
+[2026-06-27T16:28:02.555Z] [STDOUT] [Export] Feature Statistics:
+[2026-06-27T16:28:02.562Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[2026-06-27T16:28:02.569Z] [STDOUT] retrieval_score           mean=0.818  min=0.500  max=1.000  var=0.024  missing=0.0%
+[2026-06-27T16:28:02.571Z] [STDOUT] skill_overlap             mean=0.512  min=0.001  max=0.999  var=0.063  missing=0.0%
+[2026-06-27T16:28:02.573Z] [STDOUT] exp_match                 mean=0.507  min=0.000  max=1.000  var=0.250  missing=0.0%
+[2026-06-27T16:28:02.574Z] [STDOUT] freshness                 mean=0.624  min=0.052  max=0.998  var=0.059  missing=0.0%
+[2026-06-27T16:28:02.577Z] [STDOUT] career_alignment          mean=0.500  min=0.000  max=0.991  var=0.070  missing=0.0%
+[2026-06-27T16:28:02.579Z] [STDOUT] learning_gap_score        mean=0.379  min=0.002  max=0.997  var=0.056  missing=0.0%
+[2026-06-27T16:28:02.598Z] [STDOUT] lp_alignment              mean=0.501  min=0.000  max=0.999  var=0.078  missing=0.0%
+[2026-06-27T16:28:02.599Z] [STDOUT] user_skill_density        mean=0.618  min=0.300  max=0.800  var=0.024  missing=0.0%
+[2026-06-27T16:28:02.603Z] [STDOUT] job_skill_difficulty      mean=0.718  min=0.400  max=0.900  var=0.024  missing=0.0%
+[2026-06-27T16:28:02.603Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[Export] Done. Total exported: 777 / 777
+[2026-06-27T16:34:40.871Z] === RETRAINING STARTED ===
+[2026-06-27T16:34:40.887Z] Initiated by Admin: 3
+[2026-06-27T16:34:42.537Z] [STDOUT] > backend@1.0.0 retrain
+> node scripts/exportFeedbackForRetrain.js && venv\Scripts\python ai_service/retrain.py
+[2026-06-27T16:34:42.847Z] [STDOUT] ✅ Prisma connected successfully
+[2026-06-27T16:34:42.852Z] [STDOUT] [Export] Fetching ALL feedback from database...
+[2026-06-27T16:34:42.904Z] [STDOUT] [Export] Found 777 feedback records
+[2026-06-27T16:34:42.905Z] [STDOUT] [Export] Exporting 777 clean rows...
+[2026-06-27T16:34:42.935Z] [STDOUT] [Export] Written 777 events to C:\final-project\backend\ai_service\data\feedback_log.jsonl
+[2026-06-27T16:34:42.936Z] [STDOUT] [Export] Feature Statistics:
+──────────────────────────────────────────────────────────────────────
+[2026-06-27T16:34:42.937Z] [STDOUT] retrieval_score           mean=0.818  min=0.500  max=1.000  var=0.024  missing=0.0%
+[2026-06-27T16:34:42.938Z] [STDOUT] skill_overlap             mean=0.512  min=0.001  max=0.999  var=0.063  missing=0.0%
+[2026-06-27T16:34:42.939Z] [STDOUT] exp_match                 mean=0.507  min=0.000  max=1.000  var=0.250  missing=0.0%
+[2026-06-27T16:34:42.944Z] [STDOUT] freshness                 mean=0.624  min=0.052  max=0.998  var=0.059  missing=0.0%
+[2026-06-27T16:34:42.945Z] [STDOUT] career_alignment          mean=0.500  min=0.000  max=0.991  var=0.070  missing=0.0%
+[2026-06-27T16:34:42.946Z] [STDOUT] learning_gap_score        mean=0.379  min=0.002  max=0.997  var=0.056  missing=0.0%
+[2026-06-27T16:34:42.947Z] [STDOUT] lp_alignment              mean=0.501  min=0.000  max=0.999  var=0.078  missing=0.0%
+[2026-06-27T16:34:42.948Z] [STDOUT] user_skill_density        mean=0.618  min=0.300  max=0.800  var=0.024  missing=0.0%
+[2026-06-27T16:34:42.949Z] [STDOUT] job_skill_difficulty      mean=0.718  min=0.400  max=0.900  var=0.024  missing=0.0%
+[2026-06-27T16:34:42.949Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[Export] Done. Total exported: 777 / 777
+[2026-06-27T16:38:57.279Z] === RETRAINING STARTED ===
+[2026-06-27T16:38:57.286Z] Initiated by Admin: 3
+[2026-06-27T16:38:58.664Z] [STDOUT] > backend@1.0.0 retrain
+> node scripts/exportFeedbackForRetrain.js && venv\Scripts\python ai_service/retrain.py
+[2026-06-27T16:38:58.957Z] [STDOUT] ✅ Prisma connected successfully
+[2026-06-27T16:38:58.963Z] [STDOUT] [Export] Fetching ALL feedback from database...
+[2026-06-27T16:38:59.028Z] [STDOUT] [Export] Found 777 feedback records
+[2026-06-27T16:38:59.029Z] [STDOUT] [Export] Exporting 777 clean rows...
+[2026-06-27T16:38:59.064Z] [STDOUT] [Export] Written 777 events to C:\final-project\backend\ai_service\data\feedback_log.jsonl
+[2026-06-27T16:38:59.064Z] [STDOUT] [Export] Feature Statistics:
+[2026-06-27T16:38:59.066Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[2026-06-27T16:38:59.069Z] [STDOUT] retrieval_score           mean=0.818  min=0.500  max=1.000  var=0.024  missing=0.0%
+[2026-06-27T16:38:59.072Z] [STDOUT] skill_overlap             mean=0.512  min=0.001  max=0.999  var=0.063  missing=0.0%
+[2026-06-27T16:38:59.076Z] [STDOUT] exp_match                 mean=0.507  min=0.000  max=1.000  var=0.250  missing=0.0%
+[2026-06-27T16:38:59.078Z] [STDOUT] freshness                 mean=0.624  min=0.052  max=0.998  var=0.059  missing=0.0%
+[2026-06-27T16:38:59.079Z] [STDOUT] career_alignment          mean=0.500  min=0.000  max=0.991  var=0.070  missing=0.0%
+[2026-06-27T16:38:59.080Z] [STDOUT] learning_gap_score        mean=0.379  min=0.002  max=0.997  var=0.056  missing=0.0%
+[2026-06-27T16:38:59.081Z] [STDOUT] lp_alignment              mean=0.501  min=0.000  max=0.999  var=0.078  missing=0.0%
+[2026-06-27T16:38:59.082Z] [STDOUT] user_skill_density        mean=0.618  min=0.300  max=0.800  var=0.024  missing=0.0%
+[2026-06-27T16:38:59.083Z] [STDOUT] job_skill_difficulty      mean=0.718  min=0.400  max=0.900  var=0.024  missing=0.0%
+[2026-06-27T16:38:59.083Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[Export] Done. Total exported: 777 / 777
+[2026-06-27T16:46:13.193Z] === RETRAINING STARTED ===
+[2026-06-27T16:46:13.198Z] Initiated by Admin: 3
+[2026-06-27T16:46:14.778Z] [STDOUT] > backend@1.0.0 retrain
+> node scripts/exportFeedbackForRetrain.js && venv\Scripts\python ai_service/retrain.py
+[2026-06-27T16:46:15.350Z] [STDOUT] ✅ Prisma connected successfully
+[2026-06-27T16:46:15.357Z] [STDOUT] [Export] Fetching ALL feedback from database...
+[2026-06-27T16:46:15.429Z] [STDOUT] [Export] Found 777 feedback records
+[2026-06-27T16:46:15.430Z] [STDOUT] [Export] Exporting 777 clean rows...
+[2026-06-27T16:46:15.493Z] [STDOUT] [Export] Written 777 events to C:\final-project\backend\ai_service\data\feedback_log.jsonl
+[2026-06-27T16:46:15.493Z] [STDOUT] [Export] Feature Statistics:
+──────────────────────────────────────────────────────────────────────
+[2026-06-27T16:46:15.495Z] [STDOUT] retrieval_score           mean=0.818  min=0.500  max=1.000  var=0.024  missing=0.0%
+[2026-06-27T16:46:15.496Z] [STDOUT] skill_overlap             mean=0.512  min=0.001  max=0.999  var=0.063  missing=0.0%
+[2026-06-27T16:46:15.498Z] [STDOUT] exp_match                 mean=0.507  min=0.000  max=1.000  var=0.250  missing=0.0%
+[2026-06-27T16:46:15.499Z] [STDOUT] freshness                 mean=0.624  min=0.052  max=0.998  var=0.059  missing=0.0%
+[2026-06-27T16:46:15.499Z] [STDOUT] career_alignment          mean=0.500  min=0.000  max=0.991  var=0.070  missing=0.0%
+[2026-06-27T16:46:15.500Z] [STDOUT] learning_gap_score        mean=0.379  min=0.002  max=0.997  var=0.056  missing=0.0%
+[2026-06-27T16:46:15.503Z] [STDOUT] lp_alignment              mean=0.501  min=0.000  max=0.999  var=0.078  missing=0.0%
+[2026-06-27T16:46:15.505Z] [STDOUT] job_skill_difficulty      mean=0.718  min=0.400  max=0.900  var=0.024  missing=0.0%
+[2026-06-27T16:46:15.504Z] [STDOUT] user_skill_density        mean=0.618  min=0.300  max=0.800  var=0.024  missing=0.0%
+[2026-06-27T16:46:15.505Z] [STDOUT] ──────────────────────────────────────────────────────────────────────
+[Export] Done. Total exported: 777 / 777
+[2026-06-27T16:46:24.788Z] [STDERR] 2026-06-27 19:46:24,787 INFO ============================================================
+[2026-06-27T16:46:24.788Z] [STDERR] 2026-06-27 19:46:24,787 INFO Starting Retrain v4.1
+2026-06-27 19:46:24,787 INFO ============================================================
+[2026-06-27T16:46:24.855Z] [STDERR] 2026-06-27 19:46:24,859 WARNING Extra features in data (will be ignored): ['job_id', 'label', 'user_id']
+[2026-06-27T16:46:24.882Z] [STDERR] 2026-06-27 19:46:24,877 INFO Feature statistics:
+[2026-06-27T16:46:24.885Z] [STDERR] 2026-06-27 19:46:24,888 INFO   retrieval_score           mean=0.818  std=0.154  missing=0.0%
+[2026-06-27T16:46:24.887Z] [STDERR] 2026-06-27 19:46:24,888 INFO   skill_overlap             mean=0.512  std=0.252  missing=0.0%
+[2026-06-27T16:46:24.888Z] [STDERR] 2026-06-27 19:46:24,888 INFO   exp_match                 mean=0.507  std=0.500  missing=0.0%
+[2026-06-27T16:46:24.890Z] [STDERR] 2026-06-27 19:46:24,888 INFO   freshness                 mean=0.624  std=0.242  missing=0.0%
+[2026-06-27T16:46:24.891Z] [STDERR] 2026-06-27 19:46:24,888 INFO   career_alignment          mean=0.500  std=0.264  missing=0.0%
+[2026-06-27T16:46:24.892Z] [STDERR] 2026-06-27 19:46:24,888 INFO   learning_gap_score        mean=0.379  std=0.238  missing=0.0%
+[2026-06-27T16:46:24.894Z] [STDERR] 2026-06-27 19:46:24,888 INFO   lp_alignment              mean=0.501  std=0.280  missing=0.0%
+[2026-06-27T16:46:24.895Z] [STDERR] 2026-06-27 19:46:24,888 INFO   user_skill_density        mean=0.618  std=0.154  missing=0.0%
+[2026-06-27T16:46:24.896Z] [STDERR] 2026-06-27 19:46:24,888 INFO   job_skill_difficulty      mean=0.718  std=0.154  missing=0.0%
+[2026-06-27T16:46:24.911Z] [STDERR] 2026-06-27 19:46:24,912 INFO Label distribution:
+label
+0    117
+1    139
+2    205
+3    151
+4    165
+Name: count, dtype: int64
+[2026-06-27T16:46:24.918Z] [STDERR] 2026-06-27 19:46:24,920 INFO Feedback events loaded: 777
+[2026-06-27T16:46:24.918Z] [STDERR] 2026-06-27 19:46:24,920 INFO Training data: 777 rows
+[2026-06-27T16:46:24.937Z] [STDERR] 2026-06-27 19:46:24,937 INFO Training LambdaMART Ranker with dynamic local scale adjustments...
+[2026-06-27T16:46:24.952Z] [STDERR] C:\final-project\backend\venv\lib\site-packages\lightgbm\sklearn.py:861: UserWarning: Found 'ndcg_eval_at' in params. Will use it instead of 'eval_at' argument
+  _log_warning(f"Found '{alias}' in params. Will use it instead of 'eval_at' argument")
+[2026-06-27T16:46:30.304Z] [STDERR] C:\final-project\backend\venv\lib\site-packages\lightgbm\sklearn.py:861: UserWarning: Found 'ndcg_eval_at' in params. Will use it instead of 'eval_at' argument
+  _log_warning(f"Found '{alias}' in params. Will use it instead of 'eval_at' argument")
+[2026-06-27T16:46:30.319Z] [STDERR] 2026-06-27 19:46:30,323 INFO New model NDCG@5:  0.9868
+[2026-06-27T16:46:30.320Z] [STDERR] 2026-06-27 19:46:30,323 INFO New model NDCG@10: 0.9868
+2026-06-27 19:46:30,323 INFO New model MAP@10:  1.0000
+[2026-06-27T16:46:30.320Z] [STDERR] 2026-06-27 19:46:30,323 INFO New model MRR@10:  1.0000
+[2026-06-27T16:46:30.347Z] [STDERR] 2026-06-27 19:46:30,345 INFO Old model NDCG@5:  0.9868
+[2026-06-27T16:46:30.348Z] [STDERR] 2026-06-27 19:46:30,345 INFO Old model NDCG@10: 0.9868
+2026-06-27 19:46:30,345 INFO Old model MAP@10:  1.0000
+2026-06-27 19:46:30,345 INFO Old model MRR@10:  1.0000
+[2026-06-27T16:46:30.353Z] [STDERR] 2026-06-27 19:46:30,357 INFO Backup saved: lambdamart_model_backup_20260627_194630.txt
+[2026-06-27T16:46:30.363Z] [STDERR] 2026-06-27 19:46:30,365 INFO \u2705 New model saved (NDCG@10: 0.9868 \u2192 0.9868)
+[2026-06-27T16:46:30.365Z] [STDERR] 2026-06-27 19:46:30,365 INFO model_meta.json saved (9 features)
+[2026-06-27T16:46:30.367Z] [STDERR] 2026-06-27 19:46:30,365 INFO Feature Importance:
+[2026-06-27T16:46:30.367Z] [STDERR] 2026-06-27 19:46:30,365 INFO   lp_alignment              238.0
+[2026-06-27T16:46:30.368Z] [STDERR] 2026-06-27 19:46:30,365 INFO   career_alignment          219.0
+[2026-06-27T16:46:30.368Z] [STDERR] 2026-06-27 19:46:30,365 INFO   learning_gap_score        177.0
+[2026-06-27T16:46:30.368Z] [STDERR] 2026-06-27 19:46:30,365 INFO   skill_overlap             171.0
+[2026-06-27T16:46:30.368Z] [STDERR] 2026-06-27 19:46:30,365 INFO   freshness                 116.0
+[2026-06-27T16:46:30.369Z] [STDERR] 2026-06-27 19:46:30,365 INFO   job_skill_difficulty      64.0
+2026-06-27 19:46:30,365 INFO   retrieval_score           48.0
+[2026-06-27T16:46:30.369Z] [STDERR] 2026-06-27 19:46:30,373 INFO   exp_match                 48.0
+[2026-06-27T16:46:30.369Z] [STDERR] 2026-06-27 19:46:30,373 INFO Retrain Complete
+[2026-06-27T16:46:30.369Z] [STDERR] 2026-06-27 19:46:30,373 INFO   user_skill_density        11.0
+2026-06-27 19:46:30,373 INFO ============================================================
+[2026-06-27T16:46:30.369Z] [STDERR] 2026-06-27 19:46:30,373 INFO {
+  "status": "improved",
+  "old_ndcg_at_5": 0.9868,
+  "new_ndcg_at_5": 0.9868,
+  "old_ndcg_at_10": 0.9868,
+  "new_ndcg_at_10": 0.9868,
+  "old_map_at_10": 1.0,
+  "new_map_at_10": 1.0,
+  "old_mrr_at_10": 1.0,
+  "new_mrr_at_10": 1.0,
+  "evaluation_status": "completed",
+  "feedback_used": 777,
+  "total_rows": 777,
+  "timestamp": "20260627_194630",
+  "features": [
+    "retrieval_score",
+    "skill_overlap",
+    "exp_match",
+    "freshness",
+    "career_alignment",
+    "learning_gap_score",
+    "lp_alignment",
+    "user_skill_density",
+    "job_skill_difficulty"
+  ]
+}
+[2026-06-27T16:46:30.370Z] [STDOUT] [50]	valid_0's ndcg@5: 0.981304	valid_0's ndcg@10: 0.991015
+[100]	valid_0's ndcg@5: 0.980451	valid_0's ndcg@10: 0.990318
+[2026-06-27T16:46:30.987Z] === RETRAINING COMPLETED SUCCESSFULLY in 0m 17s ===
