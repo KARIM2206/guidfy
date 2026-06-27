@@ -17,13 +17,12 @@ import {
   FileText,
   HelpCircle,
 } from 'lucide-react';
-// import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import StatsCard from '@/components/dashboard/StatsCard';
-import DataTable from '@/components/dashboard/DataTable';
-import Badge from '@/components/dashboard/Badge';
-import ConfirmDialog from '@/components/dashboard/ConfirmDialog';
-import { PageLoading } from '@/components/dashboard/LoadingState';
-import { getAllReportsSA, resolveReportSA, dismissReportSA } from '@/services/superAdmin.service';
+import StatsCard from '@/app/components/community/dashboard/StatsCard';
+import DataTable from '@/app/components/ui/DataTable';
+import Badge from '@/app/components/ui/Badge';
+import ConfirmDialog from '@/app/components/ui/ConfirmDialog';
+import Loader from '@/app/components/ui/Loader';
+import { getAllReportsSA, resolveReportSA, dismissReportSA } from '@/services/community/superAdmin.service';
 
 // ═══════════════════════════════════════════════════
 // Reports Page
@@ -308,7 +307,7 @@ export default function SuperAdminReportsPage() {
 
       {/* Data Table */}
       {loading ? (
-        <PageLoading />
+        <Loader />
       ) : (
         <DataTable
           columns={columns}

@@ -41,10 +41,10 @@ export default function SuperAdminProjectsPage() {
 
   // 🔎 فلترة حسب Learning Path
   const filteredProjects = filterLearningPath
-    ? projects.filter(
+    ? (projects || []).filter(
         (project) => project.learningPathId === Number(filterLearningPath)
       )
-    : allProjects;
+    : (allProjects || []);
 
   const handleViewProject = (project) => {
     setSelectedProject(project);
@@ -86,12 +86,12 @@ export default function SuperAdminProjectsPage() {
       {/* Header */}
       <ProjectsHeader 
         setFilterLearningPath={setFilterLearningPath} 
-        learningPaths={learningPaths}
+        learningPaths={learningPaths || []}
       />
 
       {/* Projects Table */}
       <ProjectsTable
-        projects={filteredProjects}
+        projects={filteredProjects || []}
         openProjectModal={handleViewProject}
         openDeleteModal={handleDeleteProject}
         onStatusChange={handleStatusChange}
@@ -103,7 +103,7 @@ export default function SuperAdminProjectsPage() {
         <ProjectModal
           isOpen={viewModalOpen}
           setIsOpen={setViewModalOpen}
-          learningPaths={learningPaths}
+          learningPaths={learningPaths || []}
 
           project={selectedProject}
         />

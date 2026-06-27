@@ -1,58 +1,70 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Flag, ArrowLeft, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
-import {
-  getCommunityReportsSA,
-  resolveReportSA
-} from '@/services/community/superAdmin.service';
+import { motion } from 'framer-motion';
+import { Flag, ArrowLeft, CheckCircle, Loader } from 'lucide-react';
+import { useCommunityReports, useResolveReport } from '@/app/hooks/useCommunityReports';
+import { useAuthStore } from '@/lib/stores/authStore';
 import {
   LoadingRows, EmptyState, Pagination, ConfirmModal
 } from '@/app/components/shared/DashboardCard';
 
-export default function SuperAdminCommunityReports() {
+const isAdmin = (role) => role === 'ADMIN' || role === 'SUPER_ADMIN';
+
+export default function CommunityReportsPage() {
   const { communityId } = useParams();
-  const [reports, setReports] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 1 });
-  const [loading, setLoading] = useState(true);
+  const { user, isAuthenticated, loading: authLoading } = useAuthStore();
+  const [page, setPage] = useState(1);
   const [confirm, setConfirm] = useState({ open: false, id: null });
-  const [actionLoading, setActionLoading] = useState(false);
 
-  const fetchReports = useCallback(async (page = 1) => {
-    setLoading(true);
-    try {
-      const res = await getCommunityReportsSA(communityId, { page, limit: 10 });
-      setReports(res.data || []);
-      setPagination(res.pagination);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }, [communityId]);
+  const { data, isLoading, isPlaceholderData } = useCommunityReports(communityId, page);
+  const resolve = useResolveReport();
 
-  useEffect(() => { fetchReports(1); }, [fetchReports]);
+  const reports = data?.data || [];
+  const pagination = data?.pagination || { page: 1, limit: 10, total: 0, pages: 1 };
 
   const handleResolve = async () => {
-    setActionLoading(true);
+    if (!confirm.id) return;
     try {
-      await resolveReportSA(confirm.id, 'Resolved by super admin');
-      setConfirm({ open: false });
-      fetchReports(pagination.page);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setActionLoading(false);
+      await resolve.mutateAsync({ reportId: confirm.id, notes: 'Resolved by admin' });
+      setConfirm({ open: false, id: null });
+    } catch (err) {
+      console.error(err);
     }
   };
+
+  const handlePageChange = (newPage) => setPage(newPage);
+
+  // Auth Guard (after all hooks)
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader className="w-10 h-10 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user || !isAdmin(user.role)) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 px-8 py-6 rounded-2xl text-center">
+          <h2 className="text-xl font-bold text-red-800">Access Denied</h2>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 px-6 py-8">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex items-center gap-4">
-        <Link href="/super-admin/dashboard/communities" className="text-gray-500 hover:text-gray-700">
+      <motion.div
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8 flex items-center gap-4"
+      >
+        <Link href="/super-admin/dashboard/communities" className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition">
           <ArrowLeft size={18} />
         </Link>
         <div>
@@ -61,7 +73,7 @@ export default function SuperAdminCommunityReports() {
         </div>
       </motion.div>
 
-      {/* Table Container */}
+      {/* Table */}
       <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -75,8 +87,8 @@ export default function SuperAdminCommunityReports() {
                 <th className="px-4 py-4 text-right">Action</th>
               </tr>
             </thead>
-            <tbody>
-              {loading ? (
+            <tbody className={`transition-opacity ${isPlaceholderData ? 'opacity-60' : 'opacity-100'}`}>
+              {isLoading && reports.length === 0 ? (
                 <tr><td colSpan={6} className="p-6"><LoadingRows rows={5} /></td></tr>
               ) : reports.length === 0 ? (
                 <tr><td colSpan={6}><EmptyState icon={Flag} title="No reports found" /></td></tr>
@@ -93,7 +105,7 @@ export default function SuperAdminCommunityReports() {
                     <td className="px-4 py-3 text-xs capitalize text-gray-800">{r.targetType}</td>
                     <td className="px-4 py-3 text-xs text-gray-600">{r.reason}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                         r.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
                         r.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-700' :
                         'bg-red-100 text-red-700'
@@ -120,22 +132,25 @@ export default function SuperAdminCommunityReports() {
                 ))
               )}
             </tbody>
-           </table>
+          </table>
         </div>
 
         <div className="px-6 pb-4">
-          <Pagination pagination={pagination} onPageChange={fetchReports} />
+          <Pagination
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            disabled={isPlaceholderData}
+          />
         </div>
       </div>
 
-      {/* Resolve Confirmation */}
       <ConfirmModal
         open={confirm.open}
         title="Resolve Report"
         description="Are you sure you want to mark this report as resolved?"
         onConfirm={handleResolve}
-        onCancel={() => setConfirm({ open: false })}
-        loading={actionLoading}
+        onCancel={() => setConfirm({ open: false, id: null })}
+        loading={resolve.isPending}
         danger={false}
       />
     </div>

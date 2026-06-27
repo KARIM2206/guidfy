@@ -44,7 +44,7 @@ export default function RoadmapForm({
         category: initialData.category || '',
         level: initialData.level || '',
         estimatedDuration: initialData.estimatedDuration || '',
-        assignedAdminIds: initialData.assignedAdminIds || [],
+        assignedAdminIds: initialData.assignedAdminIds || initialData.assignments?.map(a => a.adminId) || [],
       });
     } else {
       setFormData({

@@ -39,7 +39,7 @@ export default function ProjectsHeader({ setFilterLearningPath }) {
   }, [token]);
 
   useEffect(() => {
-    if (learningPaths.length > 0) {
+    if (learningPaths && learningPaths.length > 0) {
       setSelectedLearningPath('');
       setFormData(prev => ({
         ...prev,
@@ -67,7 +67,7 @@ export default function ProjectsHeader({ setFilterLearningPath }) {
   };
 
 const openModal = () => {
-  const lp = learningPaths.find(lp => lp.id == selectedLearningPath);
+  const lp = (learningPaths || []).find(lp => lp.id == selectedLearningPath);
 
   const existingAdmins =
     lp?.permissions
@@ -111,7 +111,7 @@ const openModal = () => {
   };
 const isEditMode =
   selectedLearningPath &&
-  learningPaths
+  (learningPaths || [])
     .find(lp => lp.id == selectedLearningPath)
     ?.permissions
     ?.filter(p => p.section === "PROJECT")
@@ -129,7 +129,7 @@ const isEditMode =
           onChange={handleLearningPathChange}
           options={[
             { value: '', label: 'All Learning Paths' },
-            ...learningPaths.map(lp => ({
+            ...(learningPaths || []).map(lp => ({
               value: lp.id,
               label: lp.title
             })),
@@ -158,7 +158,7 @@ const isEditMode =
                 learningPathId: e.target.value
               }))
             }
-            options={learningPaths.map((lp) => ({
+            options={(learningPaths || []).map((lp) => ({
               value: lp.id,
               label: lp.title
             }))}

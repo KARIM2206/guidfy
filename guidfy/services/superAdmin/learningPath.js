@@ -14,7 +14,8 @@ import api from "../apiSuperAdmin";
 ================================= */
 export const addLearningPath = async (learningPathData) => {
   try {
-    const response = await api.post("/learning-paths", learningPathData);
+    const config = learningPathData instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
+    const response = await api.post("/learning-paths", learningPathData, config);
     return response.data;
   } catch (error) {
     console.error(
@@ -32,10 +33,29 @@ export const addLearningPath = async (learningPathData) => {
 export const getLearningPaths = async (params = {}) => {
   try {
     const response = await api.get("/learning-paths", { params });
+  
+    
     return response.data;
   } catch (error) {
     console.error(
       "Error fetching learning paths:",
+      error.response?.data || error.message
+    );
+    throw error.response?.data || error;
+  }
+};
+
+/* ===============================
+   Get All Learning Paths for Super Admin
+   Supports: pagination, search
+================================= */
+export const getAllLearningPathsSA = async (params = {}) => {
+  try {
+    const response = await api.get("/learning-paths/all", { params });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching learning paths for SA:",
       error.response?.data || error.message
     );
     throw error.response?.data || error;
@@ -84,7 +104,8 @@ export const getLearningPathByTitle = async (title) => {
 ================================= */
 export const updateLearningPath = async (id, learningPathData) => {
   try {
-    const response = await api.put(`/learning-paths/${id}`, learningPathData);
+    const config = learningPathData instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
+    const response = await api.put(`/learning-paths/${id}`, learningPathData, config);
     return response.data;
   } catch (error) {
     console.error(
@@ -128,7 +149,7 @@ export const toggleLearningPathPublish = async (id) => {
   }
 };
 export const assignAdminsToLearningPath = async ({learningPathId, data}) => {
-  console.log('learningPathId in assignAdminsToLearningPath', learningPathId);
+  console.log('learningPathId in assignAdminsToLearningPath', learningPathId, 'data', data);
   
   try {
     const response = await api.post(`/learning-paths/${learningPathId}/admins`, data);
@@ -141,28 +162,28 @@ export const assignAdminsToLearningPath = async ({learningPathId, data}) => {
     throw error.response?.data || error;
   }
 }
-export const getLearningPathsForAdmin = async (section) => {
-  try {
-    const response = await api.get(`/learning-paths/admin?section=${section}`);
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error fetching learning paths for admin:",
-      error.response?.data || error.message
-    );
-    throw error.response?.data || error;
-  }
+// services/superAdmin/learningPath.js
+export const getLearningPathsForAdmin = async (section = 'JOB') => {
+  const res = await api.get(`/learning-paths/admin?section=${section}`);
+  return res.data;
 };
+
+// ═══════════════════════════════════════════════════════
+// FIX 1: services/superAdmin/learningPath.js
+// المشكلة: apiClient interceptor بيرجع response.data مباشرة
+// فـ response في الـ service = البيانات نفسها مش الـ axios response
+// ═══════════════════════════════════════════════════════
 
 export const recommendLearningPath = async (features) => {
   try {
     console.log('features in recommendLearningPath', features);
-    
-    const response = await api.post(`/learning-paths/recommend`,  features );
-    return response.data;
+    // ✅ apiClient interceptor already returns response.data
+    // so `data` here = { success, recommended_path, top_paths, ... }
+    const data = await api.post(`/learning-paths/recommend`, features);
+    return data; // ← return مباشرة بدون .data تاني
   } catch (error) {
     console.error(
-      "Error fetching learning paths for admin:",
+      "Error recommending learning path:",
       error.response?.data || error.message
     );
     throw error.response?.data || error;
@@ -171,11 +192,12 @@ export const recommendLearningPath = async (features) => {
 
 export const getMyRecommendations = async () => {
   try {
-    const response = await api.get(`/learning-paths/my-recommendations`);
-    return response.data;
+    // ✅ نفس المشكلة — apiClient returns response.data directly
+    const data = await api.get(`/learning-paths/my-recommendations`);
+    return data; // data = { success, data: [...] } or { success, data: {...} }
   } catch (error) {
     console.error(
-      "Error fetching learning paths for admin:",
+      "Error fetching my recommendations:",
       error.response?.data || error.message
     );
     throw error.response?.data || error;

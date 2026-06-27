@@ -1,97 +1,116 @@
-import api from "../api";
+import adminApi from '../api';
 
-export const addJob = async (jobData) => {
-    try {
-        console.log("jobData", jobData);
-        const response = await api.post("/jobs", jobData);
-        return response.data;
-    } catch (error) {
-        console.error("Error adding job:", error.response?.data || error.message);
-        throw error.response?.data || error;
-    }
+// ═══════════════════════════════════════════════════
+//  JOBS CRUD
+// ═══════════════════════════════════════════════════
+
+export const getAllJobs = (params = {}) =>
+  adminApi.get('/jobs', { params });
+
+export const getAllJobsAdmin = (params = {}) =>
+  adminApi.get('/jobs/all', { params });
+
+export const getJobById = (id) =>
+  adminApi.get(`/jobs/${id}`);
+
+export const createJob = (data) =>
+  adminApi.post('/jobs', data);
+
+export const updateJob = (id, data) =>
+  adminApi.put(`/jobs/${id}`, data);
+
+export const deleteJob = (id) =>
+  adminApi.delete(`/jobs/${id}`);
+
+export const changeJobStatus = (id, status) =>
+  adminApi.patch(`/jobs/${id}/status`, { status });
+
+// ═══════════════════════════════════════════════════
+//  STUDENT / PUBLIC
+// ═══════════════════════════════════════════════════
+
+;
+
+export const getAdminJobsByLearningPath = (learningPathId, params = {}) =>
+  adminApi.get(`/jobs/learning-path/${learningPathId}/jobs`, { params });
+
+// ═══════════════════════════════════════════════════
+//  STATS
+// ═══════════════════════════════════════════════════
+
+export const getJobsStats = () =>
+  adminApi.get('/jobs/stats');
+
+// ═══════════════════════════════════════════════════
+//  IMPORTED JOBS
+// ═══════════════════════════════════════════════════
+
+export const getImportedJobs = (params = {}) =>
+  adminApi.get('/jobs/imported', { params });
+
+export const approveImportedJob = (id) =>
+  adminApi.post(`/jobs/imported/${id}/approve`);
+
+export const rejectImportedJob = (id, reason) =>
+  adminApi.post(`/jobs/imported/${id}/reject`, { reason });
+
+export const approveAllImported = () =>
+  adminApi.post('/jobs/imported/approve-all');
+
+export const removeDuplicateJobs = () =>
+  adminApi.post('/jobs/remove-duplicates');
+
+// ═══════════════════════════════════════════════════
+//  SCRAPER
+// ═══════════════════════════════════════════════════
+
+export const getScraperStatus = () =>
+  adminApi.get('/jobs/scraper/status');
+
+export const startScraper = (config = {}) =>
+  adminApi.post('/jobs/scraper/start', config);
+
+export const stopScraper = () =>
+  adminApi.post('/jobs/scraper/stop');
+
+export const getScraperLogs = (params = {}) =>
+  adminApi.get('/jobs/scraper/logs', { params });
+
+export const getScraperHistory = (params = {}) =>
+  adminApi.get('/jobs/scraper/history', { params });
+
+// ═══════════════════════════════════════════════════
+//  EXTERNAL / N8N  ← هنا كان ناقص
+// ═══════════════════════════════════════════════════
+
+export const fetchJobsFromN8N = (params) =>
+  adminApi.get('/jobs/fetch-from-n8n', { params });
+
+// ═══════════════════════════════════════════════════
+//  AI RECOMMENDATIONS
+// ═══════════════════════════════════════════════════
+
+export const getRecommendedJobs = (params = {}) =>
+  adminApi.get('/jobs/recommended', { params });
+
+// services/admin/jobs.js — أضف الـ functions دي
+
+export const getJobsByLearningPath = async (learningPathId, params = {}) => {
+  const query = new URLSearchParams();
+  if (params.page) query.append('page', params.page);
+  if (params.limit) query.append('limit', params.limit);
+  if (params.status && params.status !== 'ALL') query.append('status', params.status);
+  if (params.search) query.append('search', params.search);
+
+  const res = await adminApi.get(
+    `/jobs/admin/learning-path/${learningPathId}?${query.toString()}`
+  );
+  return res;
 };
 
-export const updateJob = async (id, jobData) => {
-    try {
-        const response = await api.put(`/jobs/${id}`, jobData);
-        return response.data;
-    } catch (error) {
-        console.error("Error updating job:", error.response?.data || error.message);
-        throw error.response?.data || error;
-    }
-};
-export const changeStatus = async (id, status) => {
-    try {
-        const response = await api.put(`/jobs/status/${id}`, { status });
-        return response.data;
-    } catch (error) {
-        console.error("Error changing job status:", error.response?.data || error.message);
-        throw error.response?.data || error;
-    }
-};
+// ═══════════════════════════════════════════════════
+//  SAVED JOBS (STUDENT)
+// ═══════════════════════════════════════════════════
 
-export const deleteJob = async (id) => {
-    try {
-        const response = await api.delete(`/jobs/${id}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error deleting job:", error.response?.data || error.message);
-        throw error.response?.data || error;
-    }
-};
-
-export const getJobs = async () => {
-    try {
-        const response = await api.get("/jobs");
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching jobs:", error.response?.data || error.message);
-        throw error.response?.data || error;
-    }
-};
-export const getJobsFromN8N = async ({learningPathId, jobTitle, page =0 }) => {
-    try {
-        const response = await api.get("/jobs/fetch-from-n8n", {
-            params: {
-                learningPathId,
-                jobTitle,
-                page,
-            },
-        });
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching jobs:", error.response?.data || error.message);
-        throw error.response?.data || error;
-    }
-};
-export const getAllJobs = async () => {
-    try {
-        const response = await api.get("/jobs/all");
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching jobs:", error.response?.data || error.message);
-        throw error.response?.data || error;
-    }
-};
-export const getAlljobsToStudentByLearningPathId = async ({learningPathId,page,limit}) => {
-    console.log("learningPathId", learningPathId);
-    console.log("page", page);
-    console.log("limit", limit);
-    try {
-        const response = await api.get(`/jobs/all/student/learning-path/${learningPathId}?page=${page}&limit=${limit}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching jobs:", error.response?.data || error.message);
-        throw error.response?.data || error;
-    }
-};
-
-export const getJobById = async (id) => {
-    try {
-        const response = await api.get(`/jobs/${id}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching job:", error.response?.data || error.message);
-        throw error.response?.data || error;
-    }
-};
+export const getSavedJobs = () => adminApi.get('/jobs/saved');
+export const toggleSavedJob = (jobId) => adminApi.post(`/jobs/${jobId}/save`);

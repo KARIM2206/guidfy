@@ -5,9 +5,9 @@ import { motion } from 'framer-motion';
 import Button from '@/app/components/ui/Button';
 import Select from '@/app/components/ui/Select';
 import Modal from '@/app/components/ui/Modal';
-import { CheckCircle, Users, Filter } from 'lucide-react';
+import { CheckCircle, Users, Filter, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { useLearningPaths } from '@/app/hooks/useLearningPath';
+import { useLearningPaths, useAssignAdmins } from '@/app/hooks/useLearningPath';
 import { useJobs } from '@/app/hooks/useJobs';
 import { getAllUsers } from '@/services/auth';
 import { useAuth } from '@/app/CONTEXT/AuthProvider';
@@ -30,6 +30,25 @@ export default function JobsHeader({
     learningPathId: '',
     assignedAdminIds: []
   });
+
+  const assignMutation = useAssignAdmins();
+
+  const handleSaveAssignments = async () => {
+    if (!formData.learningPathId) {
+      toast.error('Please select a learning path first');
+      return;
+    }
+    try {
+      await assignMutation.mutateAsync({
+        learningPathId: formData.learningPathId,
+        data: { section: 'JOB', adminIds: formData.assignedAdminIds }
+      });
+      toast.success('Admins assigned successfully');
+      setModalOpen(false);
+    } catch (err) {
+      toast.error('Failed to assign admins');
+    }
+  };
 
   // ✅ خيارات الحالة الصحيحة للسوبر أدمن
   const statusOptions = [
@@ -65,12 +84,8 @@ export default function JobsHeader({
   };
 
   const handleAdminToggle = (adminId) => {
-    setFormData(prev => ({
-      ...prev,
-      assignedAdminIds: prev.assignedAdminIds.includes(adminId)
-        ? prev.assignedAdminIds.filter(id => id !== adminId)
-        : [...prev.assignedAdminIds, adminId]
-    }));
+    // Only toggles selection for newly added admins, not existing ones
+    // We handle logic inline to prevent toggling off existing admins with card click
   };
 
   const openModal = () => {
@@ -159,14 +174,43 @@ export default function JobsHeader({
                   return (
                     <motion.div
                       key={admin.id}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleAdminToggle(admin.id)}
-                      className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all
-                        ${isSelected ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 bg-white hover:border-indigo-300'}`}
+                      whileHover={{ scale: isSelected ? 1 : 1.02 }}
+                      whileTap={{ scale: isSelected ? 1 : 0.98 }}
+                      onClick={() => {
+                        if (!isSelected) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            assignedAdminIds: [...prev.assignedAdminIds, admin.id]
+                          }));
+                        }
+                      }}
+                      className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
+                        isSelected 
+                          ? 'border-indigo-200 bg-indigo-50/50 cursor-default' 
+                          : 'border-gray-200 bg-white hover:border-indigo-300 cursor-pointer'
+                      }`}
                     >
                       <span className="text-sm font-medium">{admin.name}</span>
-                      {isSelected && <CheckCircle className="w-5 h-5 text-indigo-600" />}
+                      {isSelected && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-indigo-600 bg-indigo-100 px-2 py-1 rounded-full">
+                            Assigned
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFormData((prev) => ({
+                                ...prev,
+                                assignedAdminIds: prev.assignedAdminIds.filter((id) => id !== admin.id)
+                              }));
+                            }}
+                            className="p-1.5 hover:bg-red-100 text-red-500 rounded-md transition-colors"
+                            title="Unassign"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      )}
                     </motion.div>
                   );
                 })}
@@ -180,8 +224,8 @@ export default function JobsHeader({
             <Button variant="secondary" onClick={() => setModalOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={/* handleSaveAssignments */ () => {}}>
-              {isEditMode ? 'Update Assignment' : 'Save Assignment'}
+            <Button onClick={handleSaveAssignments} disabled={assignMutation.isPending}>
+              {assignMutation.isPending ? 'Saving...' : (isEditMode ? 'Update Assignment' : 'Save Assignment')}
             </Button>
           </div>
         </div>

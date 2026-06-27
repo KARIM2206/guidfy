@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -17,116 +17,111 @@ import {
   Trash2,
 } from 'lucide-react';
 
-// Hooks
-import { useLearningPaths } from '@/app/hooks/useLearningPath';
-import { useRoadmaps } from '@/app/hooks/useRoadmaps';
+import { useLearningPathById, useUpdateLearningPath } from '@/app/hooks/useLearningPath';
+import {
+  useRoadmaps,
+  useCreateRoadmap,
+  useUpdateRoadmap,
+  useDeleteRoadmap,
+} from '@/app/hooks/useRoadmaps';
 
-// UI Components
 import Loader from '@/app/components/ui/Loader';
 import Button from '@/app/components/ui/Button';
-import Modal from '@/app/components/ui/Modal';
-import RoadmapForm from '@/app/components/super-admin/dashboard/RoadmapsForm'; // adjust path
-import DeleteModel from '@/app/components/admin/dashboard/roadmap/DeleteModel'; // generic delete modal
-import { getAllUsers } from '@/services/auth';
-import { useAuth } from '@/app/CONTEXT/AuthProvider';
+import RoadmapForm from '@/app/components/super-admin/dashboard/RoadmapsForm';
+import LearningPathForm from '@/app/components/super-admin/dashboard/LearningPathForm';
+import DeleteModel from '@/app/components/admin/dashboard/roadmap/DeleteModel';
 
 export default function LearningPathDetailPage() {
   const { id } = useParams();
   const router = useRouter();
- const [admins, setAdmins] = useState([]);
-  // Learning Path hook
-  const {
-    currentLearningPath,
-    fetchLearningPathById,
-    loading: lpLoading,
-  } = useLearningPaths();
+  const numericId = Number(id); // ✅ حول لـ number عشان الـ comparison يشتغل
 
-  // Roadmaps hook
-  const {
-    roadmaps,
-   
-    createRoadmap,
-    editRoadmap,
-    removeRoadmap,
-    fetchRoadmaps,
-    loading: roadmapLoading,
-  } = useRoadmaps();
-const {token}=useAuth()
-  // Local state
+  // ─── UI State ───
   const [roadmapModalOpen, setRoadmapModalOpen] = useState(false);
   const [editingRoadmap, setEditingRoadmap] = useState(null);
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
+  const [lpModalOpen, setLpModalOpen] = useState(false);
 
-  // Fetch learning path details
-  useEffect(() => {
-    if (id) fetchLearningPathById(id);
-  }, [id, fetchLearningPathById]);
+  // ─── Queries ───
+  const { data: lpData, isLoading: lpLoading } = useLearningPathById(id);
+  const { data: roadmapsData, isLoading: roadmapsLoading } = useRoadmaps({
+    learningPathId: id,
+  });
 
-  // Fetch roadmaps related to this learning path
-  useEffect(() => {
-    if (id) {
-      const params = { learningPathId: id };
-      // If your useRoadmaps hook supports filtering by learningPathId, pass it.
-      // Otherwise fetch all and filter client-side (shown below)
-      fetchRoadmaps(params);
-    }
-  }, [id, fetchRoadmaps]);
-  console.log(roadmaps,'roadmaps in learning path');
-  
-const fetchAdmins = async () => {
-    try {
-        const res=await getAllUsers({token,role:"ADMIN"});
-        if (!res.success) {
-            console.error(res.message);
-        }
-        setAdmins(res.data);
-    } catch (error) {
-        
-    }
-}
-useEffect(() => {
-    fetchAdmins();
-},[token,roadmapModalOpen])
-  // Filter roadmaps belonging to this learning path
-  const relatedRoadmaps = roadmaps.filter(
-    (rm) => rm.learningPaths[0].learningPathId === id || rm.learningPathId === Number(id)
-  );
+  // ─── Mutations ───
+  const createMutation = useCreateRoadmap();
+  const updateMutation = useUpdateRoadmap();
+  const deleteMutation = useDeleteRoadmap();
+  const updateLpMutation = useUpdateLearningPath();
 
+  // ─── Derived Data ───
+  const currentLearningPath = lpData?.data ?? lpData;
 
-  const handleAddRoadmap = () => {
+  // ✅ الـ API بيرجع { data: [...], pagination: {...} }
+  const allRoadmaps = roadmapsData?.data ?? roadmapsData ?? [];
+
+  // ✅ فلترة صحيحة: نفحص كل learningPaths array ونقارن بـ number
+  const relatedRoadmaps = useMemo(() => {
+    if (!numericId || isNaN(numericId)) return [];
+    return allRoadmaps.filter((rm) =>
+      rm.learningPaths?.some((lp) => lp.learningPathId === numericId)
+    );
+  }, [allRoadmaps, numericId]);
+
+  const isMutating =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending;
+
+  // ─── Handlers ───
+  const handleAddRoadmap = useCallback(() => {
     setEditingRoadmap(null);
     setRoadmapModalOpen(true);
-  };
+  }, []);
 
-  const handleEditRoadmap = (roadmap) => {
+  const handleEditRoadmap = useCallback((roadmap) => {
     setEditingRoadmap(roadmap);
     setRoadmapModalOpen(true);
-  };
+  }, []);
 
-  const handleDeleteRoadmap = (roadmapId) => {
+  const handleDeleteRoadmap = useCallback((roadmapId) => {
     setDeleteModal({ open: true, id: roadmapId });
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (deleteModal.id) {
-      await removeRoadmap(deleteModal.id);
+      await deleteMutation.mutateAsync(deleteModal.id);
       setDeleteModal({ open: false, id: null });
     }
-  };
+  }, [deleteModal.id, deleteMutation]);
 
-  const handleRoadmapSubmit = async (formData) => {
-    // Ensure the roadmap is linked to this learning path
-    const payload = { ...formData, learningPathId: id };
-    if (editingRoadmap) {
-      await editRoadmap(editingRoadmap.id, payload);
-    } else {
-      await createRoadmap(payload);
-    }
-    setRoadmapModalOpen(false);
-    // Refresh roadmaps list
-    const params = { learningPathId: id };
-    fetchRoadmaps(params);
-  };
+  const handleRoadmapSubmit = useCallback(
+    async (formData) => {
+      const payload = { ...formData, learningPathId: numericId };
+      if (editingRoadmap) {
+        await updateMutation.mutateAsync({
+          id: editingRoadmap.id,
+          data: payload,
+        });
+      } else {
+        await createMutation.mutateAsync(payload);
+      }
+      setRoadmapModalOpen(false);
+      setEditingRoadmap(null);
+    },
+    [editingRoadmap, numericId, createMutation, updateMutation]
+  );
+
+  const handleLpSubmit = useCallback(
+    async (formData) => {
+      await updateLpMutation.mutateAsync({
+        id,
+        data: formData,
+      });
+      setLpModalOpen(false);
+    },
+    [id, updateLpMutation]
+  );
 
   if (lpLoading || !currentLearningPath) {
     return <Loader />;
@@ -159,7 +154,7 @@ useEffect(() => {
         </div>
         <Button
           variant="outline"
-          onClick={() => router.push('edit')} // or open edit modal
+          onClick={() => setLpModalOpen(true)}
           className="gap-2"
         >
           <Edit size={18} />
@@ -167,7 +162,7 @@ useEffect(() => {
         </Button>
       </motion.div>
 
-      {/* Learning Path Details Card */}
+      {/* Details Card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -309,135 +304,139 @@ useEffect(() => {
       </motion.div>
 
       {/* Roadmaps Section */}
-     {/* Roadmaps Section */}
-<motion.div
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ delay: 0.3 }}
->
-  <div className="flex justify-between items-center mb-4">
-    <h2 className="text-xl font-semibold text-gray-800">
-      Roadmaps in this Path
-    </h2>
-    <Button onClick={handleAddRoadmap} size="sm">
-      <Plus size={16} className="mr-1" /> Add Roadmap
-    </Button>
-  </div>
-
-  {roadmapLoading ? (
-    <div className="flex justify-center py-8">
-      <Loader />
-    </div>
-  ) : roadmaps.length === 0 ? (
-    <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
-      <p className="text-gray-500">No roadmaps yet. Click "Add Roadmap" to create one.</p>
-    </div>
-  ) : (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {roadmaps.map((roadmap, index) => (
-       <motion.div
-  key={roadmap.id}
-  initial={{ opacity: 0, y: 10 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ delay: index * 0.05 }}
-  whileHover={{ y: -4 }}
-  className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-xl transition-all duration-300"
->
-  {/* Header */}
-  <div className="flex justify-between items-start gap-2 mb-3">
-    
-    {/* Title + Tooltip */}
-    <div className="relative max-w-[75%] group/title">
-      <h3 className="font-semibold text-gray-800 truncate cursor-pointer">
-        {roadmap.title}
-      </h3>
-
-      {/* Tooltip (يظهر بس على title) */}
-      <div className="absolute left-0 top-full mt-1 hidden group-hover/title:block z-50">
-        <div className="bg-gray-900 text-white text-xs rounded-md px-3 py-2 shadow-lg max-w-xs">
-          {roadmap.title}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-800">
+            Roadmaps in this Path ({relatedRoadmaps.length})
+          </h2>
+          <Button onClick={handleAddRoadmap} size="sm">
+            <Plus size={16} className="mr-1" /> Add Roadmap
+          </Button>
         </div>
-      </div>
-    </div>
 
-    {/* Status */}
-    <span
-      className={`text-xs px-3 py-1 rounded-full font-medium ${
-        roadmap.isPublished
-          ? "bg-green-100 text-green-700"
-          : "bg-gray-100 text-gray-500"
-      }`}
-    >
-      {roadmap.isPublished ? "Published" : "Draft"}
-    </span>
-  </div>
+        {roadmapsLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader />
+          </div>
+        ) : relatedRoadmaps.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
+            <p className="text-gray-500">
+              No roadmaps yet. Click &quot;Add Roadmap&quot; to create one.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {relatedRoadmaps.map((roadmap, index) => (
+              <motion.div
+                key={roadmap.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ y: -4 }}
+                className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-xl transition-all duration-300"
+              >
+                {/* Header */}
+                <div className="flex justify-between items-start gap-2 mb-3">
+                  <div className="relative max-w-[75%] group/title">
+                    <h3 className="font-semibold text-gray-800 truncate cursor-pointer">
+                      {roadmap.title}
+                    </h3>
+                    <div className="absolute left-0 top-full mt-1 hidden group-hover/title:block z-50">
+                      <div className="bg-gray-900 text-white text-xs rounded-md px-3 py-2 shadow-lg max-w-xs">
+                        {roadmap.title}
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-xs px-3 py-1 rounded-full font-medium ${
+                      roadmap.isPublished
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    {roadmap.isPublished ? 'Published' : 'Draft'}
+                  </span>
+                </div>
 
-  {/* Description */}
-  <p className="text-sm text-gray-600 mb-4 line-clamp-2 leading-relaxed">
-    {roadmap.description || "No description provided."}
-  </p>
+                {/* Description */}
+                <p className="text-sm text-gray-600 mb-4 line-clamp-2 leading-relaxed">
+                  {roadmap.description || 'No description provided.'}
+                </p>
 
-  {/* Assignments */}
-  {roadmap.assignments?.length > 0 && (
-    <div className="flex items-center gap-2 mb-3 text-xs text-gray-500">
-      <Users size={14} />
-      <span className="truncate">
-        {roadmap.assignments.length} admin(s) assigned
-      </span>
-    </div>
-  )}
+                {/* Assignments */}
+                {roadmap.assignments?.length > 0 && (
+                  <div className="flex items-center gap-2 mb-3 text-xs text-gray-500">
+                    <Users size={14} />
+                    <span className="truncate">
+                      {roadmap.assignments.length} admin(s) assigned
+                    </span>
+                  </div>
+                )}
 
-  {/* Footer */}
-  <div className="flex items-center justify-between mt-4">
-    
-    {/* Actions */}
-    <div className="flex items-center gap-2">
-      <button
-        onClick={() => router.push(`${id}/roadmaps/${roadmap.id}`)}
-        className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition"
-      >
-        <Eye size={18} />
-      </button>
+                {/* Footer */}
+                <div className="flex items-center justify-between mt-4">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        router.push(`${roadmap?.learningPaths[0]?.learningPathId}/roadmaps/${roadmap.id}`)
+                      }
+                      className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition"
+                    >
+                      <Eye size={18} />
+                    </button>
 
-      <button
-        onClick={() => handleEditRoadmap(roadmap)}
-        className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition"
-      >
-        <Edit size={18} />
-      </button>
+                    <button
+                      onClick={() => handleEditRoadmap(roadmap)}
+                      className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition"
+                    >
+                      <Edit size={18} />
+                    </button>
 
-      <button
-        onClick={() => handleDeleteRoadmap(roadmap.id)}
-        className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
-      >
-        <Trash2 size={18} />
-      </button>
-    </div>
+                    <button
+                      onClick={() => handleDeleteRoadmap(roadmap.id)}
+                      className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
 
-    {/* Steps */}
-    <span className="text-xs text-gray-400 font-medium">
-      {roadmap.stepsCount || 0} steps
-    </span>
-  </div>
-</motion.div>
-      ))}
-    </div>
-  )}
-</motion.div>
-      {/* Roadmap Form Modal */}
-   
-        <RoadmapForm
-          isOpen={roadmapModalOpen}
-          loading={roadmapLoading}
-          admins={admins}
-          initialData={editingRoadmap}
-          onSubmit={handleRoadmapSubmit}
-          onCancel={() => setRoadmapModalOpen(false)}
-          // Pass any additional props like categories list if needed
+                  <span className="text-xs text-gray-400 font-medium">
+                    {roadmap.steps?.length || 0} steps
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </motion.div>
+
+      {/* Edit Learning Path Modal */}
+      {currentLearningPath && (
+        <LearningPathForm
+          isOpen={lpModalOpen}
+          initialData={currentLearningPath}
+          onSubmit={handleLpSubmit}
+          onCancel={() => setLpModalOpen(false)}
         />
-      
+      )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Form Modal */}
+      <RoadmapForm
+        isOpen={roadmapModalOpen}
+        loading={isMutating}
+        initialData={editingRoadmap}
+        onSubmit={handleRoadmapSubmit}
+        onCancel={() => {
+          setRoadmapModalOpen(false);
+          setEditingRoadmap(null);
+        }}
+      />
+
+      {/* Delete Modal */}
       <DeleteModel
         isOpen={deleteModal.open}
         onClose={() => setDeleteModal({ open: false, id: null })}

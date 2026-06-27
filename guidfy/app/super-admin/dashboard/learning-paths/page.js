@@ -1,61 +1,120 @@
+
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import Table from '@/app/components/ui/Table';
-import Modal from '@/app/components/ui/Modal';
-import Button from '@/app/components/ui/Button';
-import { Edit, Trash2, Plus, Eye, EyeOff, ChevronRight, Image as ImageIcon } from 'lucide-react';
-import Image from 'next/image'; // استيراد Image من next/image لتحسين الصور
+import Image from 'next/image';
+import Link from 'next/link';
+import {
+  Edit,
+  Trash2,
+  Plus,
+  Eye,
+  EyeOff,
+  ChevronRight,
+  Image as ImageIcon,
+} from 'lucide-react';
 
-import { useRoadmaps } from '@/app/hooks/useRoadmaps';
-import { useLearningPaths } from '@/app/hooks/useLearningPath';
+import Table from '@/app/components/ui/Table';
+import Button from '@/app/components/ui/Button';
 import LearningPathForm from '@/app/components/super-admin/dashboard/LearningPathForm';
 import DeleteModel from '@/app/components/admin/dashboard/roadmap/DeleteModel';
-import Link from 'next/link';
 import LearningPathFilter from '@/app/components/super-admin/dashboard/LearningPathFilter';
 
+import {
+  useLearningPathsSA,
+  useCreateLearningPath,
+  useUpdateLearningPath,
+  useDeleteLearningPath,
+  useTogglePublish,
+} from '@/app/hooks/useLearningPath';
+import { useRoadmaps } from '@/app/hooks/useRoadmaps';
+
 export default function LearningPathsPage() {
-  const {
-    learningPaths,
-    fetchLearningPaths,
-    createLearningPath,
-    editLearningPath,
-    removeLearningPath,
-    publishLearningPath,
-    loading,
-  } = useLearningPaths();
-
-  const { roadmaps, fetchRoadmaps } = useRoadmaps();
-
-  const [modalOpen, setModalOpen] = useState(false);
-  const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
-  const [editingPath, setEditingPath] = useState(null);
-
-  // Filter state
+  // ─── Filter State ───
   const [filters, setFilters] = useState({
     level: '',
     category: '',
     search: '',
   });
 
-  useEffect(() => {
-    fetchLearningPaths();
-    fetchRoadmaps();
-  }, []);
+  // ─── UI State ───
+  const [modalOpen, setModalOpen] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
+  const [editingPath, setEditingPath] = useState(null);
 
-  // Apply filters to learningPaths
+  // ─── Queries ───
+  const {
+    data: lpData,
+    isLoading: lpLoading,
+    isFetching: lpFetching,
+  } = useLearningPathsSA(filters);
+
+  const {
+    data: roadmapsData,
+    isLoading: roadmapsLoading,
+  } = useRoadmaps();
+
+  // ─── Mutations ───
+  const createMutation = useCreateLearningPath();
+  const updateMutation = useUpdateLearningPath();
+  const deleteMutation = useDeleteLearningPath();
+  const publishMutation = useTogglePublish();
+
+  // ─── Derived Data ───
+  const learningPaths = lpData?.data ?? [];
+  const roadmaps = roadmapsData?.data ?? roadmapsData ?? [];
+
+  // Client-side filtering
   const filteredPaths = learningPaths.filter((path) => {
-    if (filters.level && path.level !== filters.level) return false;
-    if (filters.category && path.category !== filters.category) return false;
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      if (!path.title.toLowerCase().includes(searchLower)) return false;
+      return path.title?.toLowerCase().includes(searchLower);
     }
     return true;
   });
 
-  // تعريف الأعمدة مع إضافة عمود الصورة
+  const loading =
+    lpLoading ||
+    lpFetching ||
+    roadmapsLoading ||
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending ||
+    publishMutation.isPending;
+
+  // ─── Handlers ───
+  const handleOpenModal = useCallback((path = null) => {
+    setEditingPath(path);
+    setModalOpen(true);
+  }, []);
+
+  const handleSubmit = useCallback(
+    async (formData) => {
+      if (editingPath) {
+        await updateMutation.mutateAsync({ id: editingPath.id, data: formData });
+      } else {
+        await createMutation.mutateAsync(formData);
+      }
+      setModalOpen(false);
+      setEditingPath(null);
+    },
+    [editingPath, createMutation, updateMutation]
+  );
+
+  const handleDelete = useCallback(async () => {
+    if (deleteModal.id) {
+      await deleteMutation.mutateAsync(deleteModal.id);
+      setDeleteModal({ open: false, id: null });
+    }
+  }, [deleteModal.id, deleteMutation]);
+
+  const handlePublishToggle = useCallback(
+    (id) => publishMutation.mutate(id),
+    [publishMutation]
+  );
+
+  // ─── Columns ───
   const columns = [
     {
       key: 'image',
@@ -64,15 +123,14 @@ export default function LearningPathsPage() {
         <div className="flex items-center justify-center">
           {row.image ? (
             <div className="relative w-10 h-10 rounded-md overflow-hidden border border-gray-200">
-          
-             <Image
-  src={`http://localhost:8000${row.image}`}
-  alt={row.title}
-  fill
-  className="object-cover"
-  sizes="40px"
-  unoptimized
-/>
+              <Image
+                src={`http://localhost:8000${row.image}`}
+                alt={row.title}
+                fill
+                className="object-cover"
+                sizes="40px"
+                unoptimized
+              />
             </div>
           ) : (
             <div className="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center text-gray-400">
@@ -84,42 +142,35 @@ export default function LearningPathsPage() {
     },
     { key: 'title', label: 'Title' },
     { key: 'jobs', label: 'Jobs' },
-    { key: 'projects', label: 'Projects', render: (row) => row.projects?.length || 0 },
+    {
+      key: 'projects',
+      label: 'Projects',
+      render: (row) => row.projects?.length || 0,
+    },
     { key: 'estimatedDuration', label: 'Duration' },
     {
       key: 'isPublished',
       label: 'Status',
       render: (row) => (
         <span
-          className={`px-2 py-1 text-xs rounded ${
-            row.isPublished
-              ? 'bg-green-100 text-green-600'
-              : 'bg-gray-200 text-gray-600'
-          }`}
+          className={`px-2 py-1 text-xs rounded ${row.isPublished
+            ? 'bg-green-100 text-green-600'
+            : 'bg-gray-200 text-gray-600'
+            }`}
         >
-          {row?.isPublished ? 'Published' : 'Draft'}
+          {row.isPublished ? 'Published' : 'Draft'}
         </span>
       ),
     },
   ];
 
-  const handleOpenModal = (path = null) => {
-    setEditingPath(path);
-    setModalOpen(true);
-  };
-
-  const handleSubmit = async (formData) => {
-    if (editingPath) {
-      await editLearningPath(editingPath.id, formData);
-    } else {
-      await createLearningPath(formData);
-    }
-    fetchLearningPaths();
-    setModalOpen(false);
-  };
-
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="p-6"
+    >
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Learning Paths</h1>
         <Button onClick={() => handleOpenModal()}>
@@ -127,9 +178,10 @@ export default function LearningPathsPage() {
         </Button>
       </div>
 
-      {/* Filter Component */}
+      {/* Filters */}
       <LearningPathFilter filters={filters} setFilters={setFilters} />
 
+      {/* Table */}
       <Table
         columns={columns}
         data={filteredPaths}
@@ -142,9 +194,11 @@ export default function LearningPathsPage() {
             >
               <ChevronRight size={18} />
             </Link>
+
             <button
-              onClick={() => publishLearningPath(row.id)}
-              className="text-gray-600 hover:text-black"
+              onClick={() => handlePublishToggle(row.id)}
+              className="text-gray-600 hover:text-black disabled:opacity-50"
+              disabled={publishMutation.isPending}
             >
               {row.isPublished ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
@@ -166,21 +220,23 @@ export default function LearningPathsPage() {
         )}
       />
 
+      {/* Delete Modal */}
       <DeleteModel
         isOpen={deleteModal.open}
-        onClose={() => setDeleteModal((prev) => ({ ...prev, open: false }))}
-        confirmDelete={() => {
-          removeLearningPath(deleteModal.id);
-          setDeleteModal((prev) => ({ ...prev, open: false }));
-        }}
+        onClose={() => setDeleteModal({ open: false, id: null })}
+        confirmDelete={handleDelete}
       />
 
+      {/* Form Modal */}
       <LearningPathForm
         initialData={editingPath}
         roadmaps={roadmaps}
         onSubmit={handleSubmit}
         isOpen={modalOpen}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => {
+          setModalOpen(false);
+          setEditingPath(null);
+        }}
       />
     </motion.div>
   );

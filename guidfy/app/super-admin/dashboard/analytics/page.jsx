@@ -71,5 +71,18 @@
 //           <div key={index} className="flex-1 flex flex-col items-center gap-1">
 //             <motion.div
 //               initial={{ height: 0 }}
-//               animate={{ height: `${(item.count / maxCount) * 100}%` }}
-//               transition={{ duration: 0.5
+//               transition={{ duration: 0.5 }} />
+//           </div>
+//         ))}
+//       </div>
+//     );
+//   };
+// }
+
+export default function SuperAdminAnalyticsPage() {
+  return (
+    <div className="flex items-center justify-center min-h-screen text-gray-500">
+      Analytics Page - Coming Soon
+    </div>
+  );
+}

@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   Edit,
@@ -15,13 +15,29 @@ import {
   Eye,
   CheckCircle,
   XCircle,
-  EyeClosed,
   EyeOff,
+  Plus,
+  X,
+  Search,
+  UserPlus,
+  Trash2,
+  Crown,
 } from 'lucide-react';
 
 // Hooks
-import { useRoadmaps } from '@/app/hooks/useRoadmaps';
-import { useSteps } from '@/app/hooks/useStep';
+import {
+  useRoadmapById,
+  useToggleRoadmap,
+  useUpdateRoadmap,
+  useAssignAdmin,
+  useRemoveAdmin,
+} from '@/app/hooks/useRoadmaps';
+import {
+  useStepsByRoadmap,
+  useCreateStep,
+  useUpdateStep,
+  useDeleteStep,
+} from '@/app/hooks/useStep';
 
 // Components
 import Loader from '@/app/components/ui/Loader';
@@ -30,170 +46,584 @@ import StepList from '@/app/components/admin/dashboard/roadmap/step/StepList';
 import StepForm from '@/app/components/admin/dashboard/roadmap/step/StepForm';
 import DeleteModel from '@/app/components/admin/dashboard/roadmap/DeleteModel';
 import ConfirmModal from '@/app/components/admin/dashboard/ConfirmModal';
-import { toggleRoadmapPublish } from '@/services/admin/roadmap';
+import RoadmapForm from '@/app/components/super-admin/dashboard/RoadmapsForm';
+import { useAdmins } from '@/app/hooks/useAdmins';
 
+/* ═══════════════════════════════════════════════════════════
+   Admin Assignment Modal Component
+   ═══════════════════════════════════════════════════════════ */
+
+function AdminAssignmentModal({
+  isOpen,
+  onClose,
+  roadmap,
+  onAssign,
+  onRemove,
+  isLoading,
+}) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
+  // ─── Fetch Real Admins ───
+  const { data: allAdmins = [], isLoading: adminsLoading } = useAdmins();
+
+  // ─── Derived Data ───
+  const assignedAdminIds = useMemo(() => {
+    const ids = new Set();
+    roadmap?.assignments?.forEach((a) => {
+      const id = a.admin?.id ?? a.adminId;
+      if (id) ids.add(id);
+    });
+    return ids;
+  }, [roadmap]);
+
+  const currentAdmins = useMemo(() => {
+    return (
+      roadmap?.assignments
+        ?.map((a) => a.admin)
+        .filter(Boolean)
+        .filter((admin, index, self) => 
+          self.findIndex((a) => a?.id === admin?.id) === index
+        ) || []
+    );
+  }, [roadmap]);
+
+  const availableAdmins = useMemo(() => {
+    return allAdmins;
+  }, [allAdmins]);
+
+  const filteredAdmins = useMemo(() => {
+    if (!searchQuery.trim()) return availableAdmins;
+    const q = searchQuery.toLowerCase();
+    return availableAdmins.filter(
+      (admin) =>
+        admin.name?.toLowerCase().includes(q) ||
+        admin.email?.toLowerCase().includes(q)
+    );
+  }, [availableAdmins, searchQuery]);
+
+  // ─── Handlers ───
+  const toggleSelection = (adminId) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(adminId)) {
+        next.delete(adminId);
+      } else {
+        next.add(adminId);
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    const allIds = filteredAdmins.map((a) => a.id);
+    const allSelected = allIds.every((id) => selectedIds.has(id));
+    if (allSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        allIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        allIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+  };
+
+  const handleAssign = () => {
+    if (selectedIds.size === 0) return;
+    onAssign(Array.from(selectedIds));
+    setSelectedIds(new Set());
+    setSearchQuery('');
+  };
+
+  const handleClose = () => {
+    setSelectedIds(new Set());
+    setSearchQuery('');
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={handleClose}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+          />
+
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed inset-0 m-auto z-50 w-full max-w-xl h-fit max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-purple-50">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-white rounded-xl shadow-sm">
+                  <Users size={22} className="text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Manage Admins</h3>
+                  <p className="text-sm text-gray-500">
+                    {currentAdmins.length} assigned · {availableAdmins.length} available
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleClose}
+                className="p-2 hover:bg-white/80 rounded-xl transition-all"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* ─── Current Admins ─── */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <Shield size={14} className="text-amber-500" />
+                    Currently Assigned
+                    <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs">
+                      {currentAdmins.length}
+                    </span>
+                  </h4>
+                </div>
+
+                <div className="space-y-2">
+                  <AnimatePresence mode="popLayout">
+                    {currentAdmins.length === 0 ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-center py-8 text-gray-400 text-sm bg-gray-50/80 rounded-xl border border-dashed border-gray-200"
+                      >
+                        <Users size={24} className="mx-auto mb-2 text-gray-300" />
+                        No admins assigned yet
+                      </motion.div>
+                    ) : (
+                      currentAdmins.map((admin) => (
+                        <motion.div
+                          key={admin.id}
+                          layout
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20, scale: 0.9 }}
+                          className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-sm group hover:border-red-200 hover:shadow-md transition-all"
+                        >
+                          <div className="flex items-center gap-3">
+                            {admin.avatar ? (
+                              <img
+                                src={admin.avatar}
+                                alt={admin.name}
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
+                                {admin.name?.charAt(0).toUpperCase() || 'A'}
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-semibold text-gray-800 text-sm">
+                                {admin.name}
+                              </p>
+                              <p className="text-xs text-gray-500">{admin.email}</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => onRemove(admin.id)}
+                            disabled={isLoading}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
+                            title="Remove admin"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </motion.div>
+                      ))
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-100" />
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-white px-4 text-xs text-gray-400 uppercase tracking-wider">
+                    Add Admins
+                  </span>
+                </div>
+              </div>
+
+              {/* ─── Available Admins ─── */}
+              <div>
+                {/* Search + Select All */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="relative flex-1">
+                    <Search
+                      size={16}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Search admins by name or email..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    />
+                  </div>
+                  {filteredAdmins.length > 0 && (
+                    <button
+                      onClick={selectAll}
+                      className="text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-3 py-2.5 rounded-xl border border-indigo-200 transition-all whitespace-nowrap"
+                    >
+                      {filteredAdmins.every((a) => selectedIds.has(a.id))
+                        ? 'Deselect All'
+                        : 'Select All'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Admins List */}
+                <div className="max-h-56 overflow-y-auto space-y-1 rounded-xl border border-gray-100 bg-gray-50/30">
+                  {adminsLoading ? (
+                    <div className="flex items-center justify-center py-8 text-gray-400">
+                      <Loader2 size={20} className="animate-spin mr-2" />
+                      Loading admins...
+                    </div>
+                  ) : filteredAdmins.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400 text-sm">
+                      <Search size={24} className="mx-auto mb-2 text-gray-300" />
+                      {searchQuery
+                        ? 'No matching admins found'
+                        : 'All available admins are assigned'}
+                    </div>
+                  ) : (
+                    filteredAdmins.map((admin) => {
+                      const isAlreadyAssigned = assignedAdminIds.has(admin.id);
+                      const isSelected = selectedIds.has(admin.id) || isAlreadyAssigned;
+                      
+                      return (
+                        <motion.button
+                          key={admin.id}
+                          layout
+                          onClick={() => {
+                            if (!isAlreadyAssigned) toggleSelection(admin.id);
+                          }}
+                          disabled={isAlreadyAssigned}
+                          className={`w-full flex items-center gap-3 p-3 text-left transition-all rounded-lg mx-1 my-0.5 ${
+                            isSelected
+                              ? isAlreadyAssigned 
+                                ? 'bg-gray-100 border border-gray-200 cursor-not-allowed opacity-75' 
+                                : 'bg-indigo-50 border border-indigo-200 shadow-sm'
+                              : 'hover:bg-white hover:shadow-sm border border-transparent'
+                          }`}
+                        >
+                          {/* Checkbox */}
+                          <div
+                            className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                              isSelected
+                                ? isAlreadyAssigned 
+                                  ? 'bg-gray-400 border-gray-400' 
+                                  : 'bg-indigo-500 border-indigo-500'
+                                : 'border-gray-300'
+                            }`}
+                          >
+                            {isSelected && <CheckCircle size={14} className="text-white" />}
+                          </div>
+
+                          {/* Avatar */}
+                          {admin.avatar ? (
+                            <img
+                              src={admin.avatar}
+                              alt={admin.name}
+                              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                            />
+                          ) : (
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${
+                                isSelected
+                                  ? isAlreadyAssigned ? 'bg-gray-400' : 'bg-indigo-500'
+                                  : 'bg-gradient-to-br from-gray-400 to-gray-500'
+                              }`}
+                            >
+                              {admin.name?.charAt(0).toUpperCase() || 'A'}
+                            </div>
+                          )}
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">
+                              {admin.name}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">{admin.email}</p>
+                          </div>
+
+                          {/* Selected Badge */}
+                          {isSelected && (
+                            <motion.span
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className={`text-xs font-medium px-2 py-0.5 rounded-full ${isAlreadyAssigned ? 'text-gray-600 bg-gray-200' : 'text-indigo-600 bg-indigo-100'}`}
+                            >
+                              {isAlreadyAssigned ? 'Assigned' : 'Selected'}
+                            </motion.span>
+                          )}
+                        </motion.button>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Batch Assign Button */}
+                <AnimatePresence>
+                  {selectedIds.size > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="mt-4"
+                    >
+                      <Button
+                        onClick={handleAssign}
+                        disabled={isLoading}
+                        className="w-full gap-2 py-3 text-base"
+                        variant="primary"
+                      >
+                        <UserPlus size={18} />
+                        {isLoading
+                          ? 'Assigning...'
+                          : `Assign ${selectedIds.size} Admin${selectedIds.size > 1 ? 's' : ''}`}
+                      </Button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Main Page
+   ═══════════════════════════════════════════════════════════ */
 export default function SuperAdminRoadmapDetailPage() {
   const { roadmapId: id } = useParams();
   const router = useRouter();
 
-  // Roadmap context
-  const { currentRoadmap, fetchRoadmapById, loading: roadmapLoading } = useRoadmaps();
-
-  // Steps context
-  const {
-    steps,
-    loading: stepsLoading,
-    fetchStepsByRoadmap,
-    currentStep,
-    fetchStepById,
-    createStep,
-    editStep,
-    removeStep,
-    refreshTrigger,
-  } = useSteps();
-
-  // Local state
+  // ─── UI State ───
   const [stepFormOpen, setStepFormOpen] = useState(false);
   const [editingStep, setEditingStep] = useState({});
   const [deleteModal, setDeleteModal] = useState({ open: false, stepId: null });
-  const [isOpenconfirmModel, setIsOpenConfirmModel] = useState(false);
-const [stepId,setStepId]=useState(null)
-  // Fetch roadmap details
-  useEffect(() => {
-    if (id) fetchRoadmapById(id);
-  }, [id, fetchRoadmapById, refreshTrigger]);
-console.log(currentRoadmap,'currentRoadmap in roadmap page');
-console.log(steps,'stepId in roadmap page');
-  // Fetch steps when id changes
-  const handleFetchSteps = async() => {
-    try {
-      await fetchStepsByRoadmap(currentRoadmap.id);
-    } catch (error) {
-      console.error(error);
-      
-    }
-  }
-useEffect(() => {
-  if (currentRoadmap?.id) {
-    handleFetchSteps()
-  }
-}, [currentRoadmap, fetchStepsByRoadmap, refreshTrigger]);
-  useEffect(() => {
-    if (stepId) fetchStepById(stepId);
-  }, [stepId, fetchStepById]);
-console.log(currentRoadmap,'current roadmap');
+  const [isOpenConfirmModel, setIsOpenConfirmModel] = useState(false);
+  const [stepId, setStepId] = useState(null);
+  const [showRoadmapForm, setShowRoadmapForm] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
 
-  // Handlers
-  const handleAddStep = () => {
+  // ─── Queries ───
+  const { data: roadmapData, isLoading: roadmapLoading } = useRoadmapById(id);
+  const { data: stepsData, isLoading: stepsLoading } = useStepsByRoadmap(id);
+
+  // ─── Mutations ───
+  const toggleMutation = useToggleRoadmap();
+  const updateRoadmapMutation = useUpdateRoadmap();
+  const createStepMutation = useCreateStep();
+  const updateStepMutation = useUpdateStep();
+  const deleteStepMutation = useDeleteStep();
+  const assignAdminMutation = useAssignAdmin();
+  const removeAdminMutation = useRemoveAdmin();
+
+  // ─── Derived Data ───
+  const currentRoadmap = roadmapData?.data ?? roadmapData;
+  const steps = stepsData ?? [];
+
+  const isMutating =
+    toggleMutation.isPending ||
+    updateRoadmapMutation.isPending ||
+    createStepMutation.isPending ||
+    updateStepMutation.isPending ||
+    deleteStepMutation.isPending ||
+    assignAdminMutation.isPending ||
+    removeAdminMutation.isPending;
+
+  // ─── Handlers ───
+  const handlePublish = useCallback(async () => {
+    try {
+      await toggleMutation.mutateAsync(id);
+      setIsOpenConfirmModel(false);
+    } catch (err) {
+      console.error('Failed to toggle publish:', err);
+    }
+  }, [id, toggleMutation]);
+
+  const handleEditRoadmap = useCallback(async (formData) => {
+    try {
+      await updateRoadmapMutation.mutateAsync({ id, data: formData });
+      setShowRoadmapForm(false);
+    } catch (err) {
+      console.error('Failed to update roadmap:', err);
+    }
+  }, [id, updateRoadmapMutation]);
+
+  const handleAssignAdmin = useCallback(async (adminId) => {
+    try {
+      await assignAdminMutation.mutateAsync({ roadmapId: id, adminId });
+    } catch (err) {
+      console.error('Failed to assign admin:', err);
+    }
+  }, [id, assignAdminMutation]);
+
+  const handleRemoveAdmin = useCallback(async (adminId) => {
+    try {
+      await removeAdminMutation.mutateAsync({ roadmapId: id, adminId });
+    } catch (err) {
+      console.error('Failed to remove admin:', err);
+    }
+  }, [id, removeAdminMutation]);
+
+  const handleAddStep = useCallback(() => {
     setEditingStep({});
     setStepFormOpen(true);
-  };
+  }, []);
 
-  const handleEditStep = (step) => {
+  const handleEditStep = useCallback((step) => {
     setEditingStep(step);
     setStepFormOpen(true);
-  };
+  }, []);
 
-  const handleDeleteClick = (stepId) => {
+  const handleDeleteClick = useCallback((stepId) => {
     setDeleteModal({ open: true, stepId });
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (deleteModal.stepId) {
       try {
-        await removeStep(deleteModal.stepId);
+        await deleteStepMutation.mutateAsync(deleteModal.stepId);
         setDeleteModal({ open: false, stepId: null });
       } catch (error) {
         console.error('Failed to delete step:', error);
       }
     }
-  };
-const handlePublish = async () => {
-  try {
-    await toggleRoadmapPublish(id); // ننتظر تغيير الحالة
-    setIsOpenConfirmModel(false);
-    await fetchRoadmapById(id); // نجيب الحالة الجديدة بعد التغيير
-  } catch (err) {
-    console.error("Failed to toggle publish:", err);
-  }
-};
+  }, [deleteModal.stepId, deleteStepMutation]);
 
-  const handleStepSubmit = async (data) => {
-    if (editingStep?.id) {
-      await editStep(editingStep.id, data);
-    } else {
-      await createStep({ ...data, roadmapId: id });
-    }
-    setStepFormOpen(false);
-  };
+  const handleStepSubmit = useCallback(
+    async (data) => {
+      if (editingStep?.id) {
+        await updateStepMutation.mutateAsync({ id: editingStep.id, data });
+      } else {
+        await createStepMutation.mutateAsync({ ...data, roadmapId: id });
+      }
+      setStepFormOpen(false);
+      setEditingStep({});
+    },
+    [editingStep, id, createStepMutation, updateStepMutation]
+  );
 
   if (roadmapLoading || !currentRoadmap) {
-    return <Loader />;
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Loader />
+      </div>
+    );
   }
 
-  // Extract assigned admins from assignments (if any)
-  const assignedAdmins = currentRoadmap.assignments?.map((a) => a.admin) || [];
+  const assignedAdmins = currentRoadmap.assignments?.map((a) => a.admin).filter(Boolean) || [];
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="p-6 min-h-screen bg-gray-50"
+      className="p-4 md:p-8 min-h-screen bg-gray-50/50"
     >
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-6"
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8"
       >
         <div className="flex items-center gap-4">
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => router.back()}
-            className="p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-shadow"
+            className="p-2.5 rounded-xl bg-white shadow-sm hover:shadow-md border border-gray-200 transition-all"
           >
             <ArrowLeft size={20} className="text-gray-700" />
           </motion.button>
-          <div className="relative max-w-[200px] sm:max-w-[300px] md:max-w-[500px] group/title">
-  <motion.h1
-    initial={{ opacity: 0, x: -20 }}
-    animate={{ opacity: 1, x: 0 }}
-    transition={{ delay: 0.1 }}
-    className="text-lg sm:text-xl md:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent truncate cursor-pointer"
-  >
-    {currentRoadmap.title}
-  </motion.h1>
-
-  {/* Tooltip */}
-  <div className="absolute left-0 top-full mt-2 hidden group-hover/title:block z-[9999]">
-    <div className="bg-gray-900 text-white text-xs sm:text-sm rounded-md px-3 py-2 shadow-lg max-w-xs break-words">
-      {currentRoadmap.title}
-    </div>
-  </div>
-</div>
+          
+          <div className="relative group/title">
+            <motion.h1
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-xl md:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent truncate max-w-[200px] sm:max-w-[300px] md:max-w-[500px]"
+            >
+              {currentRoadmap.title}
+            </motion.h1>
+            <div className="absolute left-0 top-full mt-2 hidden group-hover/title:block z-50">
+              <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl max-w-xs break-words">
+                {currentRoadmap.title}
+              </div>
+            </div>
+          </div>
         </div>
+
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
-          className='flex items-center gap-2'
+          className="flex items-center gap-2 flex-wrap"
         >
-         <Button
-        variant={currentRoadmap.isPublished ? "secondary" : "outline"} // ثانوي للـ Published و Outline للـ Unpublished
-        onClick={() => setIsOpenConfirmModel(true)}
-        className="gap-2  px-3 py-1"
-      >
-        <span>{currentRoadmap.isPublished ?<EyeOff size={16}/> :<Eye size={16} />}</span>
-       <span> {currentRoadmap.isPublished ? "Unpublish" : "Publish"}</span>
-      </Button>
+          <Button
+            variant={currentRoadmap.isPublished ? 'secondary' : 'outline'}
+            onClick={() => setIsOpenConfirmModel(true)}
+            className="gap-2"
+            disabled={toggleMutation.isPending}
+          >
+            {currentRoadmap.isPublished ? <EyeOff size={16} /> : <Eye size={16} />}
+            {currentRoadmap.isPublished ? 'Unpublish' : 'Publish'}
+          </Button>
+
           <Button
             variant="outline"
-            onClick={() => router.push(`/super-admin/dashboard/roadmaps/${id}/edit`)}
+            onClick={() => setShowRoadmapForm(true)}
             className="gap-2"
           >
-            <Edit size={18} />
-            Edit Roadmap
+            <Edit size={16} />
+            Edit
+          </Button>
+
+          <Button
+            variant="primary"
+            onClick={() => setShowAdminModal(true)}
+            className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 border-0 text-white hover:opacity-90"
+          >
+            <UserPlus size={16} />
+            Admins
+            {assignedAdmins.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded-md text-xs">
+                {assignedAdmins.length}
+              </span>
+            )}
           </Button>
         </motion.div>
       </motion.div>
@@ -203,207 +633,245 @@ const handlePublish = async () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 mb-8"
+        className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-8 mb-8"
       >
+        {/* Description */}
         {currentRoadmap.description && (
-          <div className="relative group/desc max-w-full">
-  <p className="text-gray-700 mb-6 leading-relaxed text-sm sm:text-base line-clamp-2">
-    {currentRoadmap.description || "No description provided."}
-  </p>
-
-  {/* Tooltip */}
-  <div className="absolute left-0 top-full mt-2 hidden group-hover/desc:block z-[9999]">
-    <div className="bg-gray-900 text-white text-xs sm:text-sm rounded-md px-3 py-2 shadow-lg max-w-md break-words">
-      {currentRoadmap.description}
-    </div>
-  </div>
-</div>
+          <div className="relative group/desc mb-8">
+            <p className="text-gray-600 leading-relaxed text-sm md:text-base line-clamp-2">
+              {currentRoadmap.description}
+            </p>
+            <div className="absolute left-0 top-full mt-2 hidden group-hover/desc:block z-50">
+              <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl max-w-md break-words">
+                {currentRoadmap.description}
+              </div>
+            </div>
+          </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Category */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5 }}
-            className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl"
-          >
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Tag size={20} className="text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Category</p>
-              <p className="font-medium text-gray-800">{currentRoadmap.category}</p>
-            </div>
-          </motion.div>
+          <StatCard
+            icon={<Tag size={18} />}
+            label="Category"
+            value={currentRoadmap.category}
+            color="blue"
+            delay={0.4}
+          />
 
           {/* Level */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.6 }}
-            className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl"
-          >
-            <div
-              className={`p-2 rounded-lg ${
-                currentRoadmap.level === 'BEGINNER'
-                  ? 'bg-green-100'
-                  : currentRoadmap.level === 'INTERMEDIATE'
-                  ? 'bg-yellow-100'
-                  : 'bg-red-100'
-              }`}
-            >
-              <BarChart
-                size={20}
-                className={
-                  currentRoadmap.level === 'BEGINNER'
-                    ? 'text-green-600'
-                    : currentRoadmap.level === 'INTERMEDIATE'
-                    ? 'text-yellow-600'
-                    : 'text-red-600'
-                }
-              />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Level</p>
-              <p className="font-medium text-gray-800">{currentRoadmap.level}</p>
-            </div>
-          </motion.div>
+          <StatCard
+            icon={<BarChart size={18} />}
+            label="Level"
+            value={currentRoadmap.level}
+            color={
+              currentRoadmap.level === 'BEGINNER'
+                ? 'green'
+                : currentRoadmap.level === 'INTERMEDIATE'
+                ? 'yellow'
+                : 'red'
+            }
+            delay={0.5}
+          />
 
           {/* Duration */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.7 }}
-            className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl"
-          >
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Clock size={20} className="text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Duration</p>
-              <p className="font-medium text-gray-800">
-                {currentRoadmap.estimatedDuration} minutes
-              </p>
-            </div>
-          </motion.div>
+          <StatCard
+            icon={<Clock size={18} />}
+            label="Duration"
+            value={`${currentRoadmap.estimatedDuration} min`}
+            color="purple"
+            delay={0.6}
+          />
 
           {/* Created By */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.8 }}
-            className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl"
-          >
-            <div className="p-2 bg-indigo-100 rounded-lg">
-              <User size={20} className="text-indigo-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Created By</p>
-              <p className="font-medium text-gray-800">
-                {currentRoadmap.createdBy?.name || 'Unknown'}
-              </p>
-            </div>
-          </motion.div>
+          <StatCard
+            icon={<User size={18} />}
+            label="Created By"
+            value={currentRoadmap.createdBy?.name || 'Unknown'}
+            color="indigo"
+            delay={0.7}
+          />
 
           {/* Enrolled Students */}
+          <StatCard
+            icon={<Users size={18} />}
+            label="Enrolled"
+            value={currentRoadmap.enrollments?.length || 0}
+            color="pink"
+            delay={0.8}
+          />
+
+          {/* Assigned Admins — Enhanced */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.9 }}
-            className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl"
+            className="sm:col-span-2 lg:col-span-2 p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-100"
           >
-            <div className="p-2 bg-pink-100 rounded-lg">
-              <Users size={20} className="text-pink-600" />
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-amber-100 rounded-lg">
+                  <Shield size={16} className="text-amber-600" />
+                </div>
+                <p className="text-sm font-semibold text-gray-700">Assigned Admins</p>
+              </div>
+              <button
+                onClick={() => setShowAdminModal(true)}
+                className="text-xs font-medium text-amber-700 hover:text-amber-800 hover:bg-amber-100 px-2 py-1 rounded-lg transition-colors"
+              >
+                Manage
+              </button>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Enrolled Students</p>
-              <p className="font-medium text-gray-800">
-                {currentRoadmap.enrollments?.length || 0}
-              </p>
-            </div>
+            
+            {assignedAdmins.length === 0 ? (
+              <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+                <Crown size={14} />
+                No admins assigned yet
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                <AnimatePresence>
+                  {assignedAdmins.map((admin) => (
+                    <motion.div
+                      key={admin.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="flex items-center gap-2 pl-1 pr-3 py-1 bg-white rounded-full border border-amber-200 shadow-sm"
+                    >
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold">
+                        {admin.name?.charAt(0).toUpperCase() || 'A'}
+                      </div>
+                      <span className="text-xs font-medium text-gray-700">{admin.name}</span>
+                      {removeAdminMutation.isPending && (
+                        <Loader size={12} className="text-amber-500" />
+                      )}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
           </motion.div>
 
-          {/* Assigned Admins (new card) */}
+          {/* Status */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 1.0 }}
-            className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl"
+            className={`p-4 rounded-xl border ${
+              currentRoadmap.isPublished
+                ? 'bg-green-50 border-green-200'
+                : 'bg-red-50 border-red-200'
+            }`}
           >
-            <div className="p-2 bg-amber-100 rounded-lg">
-              <Shield size={20} className="text-amber-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Assigned Admins</p>
-              <div className="font-medium text-gray-800">
-                {assignedAdmins.length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {assignedAdmins.map((admin) => (
-                      <span
-                        key={admin.id}
-                        className="inline-block bg-white px-2 py-0.5 rounded-full text-xs border border-gray-200"
-                      >
-                        {admin.name}
-                      </span>
-                    ))}
-                  </div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className={`p-1.5 rounded-lg ${currentRoadmap.isPublished ? 'bg-green-100' : 'bg-red-100'}`}>
+                {currentRoadmap.isPublished ? (
+                  <CheckCircle size={16} className="text-green-600" />
                 ) : (
-                  <span>None</span>
+                  <XCircle size={16} className="text-red-600" />
                 )}
               </div>
+              <p className="text-sm font-semibold text-gray-700">Status</p>
             </div>
+            <p className={`font-medium ${currentRoadmap.isPublished ? 'text-green-700' : 'text-red-700'}`}>
+              {currentRoadmap.isPublished ? 'Published' : 'Draft'}
+            </p>
           </motion.div>
-        <motion.div
-  initial={{ opacity: 0, scale: 0.9 }}
-  animate={{ opacity: 1, scale: 1 }}
-  transition={{ delay: 1.0 }}
-  className="flex items-start gap-3 p-4 rounded-xl"
-  // ديناميكي حسب الحالة
-  style={{
-    backgroundColor:
-      currentRoadmap.isPublished === true
-        ? 'rgba(134, 239, 172, 0.3)' // أخضر فاتح
-        : 'rgba(254, 202, 202, 0.3)' // أحمر فاتح
-  }}
->
-  <div
-    className={`p-2 rounded-lg ${
-      currentRoadmap.isPublished === true ? 'bg-green-100' : 'bg-red-100'
-    }`}
-  >
-    {currentRoadmap.isPublished === true ? (
-      <CheckCircle size={20} className="text-green-600" />
-    ) : (
-      <XCircle size={20} className="text-red-600" />
-    )}
-  </div>
-  <div>
-    <p className="text-sm text-gray-500">Status</p>
-    <p className="font-medium text-gray-800">
-      {currentRoadmap.isPublished === true ? 'Published' : 'Not Published'}
-    </p>
-  </div>
-</motion.div>
-          <ConfirmModal confirmToggle={handlePublish} isOpen={isOpenconfirmModel} onClose={()=>setIsOpenConfirmModel(false)} />
         </div>
+
+        <ConfirmModal
+          confirmToggle={handlePublish}
+          isOpen={isOpenConfirmModel}
+          onClose={() => setIsOpenConfirmModel(false)}
+        />
       </motion.div>
 
       {/* Step List */}
       <StepList
         steps={steps || []}
-        stepsLength={currentRoadmap?.steps.length}
+        stepsLength={steps?.length}
         setStepId={setStepId}
         roadmapId={id}
-        // lessonLength={currentRoadmap?.steps?.lessons?.length}
         onAddStep={handleAddStep}
         onEditStep={handleEditStep}
         onDeleteStep={handleDeleteClick}
-        loading={stepsLoading}
+        loading={stepsLoading || isMutating}
       />
 
       {/* Step Form Modal */}
- 
+      <StepForm
+        isOpen={stepFormOpen}
+        onCancel={() => {
+          setStepFormOpen(false);
+          setEditingStep({});
+        }}
+        onSubmit={handleStepSubmit}
+        initialData={editingStep}
+        loading={createStepMutation.isPending || updateStepMutation.isPending}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteModel
+        isOpen={deleteModal.open}
+        onClose={() => setDeleteModal({ open: false, stepId: null })}
+        confirmDelete={confirmDelete}
+      />
+
+      {/* Roadmap Edit Modal */}
+      <RoadmapForm
+        isOpen={showRoadmapForm}
+        onCancel={() => setShowRoadmapForm(false)}
+        onSubmit={handleEditRoadmap}
+        initialData={currentRoadmap}
+        loading={updateRoadmapMutation.isPending}
+        learningPathId={currentRoadmap.learningPathId}
+        admins={[]}
+      />
+
+      {/* Admin Assignment Modal */}
+      <AdminAssignmentModal
+        isOpen={showAdminModal}
+        onClose={() => setShowAdminModal(false)}
+        roadmap={currentRoadmap}
+        onAssign={handleAssignAdmin}
+        onRemove={handleRemoveAdmin}
+        isLoading={assignAdminMutation.isPending || removeAdminMutation.isPending}
+      />
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Reusable Stat Card
+   ═══════════════════════════════════════════════════════════ */
+function StatCard({ icon, label, value, color, delay }) {
+  const colorMap = {
+    blue: 'bg-blue-50 border-blue-100 text-blue-600',
+    green: 'bg-green-50 border-green-100 text-green-600',
+    yellow: 'bg-yellow-50 border-yellow-100 text-yellow-600',
+    red: 'bg-red-50 border-red-100 text-red-600',
+    purple: 'bg-purple-50 border-purple-100 text-purple-600',
+    indigo: 'bg-indigo-50 border-indigo-100 text-indigo-600',
+    pink: 'bg-pink-50 border-pink-100 text-pink-600',
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay }}
+      className={`p-4 rounded-xl border ${colorMap[color] || colorMap.blue}`}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <div className={`p-1.5 rounded-lg bg-white/60`}>
+          {icon}
+        </div>
+        <p className="text-sm font-medium text-gray-600">{label}</p>
+      </div>
+      <p className="text-lg font-bold text-gray-800">{value}</p>
     </motion.div>
   );
 }

@@ -30,7 +30,7 @@ export default function LearningPathForm({
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-  
+
     estimatedDuration: '',
   });
 
@@ -49,9 +49,12 @@ export default function LearningPathForm({
         description: initialData.description || '',
         estimatedDuration: initialData.estimatedDuration || '',
       });
-      // Set image preview if there's an existing image URL
       if (initialData.image) {
-        setImagePreview(initialData.image);
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000';
+        const imgUrl = initialData.image.startsWith('/uploads')
+          ? `${baseUrl}${initialData.image}`
+          : initialData.image;
+        setImagePreview(imgUrl);
       }
     }
   }, [initialData]);
@@ -122,7 +125,7 @@ export default function LearningPathForm({
     const formattedFormData = new FormData();
     formattedFormData.append('title', formData.title);
     formattedFormData.append('description', formData.description);
-   
+
     formattedFormData.append('estimatedDuration', formData.estimatedDuration);
 
     // Handle image: if new file selected, append it; otherwise, if existing image URL and no new file, maybe append the URL? 
@@ -192,8 +195,8 @@ export default function LearningPathForm({
             onDragLeave={handleDragLeave}
             className={`
               relative border-2 border-dashed rounded-xl p-4 transition-all cursor-pointer
-              ${isDragging 
-                ? 'border-indigo-500 bg-indigo-50' 
+              ${isDragging
+                ? 'border-indigo-500 bg-indigo-50'
                 : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'
               }
               ${imagePreview ? 'border-solid border-indigo-200 bg-indigo-50/30' : ''}
@@ -265,9 +268,8 @@ export default function LearningPathForm({
               setFormData({ ...formData, description: e.target.value });
               if (errors.description) setErrors((prev) => ({ ...prev, description: undefined }));
             }}
-            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none ${
-              errors.description ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none ${errors.description ? 'border-red-500' : 'border-gray-300'
+              }`}
             placeholder="Describe the learning path..."
           />
           <AnimatePresence>
@@ -286,7 +288,7 @@ export default function LearningPathForm({
         </motion.div>
 
         {/* Jobs & Projects Grid */}
-{/*         
+        {/*         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <motion.div custom={3} variants={fieldVariants} initial="hidden" animate="visible">
             <Input

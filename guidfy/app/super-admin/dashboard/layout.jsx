@@ -2,34 +2,19 @@
 
 import Sidebar from '@/app/components/super-admin/dashboard/Sidebar';
 import { AdminProvider, useAdminContext } from '@/app/CONTEXT/AdminProvider';
-import { JobProvider } from '@/app/CONTEXT/JobsContext';
-import { LearningPathProvider } from '@/app/CONTEXT/LearningPathContext';
 import { LessonProvider } from '@/app/CONTEXT/LessonProvider';
 import { ProjectProvider } from '@/app/CONTEXT/ProjectContext';
-import { RoadmapProvider } from '@/app/CONTEXT/RoadmapProvider';
-import { StepProvider } from '@/app/CONTEXT/StepProvider';
-import { SuperAdminProvider } from '@/app/CONTEXT/SuperAdminContext';
 import { Menu } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
 const DashboardAdminPanelLayoutWrapper = ({ children }) => {
   return (
     <AdminProvider>
-      <SuperAdminProvider>
-        <LearningPathProvider>
-          <JobProvider>
-            <ProjectProvider>
-          <RoadmapProvider>
-            <StepProvider>
-              <LessonProvider>
-        <DashboardAdminPanelLayout>{children}</DashboardAdminPanelLayout>
+      <ProjectProvider>
+        <LessonProvider>
+          <DashboardAdminPanelLayout>{children}</DashboardAdminPanelLayout>
         </LessonProvider>
-        </StepProvider>
-        </RoadmapProvider>
-</ProjectProvider>
-</JobProvider>
-        </LearningPathProvider>
-      </SuperAdminProvider>
+      </ProjectProvider>
     </AdminProvider>
   );
 };
