@@ -22,7 +22,7 @@ const DashboardAdminPanelLayout = ({ children }) => {
   const containerRef = useRef(null);
 
   useEffect(() => {
-  const handleClickOutside = (event) => {
+    const handleClickOutside = (event) => {
       if (containerRef.current && !containerRef.current.contains(event.target)) {
         setOpenSidebar(false);
       }
@@ -34,7 +34,7 @@ const DashboardAdminPanelLayout = ({ children }) => {
   }, [openSidebar, setOpenSidebar]);
 
   return (
-    <div className="flex min-h-screen w-full bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-screen w-full bg-gray-50 px-4 dark:bg-gray-900">
       {/* Sidebar */}
       <div ref={containerRef}>
         <Sidebar />
@@ -56,8 +56,8 @@ const DashboardAdminPanelLayout = ({ children }) => {
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto transition-all duration-300">
-          <div className="pb-0">
-            <div className="p-4 md:p-8">{children}</div>
+          <div className=" pb-0">
+            <div className="">{children}</div>
           </div>
         </main>
       </div>
