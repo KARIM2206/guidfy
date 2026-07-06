@@ -1,0 +1,20 @@
+[
+    {
+        "name": "Python",
+        "type": "Language",
+        "paths": [
+            "AI/ML",
+            "Backend",
+            "Data Science"
+        ]
+    },
+    {
+        "name": "JavaScript",
+        "type": "Language",
+        "paths": [
+            "Frontend",
+            "Full-Stack",
+            "Backend"
+        ]
+    }
+]

@@ -1,233 +1,192 @@
 import Link from 'next/link';
-import { 
-  Droplet, 
-  Mail, 
-  MapPin, 
-  Phone, 
- 
+import {
+  Mail,
+  MapPin,
+  Navigation,
+  Briefcase,
+  Users,
+  Map,
+  Brain,
+  Rocket,
 } from 'lucide-react';
 import {
   FaFacebook,
   FaInstagram,
   FaTwitter,
   FaGithub,
-  FaYoutube,
-  FaLinkedin
-} from "react-icons/fa";
-export default function Footer() {
-  return (
-    <footer className="bg-white flex   border-t border-gray-200 ">
-      <div className="mx-auto max-w-7xl space-y-8 px-4 py-16 sm:px-6 lg:space-y-16 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          {/* Brand Section */}
-          <div>
-            <div className="flex items-center gap-3">
-              <Droplet 
-                size={32} 
-                className="text-blue-500"
-              />
-              <span className="text-2xl font-bold text-gray-800">Guidfy</span>
-            </div>
+  FaLinkedin,
+} from 'react-icons/fa';
 
-            <p className="mt-4 max-w-xs text-gray-600 leading-relaxed">
-              Your all-in-one platform to learn, build, and launch your tech career. 
-              Join thousands of students transforming their futures with Guidfy.
+const LEARNING_PATHS = [
+  { label: 'Frontend Development',  href: '/learning-paths' },
+  { label: 'Backend Development',   href: '/learning-paths' },
+  { label: 'Full-Stack Engineering',href: '/learning-paths' },
+  { label: 'Data Science & AI/ML',  href: '/learning-paths' },
+  { label: 'UI/UX Design',          href: '/learning-paths' },
+];
+
+const PLATFORM_LINKS = [
+  { label: 'Community Feed',       href: '/community/feed', icon: Users },
+  { label: 'Roadmaps',             href: '/learning-paths', icon: Map },
+  { label: 'Projects',             href: '/learning-paths', icon: Rocket },
+  { label: 'Job Board',            href: '/learning-paths', icon: Briefcase },
+  { label: 'AI Recommendations',  href: '/learning-paths', icon: Brain },
+];
+
+const ACCOUNT_LINKS = [
+  { label: 'My Profile',       href: '/profile' },
+  { label: 'Login',            href: '/login' },
+  { label: 'Register',         href: '/register' },
+  { label: 'Admin Dashboard',  href: '/admin/dashboard' },
+];
+
+const SOCIAL_LINKS = [
+  { icon: FaFacebook,  href: '#', label: 'Facebook',  hover: 'hover:text-blue-600' },
+  { icon: FaInstagram, href: '#', label: 'Instagram', hover: 'hover:text-pink-500' },
+  { icon: FaTwitter,   href: '#', label: 'Twitter',   hover: 'hover:text-sky-400' },
+  { icon: FaGithub,    href: '#', label: 'GitHub',    hover: 'hover:text-gray-900' },
+  { icon: FaLinkedin,  href: '#', label: 'LinkedIn',  hover: 'hover:text-blue-700' },
+];
+
+export default function Footer() {
+  const currentYear = new Date().getFullYear();
+
+  return (
+    <footer className="bg-[#FFFDF7] text-gray-600 border-t border-amber-100">
+      {/* Top gradient accent */}
+      <div className="h-1 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+
+      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-4">
+
+          {/* ── Brand ───────────────────────────────────── */}
+          <div className="lg:col-span-1">
+            {/* Logo — same as Header */}
+            <Link href="/" className="inline-flex items-center gap-2">
+              <Navigation size={24} className="text-blue-600" />
+              <span className="text-xl font-bold text-gray-800">Guidfy</span>
+            </Link>
+
+            <p className="mt-4 text-sm leading-relaxed text-gray-500 max-w-xs">
+              Your all-in-one platform to learn, build, and launch your tech
+              career. Join thousands of students transforming their futures
+              with Guidfy.
             </p>
 
-            {/* Contact Info */}
-            <div className="mt-6 space-y-3">
-              <div className="flex items-center gap-3 text-gray-600">
-                <Mail className="w-4 h-4" />
-                <span className="text-sm">support@guidfy.com</span>
+            {/* Contact */}
+            <div className="mt-6 space-y-2">
+              <div className="flex items-center gap-3 text-sm text-gray-500">
+                <Mail className="h-4 w-4 shrink-0 text-blue-500" />
+                <span>support@guidfy.com</span>
               </div>
-              <div className="flex items-center gap-3 text-gray-600">
-                <Phone className="w-4 h-4" />
-                <span className="text-sm">+1 (555) 123-4567</span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-600">
-                <MapPin className="w-4 h-4" />
-                <span className="text-sm">San Francisco, CA</span>
+              <div className="flex items-center gap-3 text-sm text-gray-500">
+                <MapPin className="h-4 w-4 shrink-0 text-blue-500" />
+                <span>Cairo, Egypt 🇪🇬</span>
               </div>
             </div>
 
-            {/* Social Links */}
-           <ul className="mt-8 flex gap-4">
-  <li>
-    <a href="#" className="text-gray-400 transition hover:text-blue-600">
-      <span className="sr-only">Facebook</span>
-      <FaFacebook className="size-5" />
-    </a>
-  </li>
-
-  <li>
-    <a href="#" className="text-gray-400 transition hover:text-pink-500">
-      <span className="sr-only">Instagram</span>
-      <FaInstagram className="size-5" />
-    </a>
-  </li>
-
-  <li>
-    <a href="#" className="text-gray-400 transition hover:text-blue-400">
-      <span className="sr-only">Twitter</span>
-      <FaTwitter className="size-5" />
-    </a>
-  </li>
-
-  <li>
-    <a href="#" className="text-gray-400 transition hover:text-gray-700">
-      <span className="sr-only">GitHub</span>
-      <FaGithub className="size-5" />
-    </a>
-  </li>
-
-  <li>
-    <a href="#" className="text-gray-400 transition hover:text-red-600">
-      <span className="sr-only">YouTube</span>
-      <FaYoutube className="size-5" />
-    </a>
-  </li>
-
-  <li>
-    <a href="#" className="text-gray-400 transition hover:text-blue-700">
-      <span className="sr-only">LinkedIn</span>
-      <FaLinkedin className="size-5" />
-    </a>
-  </li>
-</ul>
+            {/* Social */}
+            <ul className="mt-8 flex gap-4">
+              {SOCIAL_LINKS.map(({ icon: Icon, href, label, hover }) => (
+                <li key={label}>
+                  <a
+                    href={href}
+                    className={`text-gray-400 transition-colors duration-200 ${hover}`}
+                    aria-label={label}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:col-span-2 lg:grid-cols-3">
-            {/* Learning Paths */}
-            <div>
-              <p className="font-medium text-gray-900">Learning Paths</p>
-
-              <ul className="mt-6 space-y-4 text-sm">
-                <li>
-                  <a href="#" className="text-gray-600 transition hover:text-blue-600">
-                    Frontend Development
-                  </a>
+          {/* ── Learning Paths ───────────────────────────── */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">
+              Learning Paths
+            </p>
+            <ul className="mt-5 space-y-3 text-sm">
+              {LEARNING_PATHS.map(({ label, href }) => (
+                <li key={label}>
+                  <Link
+                    href={href}
+                    className="text-gray-500 transition-colors duration-150 hover:text-blue-600"
+                  >
+                    {label}
+                  </Link>
                 </li>
+              ))}
+            </ul>
+          </div>
 
-                <li>
-                  <a href="#" className="text-gray-600 transition hover:text-blue-600">
-                    Backend Development
-                  </a>
+          {/* ── Platform ─────────────────────────────────── */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">
+              Platform
+            </p>
+            <ul className="mt-5 space-y-3 text-sm">
+              {PLATFORM_LINKS.map(({ label, href, icon: Icon }) => (
+                <li key={label}>
+                  <Link
+                    href={href}
+                    className="flex items-center gap-2 text-gray-500 transition-colors duration-150 hover:text-blue-600"
+                  >
+                    <Icon className="h-3.5 w-3.5 text-blue-400" />
+                    {label}
+                  </Link>
                 </li>
+              ))}
+            </ul>
+          </div>
 
-                <li>
-                  <a href="#" className="text-gray-600 transition hover:text-blue-600">
-                    Full-Stack Engineering
-                  </a>
+          {/* ── Account ──────────────────────────────────── */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">
+              Account
+            </p>
+            <ul className="mt-5 space-y-3 text-sm">
+              {ACCOUNT_LINKS.map(({ label, href }) => (
+                <li key={label}>
+                  <Link
+                    href={href}
+                    className="text-gray-500 transition-colors duration-150 hover:text-blue-600"
+                  >
+                    {label}
+                  </Link>
                 </li>
+              ))}
+            </ul>
 
-                <li>
-                  <a href="#" className="text-gray-600 transition hover:text-blue-600">
-                    Data Science
-                  </a>
-                </li>
-
-                <li>
-                  <a href="#" className="text-gray-600 transition hover:text-blue-600">
-                    UI/UX Design
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Resources */}
-            <div>
-              <p className="font-medium text-gray-900">Resources</p>
-
-              <ul className="mt-6 space-y-4 text-sm">
-                <li>
-                  <a href="#" className="text-gray-600 transition hover:text-blue-600">
-                    Documentation
-                  </a>
-                </li>
-
-                <li>
-                  <a href="#" className="text-gray-600 transition hover:text-blue-600">
-                    Tutorials
-                  </a>
-                </li>
-
-                <li>
-                  <a href="#" className="text-gray-600 transition hover:text-blue-600">
-                    Blog
-                  </a>
-                </li>
-
-                <li>
-                  <a href="#" className="text-gray-600 transition hover:text-blue-600">
-                    Community
-                  </a>
-                </li>
-
-                <li>
-                  <a href="#" className="text-gray-600 transition hover:text-blue-600">
-                    Webinars
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Support */}
-            <div>
-              <p className="font-medium text-gray-900">Support</p>
-
-              <ul className="mt-6 space-y-4 text-sm">
-                <li>
-                  <a href="#" className="text-gray-600 transition hover:text-blue-600">
-                    Help Center
-                  </a>
-                </li>
-
-                <li>
-                  <a href="#" className="text-gray-600 transition hover:text-blue-600">
-                    Contact Us
-                  </a>
-                </li>
-
-                <li>
-                  <a href="#" className="text-gray-600 transition hover:text-blue-600">
-                    FAQ
-                  </a>
-                </li>
-
-                <li>
-                  <a href="#" className="text-gray-600 transition hover:text-blue-600">
-                    Careers
-                  </a>
-                </li>
-
-                <li>
-                  <a href="#" className="text-gray-600 transition hover:text-blue-600">
-                    Privacy Policy
-                  </a>
-                </li>
-              </ul>
+            {/* CTA */}
+            <div className="mt-8">
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 active:scale-95"
+              >
+                <Rocket size={15} />
+                Get Started Free
+              </Link>
             </div>
           </div>
         </div>
 
-        {/* Bottom Section */}
-        <div className="pt-8 border-t border-gray-200">
+        {/* ── Bottom bar ─────────────────────────────────── */}
+        <div className="mt-12 border-t border-amber-100 pt-8">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <p className="text-sm text-gray-500">
-              © 2024 Guidfy. All rights reserved.
+            <p className="text-sm text-gray-400">
+              © {currentYear} Guidfy. All rights reserved.
             </p>
-            
-            <div className="flex gap-6 text-sm text-gray-500">
-              <a href="#" className="transition hover:text-blue-600">
-                Terms of Service
-              </a>
-              <a href="#" className="transition hover:text-blue-600">
-                Privacy Policy
-              </a>
-              <a href="#" className="transition hover:text-blue-600">
-                Cookie Policy
-              </a>
+
+            <div className="flex flex-wrap justify-center gap-5 text-xs text-gray-400">
+              <a href="#" className="transition hover:text-blue-600">Terms of Service</a>
+              <a href="#" className="transition hover:text-blue-600">Privacy Policy</a>
+              <a href="#" className="transition hover:text-blue-600">Cookie Policy</a>
             </div>
+
+            <p className="text-xs font-medium text-blue-600">
+              Built with ❤️ by Karim
+            </p>
           </div>
         </div>
       </div>

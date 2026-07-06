@@ -9,7 +9,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "retrain": "node scripts/exportFeedbackForRetrain.js && venv\\Scripts\\python ai_service/retrain.py",
     "sync-skills": "node services/skillSyncService.js",
-    "recommend": "uvicorn main:app --reload --host 0.0.0.0 --port 4000"
+    "recommend": "node venv/Scripts/uvicorn main:app --reload --host 0.0.0.0 --port 4000"
+  
+    ,"predict":"node venv/Scripts/python predict.py"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

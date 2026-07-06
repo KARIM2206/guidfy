@@ -171,34 +171,17 @@ export default function CreateCommunityModal({ isOpen,setRefresh,onClose,isEdit=
   const gradient = COLOR_GRADIENT[form.color] || COLOR_GRADIENT.blue;
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* ── Backdrop ─────────────────────────── */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50  bg-black/60 backdrop-blur-sm"
-            onClick={onClose}
-          />
-
-          {/* ── Modal panel ──────────────────────── */}
-          {/* <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1,    y: 0  }}
-            exit={{   opacity: 0, scale: 0.95, y: 20  }}
-            transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-            className="fixed inset-0 z-50 flex items-center justify-center
-             p-4 pointer-events-none max-h-[80vh] overflow-auto scrollbar-animated"
-          > */}
-            <Modal onClose={onClose} className="pointer-events-auto" 
-            title={isEdit?`Edit ${data.name} Community`:'Create Community'} isOpen={isOpen}>
-            <div
-              className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl pointer-events-auto overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
+    <>
+      <Modal 
+        onClose={onClose} 
+        className="pointer-events-auto max-w-md mx-auto" 
+        title={isEdit ? `Edit ${data.name} Community` : 'Create Community'} 
+        isOpen={isOpen}
+      >
+        <div
+          className="relative w-full bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
               {/* ── Colored top strip ────────────── */}
               <div className={`h-1.5 w-full bg-gradient-to-r ${gradient}`} />
 
@@ -362,8 +345,6 @@ export default function CreateCommunityModal({ isOpen,setRefresh,onClose,isEdit=
             </div>
             </Modal>
           {/* </motion.div> */}
-        </>
-      )}
-    </AnimatePresence>
+    </>
   );
 }

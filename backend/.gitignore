@@ -20,3 +20,4 @@ ai_service/models/
 *.txt
 # Prisma generated / seed noise
 prisma/seeds/
+__pycache__/

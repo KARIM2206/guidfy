@@ -1,121 +1,79 @@
 from flask import Flask, request, jsonify
-import tensorflow as tf
-import pickle
-import numpy as np
-import json
+from engine.knowledge_loader import KnowledgeLoader
+from engine.profile_builder import ProfileBuilder
+from engine.rule_engine import RuleEngine
+from engine.scoring_engine import ScoringEngine
+from engine.confidence_engine import ConfidenceEngine
+from engine.reasoning_engine import ReasoningEngine
+from engine.roadmap_generator import RoadmapGenerator
+from admin_api import admin_bp
 
 app = Flask(__name__)
+from flask_cors import CORS
+CORS(app) # Allow frontend to call admin API
 
-nn_model = tf.keras.models.load_model("ai/learning_path_nn_model.keras")
-with open("ai/rf_model.pkl",      "rb") as f: rf_model      = pickle.load(f)
-with open("ai/scaler.pkl",        "rb") as f: scaler        = pickle.load(f)
-with open("ai/label_encoder.pkl", "rb") as f: label_encoder = pickle.load(f)
-with open("ai/metadata.json",     "r")  as f: metadata      = json.load(f)
+app.register_blueprint(admin_bp)
 
-ALL_SKILLS     = metadata["all_skills"]
-ALIASES        = metadata["aliases"]
-SKILL_WEIGHTS  = metadata["skill_weights"]
-PATHS          = metadata["paths"]
+# Phase 2: Load Knowledge Base into memory once on startup
+kb = KnowledgeLoader(base_path="knowledge")
 
-def get_skill_weight(skill: str) -> float:
-    return SKILL_WEIGHTS.get(skill.lower(), 1.0)
-
-def preprocess_input(data: dict):
-    # 1. Experience
-    exp_map = {"beginner":0.0,"intermediate":1.0,"advanced":2.0}
-    exp     = exp_map.get(str(data.get("experience","beginner")).lower().strip(), 1.0)
-
-    # 2. Education
-    ed_keywords = [("primary",0.0),("elementary",0.0),("some",1.0),
-                   ("secondary",1.0),("associate",2.0),("bachelor",3.0),
-                   ("master",4.0),("professional",4.0),("doctoral",5.0),("phd",5.0)]
-    education = str(data.get("education","bachelor")).lower()
-    ed = 3.0
-    for kw,val in ed_keywords:
-        if kw in education: ed = val; break
-
-    # 3. Weighted skill vector  ← KEY FIX
-    raw_skills_val = data.get("skills")
-    if not isinstance(raw_skills_val, list):
-        raw_skills_val = []
-    raw_skills   = [str(s).lower().strip() for s in raw_skills_val if s]
-    user_skills  = {ALIASES.get(s,s) for s in raw_skills}
-    skill_vec    = [get_skill_weight(sk) if sk.lower() in user_skills else 0.0
-                    for sk in ALL_SKILLS]
-
-    # 4. Assemble
-    vector        = [exp, ed] + skill_vec   # 2 + 42 = 44
-    user_interest = str(data.get("interest","")).lower().strip()
-    arr           = np.array(vector, dtype=np.float32).reshape(1,-1)
-
-    assert arr.shape[1] == 44, f"Expected 44 features, got {arr.shape[1]}"
-    return arr, user_interest
-
+# Instantiate Engines
+rule_engine = RuleEngine(kb.rules)
+scoring_engine = ScoringEngine(kb.paths)
+confidence_engine = ConfidenceEngine()
+reasoning_engine = ReasoningEngine()
+roadmap_generator = RoadmapGenerator(kb.roadmaps)
 
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
         data = request.json
         if not data:
-            return jsonify({"error":"Empty request body"}), 400
+            return jsonify({"error": "Empty request body"}), 400
 
-        features, user_interest = preprocess_input(data)
-        features_scaled         = scaler.transform(features)
+        answers_map = data.get("answers_map", {})
+        experience = data.get("experience", "Beginner")
+        
+        # 1. Profile Builder
+        pb = ProfileBuilder(kb.questions)
+        user_profile = pb.build_profile(answers_map)
 
-        nn_probs    = nn_model.predict(features_scaled, verbose=0)[0]
-        rf_probs    = rf_model.predict_proba(features_scaled)[0]
-        final_probs = 0.55*nn_probs + 0.45*rf_probs
+        # 2. Rule Engine (now returns breakdown)
+        raw_scores, score_breakdown, triggered_rules = rule_engine.evaluate(user_profile)
 
-        # Soft interest boost
-        interest_norm = user_interest.replace(" ","").replace("/","").replace("-","")
-        for i, path in enumerate(PATHS):
-            path_norm = path.lower().replace(" ","").replace("/","").replace("-","")
-            if interest_norm in path_norm or path_norm in interest_norm:
-                final_probs[i] *= 1.15   # خفضنا من 1.20 لـ 1.15
-                break
-        final_probs /= final_probs.sum()
+        # 3. Scoring Engine (Real Normalization, no artificial inflation)
+        top_paths = scoring_engine.calculate_scores(raw_scores, user_profile)
+            
+        # 4. Confidence Engine
+        confidence_level = confidence_engine.detect_confidence(top_paths, len(triggered_rules))
+        for p in top_paths:
+            p["confidence"] = confidence_level
 
-        idx       = int(final_probs.argmax())
-        path_name = label_encoder.inverse_transform([idx])[0]
-        ranked    = sorted(enumerate(final_probs), key=lambda x:-x[1])
-        top_paths = [{"path": label_encoder.inverse_transform([i])[0],
-                      "confidence": round(float(p),4)}
-                     for i,p in ranked[:3]]
+        # 5. Reasoning Engine
+        recommended_path = top_paths[0]["name"] if top_paths else "Frontend"
+        explanation = reasoning_engine.generate_explanation(recommended_path, triggered_rules)
 
-        return jsonify({"recommended_path": path_name, "top_paths": top_paths})
+        # 6. Roadmap Generator
+        roadmap = roadmap_generator.generate(recommended_path, user_profile.get("Study Hours", 10), experience)
 
-    except AssertionError as e:
-        return jsonify({"error": str(e)}), 422
+        # Return exactly the JSON format requested
+        result = {
+            "recommended_path": recommended_path,
+            "top_paths": top_paths,
+            "user_profile": user_profile,
+            "triggered_rules": [r["RuleID"] for r in triggered_rules],
+            "score_breakdown": score_breakdown,
+            "explanation": explanation,
+            "roadmap": roadmap
+        }
+
+        return jsonify(result)
+
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-
-def self_test():
-    tests = [
-        ("html+react+node.js+sql → Frontend/Backend (NOT DS)",
-         ["html","css","react","node.js","sql"], "AI/ML"),
-        ("tensorflow+pytorch      → AI/ML",
-         ["python","tensorflow","pytorch"],       "Frontend"),
-        ("docker+k8s+aws          → Cloud/DevOps",
-         ["docker","kubernetes","aws"],            "Data Science"),
-    ]
-    print("\n" + "="*55 + "\n  SELF TEST\n" + "="*55)
-    for label, skills, interest in tests:
-        vec, _ = preprocess_input({
-            "experience":"Intermediate",
-            "skills":skills,
-            "interest":interest
-        })
-        vec_s = scaler.transform(vec)
-        nn_p  = nn_model.predict(vec_s, verbose=0)[0]
-        rf_p  = rf_model.predict_proba(vec_s)[0]
-        probs = 0.55*nn_p + 0.45*rf_p
-
-        best = label_encoder.inverse_transform([int(probs.argmax())])[0]
-
-        print(f"\n  {label}")
-        print(f"  → {best}")
-self_test()
 
 if __name__ == "__main__":
     app.run(port=5050, debug=False)

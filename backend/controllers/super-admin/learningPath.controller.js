@@ -772,7 +772,7 @@ const assignAdminsToSection = async (req, res, next) => {
 
 async function recommendLearningPath(req, res, next) {
   try {
-    const { experience, skills, interest, hours_per_day, target_goal } = req.body;
+    const { experience, skills, interest, hours_per_day, target_goal, answers_map } = req.body;
     const userId = Number(req.user.id);
     const safeSkills = Array.isArray(skills) ? skills : [];
     const safeHours = Number(hours_per_day) || 0;
@@ -782,7 +782,8 @@ async function recommendLearningPath(req, res, next) {
       experience: experience || '',
       skills: safeSkills,
       interest: interest || '',
-      hours_per_day: safeHours
+      hours_per_day: safeHours,
+      answers_map: answers_map || {}
     });
 
     const aiPath = flaskData.recommended_path;
@@ -830,7 +831,14 @@ async function recommendLearningPath(req, res, next) {
         targetGoal: target_goal ?? null,
 
         recommendedPath: aiPath,
-        confidence: flaskData.top_paths?.[0]?.confidence ?? null,
+        confidence: (() => {
+          const conf = flaskData.top_paths?.[0]?.confidence;
+          if (conf === "HIGH") return 0.95;
+          if (conf === "MEDIUM") return 0.75;
+          if (conf === "LOW") return 0.50;
+          const parsed = parseFloat(conf);
+          return isNaN(parsed) ? null : parsed;
+        })(),
         topPaths: flaskData.top_paths ?? [],
 
         userId,
@@ -844,7 +852,12 @@ async function recommendLearningPath(req, res, next) {
       recommended_path: aiPath,
       top_paths: flaskData.top_paths ?? [],
       saved_id: saved.id,
-      matched_path: matchedPath ?? null
+      matched_path: matchedPath ?? null,
+      explanation: flaskData.explanation ?? [],
+      triggered_rules: flaskData.triggered_rules ?? [],
+      user_profile: flaskData.user_profile,
+      roadmap: flaskData.roadmap,
+      score_breakdown: flaskData.score_breakdown
     });
 
   } catch (error) {
@@ -882,9 +895,8 @@ async function getMyRecommendations(req, res, next) {
       });
     }
 
-    // لو الـ learningPathId null نحاول نلاقي بديل من topPaths
     if (!recommendation.learningPath && recommendation.topPaths?.length) {
-      const possiblePaths = recommendation.topPaths.map(p => p.path);
+      const possiblePaths = recommendation.topPaths.map(p => p.name || p.path).filter(Boolean);
 
       // جيب كل الـ published paths وعمل الـ matching في JavaScript
       // عشان SQLite مش بيدعم mode: 'insensitive' في Prisma

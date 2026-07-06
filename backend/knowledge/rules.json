@@ -1,0 +1,5017 @@
+[
+    {
+        "RuleID": "INT001",
+        "Priority": "High",
+        "Conditions": {
+            "Frontend Interest": {
+                ">=": 60
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 15
+        },
+        "Explanation": "You showed a highly consistent and sustained interest in Frontend throughout the questionnaire."
+    },
+    {
+        "RuleID": "INT002",
+        "Priority": "High",
+        "Conditions": {
+            "Backend Interest": {
+                ">=": 60
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 15
+        },
+        "Explanation": "You showed a highly consistent and sustained interest in Backend throughout the questionnaire."
+    },
+    {
+        "RuleID": "INT003",
+        "Priority": "High",
+        "Conditions": {
+            "Full Stack Interest": {
+                ">=": 60
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 15
+        },
+        "Explanation": "You showed a highly consistent and sustained interest in Full Stack throughout the questionnaire."
+    },
+    {
+        "RuleID": "INT004",
+        "Priority": "High",
+        "Conditions": {
+            "AI & Data Interest": {
+                ">=": 60
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 15
+        },
+        "Explanation": "You showed a highly consistent and sustained interest in AI & Data throughout the questionnaire."
+    },
+    {
+        "RuleID": "INT005",
+        "Priority": "High",
+        "Conditions": {
+            "Data Science Interest": {
+                ">=": 60
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 15
+        },
+        "Explanation": "You showed a highly consistent and sustained interest in Data Science throughout the questionnaire."
+    },
+    {
+        "RuleID": "INT006",
+        "Priority": "High",
+        "Conditions": {
+            "Cloud Interest": {
+                ">=": 60
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 15
+        },
+        "Explanation": "You showed a highly consistent and sustained interest in Cloud throughout the questionnaire."
+    },
+    {
+        "RuleID": "INT007",
+        "Priority": "High",
+        "Conditions": {
+            "Cyber Security Interest": {
+                ">=": 60
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 15
+        },
+        "Explanation": "You showed a highly consistent and sustained interest in Cyber Security throughout the questionnaire."
+    },
+    {
+        "RuleID": "INT008",
+        "Priority": "High",
+        "Conditions": {
+            "Mobile Interest": {
+                ">=": 60
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 15
+        },
+        "Explanation": "You showed a highly consistent and sustained interest in Mobile throughout the questionnaire."
+    },
+    {
+        "RuleID": "NEG009",
+        "Priority": "Critical",
+        "Conditions": {
+            "Frontend Interest": {
+                "<": 0
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": -20
+        },
+        "Explanation": "Your answers strongly indicated a dislike for Frontend tasks, so we deprioritized it."
+    },
+    {
+        "RuleID": "NEG010",
+        "Priority": "Critical",
+        "Conditions": {
+            "Backend Interest": {
+                "<": 0
+            }
+        },
+        "ScoreChanges": {
+            "Backend": -20
+        },
+        "Explanation": "Your answers strongly indicated a dislike for Backend tasks, so we deprioritized it."
+    },
+    {
+        "RuleID": "NEG011",
+        "Priority": "Critical",
+        "Conditions": {
+            "Full Stack Interest": {
+                "<": 0
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": -20
+        },
+        "Explanation": "Your answers strongly indicated a dislike for Full Stack tasks, so we deprioritized it."
+    },
+    {
+        "RuleID": "NEG012",
+        "Priority": "Critical",
+        "Conditions": {
+            "AI & Data Interest": {
+                "<": 0
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": -20
+        },
+        "Explanation": "Your answers strongly indicated a dislike for AI & Data tasks, so we deprioritized it."
+    },
+    {
+        "RuleID": "NEG013",
+        "Priority": "Critical",
+        "Conditions": {
+            "Data Science Interest": {
+                "<": 0
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": -20
+        },
+        "Explanation": "Your answers strongly indicated a dislike for Data Science tasks, so we deprioritized it."
+    },
+    {
+        "RuleID": "NEG014",
+        "Priority": "Critical",
+        "Conditions": {
+            "Cloud Interest": {
+                "<": 0
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": -20
+        },
+        "Explanation": "Your answers strongly indicated a dislike for Cloud tasks, so we deprioritized it."
+    },
+    {
+        "RuleID": "NEG015",
+        "Priority": "Critical",
+        "Conditions": {
+            "Cyber Security Interest": {
+                "<": 0
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": -20
+        },
+        "Explanation": "Your answers strongly indicated a dislike for Cyber Security tasks, so we deprioritized it."
+    },
+    {
+        "RuleID": "NEG016",
+        "Priority": "Critical",
+        "Conditions": {
+            "Mobile Interest": {
+                "<": 0
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": -20
+        },
+        "Explanation": "Your answers strongly indicated a dislike for Mobile tasks, so we deprioritized it."
+    },
+    {
+        "RuleID": "NEG017",
+        "Priority": "Critical",
+        "Conditions": {
+            "Analytical Score": {
+                "<": 0
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": -20,
+            "Data Science": -20
+        },
+        "Explanation": "You indicated a strong dislike for mathematics, which is heavily required for AI and Data Science."
+    },
+    {
+        "RuleID": "SYN018",
+        "Priority": "Critical",
+        "Conditions": {
+            "Frontend Interest": {
+                ">=": 50
+            },
+            "Backend Interest": {
+                ">=": 50
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 20
+        },
+        "Explanation": "You showed strong interest in both visual interfaces and server logic, making Full Stack ideal."
+    },
+    {
+        "RuleID": "SYN019",
+        "Priority": "Critical",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 30
+            },
+            "Cloud Interest": {
+                ">=": 40
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 20
+        },
+        "Explanation": "Your preference for scripting and automation aligns perfectly with DevOps and Cloud Architecture."
+    },
+    {
+        "RuleID": "SYN020",
+        "Priority": "Critical",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 40
+            },
+            "Data Science Interest": {
+                ">=": 40
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 20
+        },
+        "Explanation": "Your strong analytical skills combined with data interest make Data Science a perfect fit."
+    },
+    {
+        "RuleID": "SYN021",
+        "Priority": "Critical",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 40
+            },
+            "Problem Solving": {
+                ">=": 40
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 20
+        },
+        "Explanation": "Your pure logical problem-solving approach is exactly what is needed for Backend Engineering."
+    },
+    {
+        "RuleID": "SYN022",
+        "Priority": "Critical",
+        "Conditions": {
+            "Security Interest": {
+                ">=": 40
+            },
+            "Curiosity": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 20
+        },
+        "Explanation": "Your suspicious nature and intense curiosity are key traits of an elite Cyber Security expert."
+    },
+    {
+        "RuleID": "SYN023",
+        "Priority": "Critical",
+        "Conditions": {
+            "Creative Score": {
+                ">=": 40
+            },
+            "Visual Creativity": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 20
+        },
+        "Explanation": "Your highly creative mindset and focus on visual aesthetics are ideal for Frontend Development."
+    },
+    {
+        "RuleID": "TRT024",
+        "Priority": "Critical",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 40
+            },
+            "Frontend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 20
+        },
+        "Explanation": "Your exceptional logical thinking strongly supports a career in Frontend."
+    },
+    {
+        "RuleID": "TRT025",
+        "Priority": "High",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 30
+            },
+            "Frontend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 15
+        },
+        "Explanation": "Your strong logical thinking is a great asset for Frontend."
+    },
+    {
+        "RuleID": "TRT026",
+        "Priority": "Medium",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 8
+        },
+        "Explanation": "Your logical thinking is beneficial for Frontend."
+    },
+    {
+        "RuleID": "TRT027",
+        "Priority": "Critical",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 40
+            },
+            "Backend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 20
+        },
+        "Explanation": "Your exceptional logical thinking strongly supports a career in Backend."
+    },
+    {
+        "RuleID": "TRT028",
+        "Priority": "High",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 30
+            },
+            "Backend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 15
+        },
+        "Explanation": "Your strong logical thinking is a great asset for Backend."
+    },
+    {
+        "RuleID": "TRT029",
+        "Priority": "Medium",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 8
+        },
+        "Explanation": "Your logical thinking is beneficial for Backend."
+    },
+    {
+        "RuleID": "TRT030",
+        "Priority": "Critical",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 40
+            },
+            "Full Stack Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 20
+        },
+        "Explanation": "Your exceptional logical thinking strongly supports a career in Full Stack."
+    },
+    {
+        "RuleID": "TRT031",
+        "Priority": "High",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 30
+            },
+            "Full Stack Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 15
+        },
+        "Explanation": "Your strong logical thinking is a great asset for Full Stack."
+    },
+    {
+        "RuleID": "TRT032",
+        "Priority": "Medium",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 8
+        },
+        "Explanation": "Your logical thinking is beneficial for Full Stack."
+    },
+    {
+        "RuleID": "TRT033",
+        "Priority": "Critical",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 40
+            },
+            "AI & Data Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 20
+        },
+        "Explanation": "Your exceptional logical thinking strongly supports a career in AI & Data."
+    },
+    {
+        "RuleID": "TRT034",
+        "Priority": "High",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 30
+            },
+            "AI & Data Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 15
+        },
+        "Explanation": "Your strong logical thinking is a great asset for AI & Data."
+    },
+    {
+        "RuleID": "TRT035",
+        "Priority": "Medium",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 8
+        },
+        "Explanation": "Your logical thinking is beneficial for AI & Data."
+    },
+    {
+        "RuleID": "TRT036",
+        "Priority": "Critical",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 40
+            },
+            "Data Science Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 20
+        },
+        "Explanation": "Your exceptional logical thinking strongly supports a career in Data Science."
+    },
+    {
+        "RuleID": "TRT037",
+        "Priority": "High",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 30
+            },
+            "Data Science Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 15
+        },
+        "Explanation": "Your strong logical thinking is a great asset for Data Science."
+    },
+    {
+        "RuleID": "TRT038",
+        "Priority": "Medium",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 8
+        },
+        "Explanation": "Your logical thinking is beneficial for Data Science."
+    },
+    {
+        "RuleID": "TRT039",
+        "Priority": "Critical",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 40
+            },
+            "Cloud Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 20
+        },
+        "Explanation": "Your exceptional logical thinking strongly supports a career in Cloud."
+    },
+    {
+        "RuleID": "TRT040",
+        "Priority": "High",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 30
+            },
+            "Cloud Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 15
+        },
+        "Explanation": "Your strong logical thinking is a great asset for Cloud."
+    },
+    {
+        "RuleID": "TRT041",
+        "Priority": "Medium",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 8
+        },
+        "Explanation": "Your logical thinking is beneficial for Cloud."
+    },
+    {
+        "RuleID": "TRT042",
+        "Priority": "Critical",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 40
+            },
+            "Cyber Security Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 20
+        },
+        "Explanation": "Your exceptional logical thinking strongly supports a career in Cyber Security."
+    },
+    {
+        "RuleID": "TRT043",
+        "Priority": "High",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 30
+            },
+            "Cyber Security Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 15
+        },
+        "Explanation": "Your strong logical thinking is a great asset for Cyber Security."
+    },
+    {
+        "RuleID": "TRT044",
+        "Priority": "Medium",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 8
+        },
+        "Explanation": "Your logical thinking is beneficial for Cyber Security."
+    },
+    {
+        "RuleID": "TRT045",
+        "Priority": "Critical",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 40
+            },
+            "Mobile Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 20
+        },
+        "Explanation": "Your exceptional logical thinking strongly supports a career in Mobile."
+    },
+    {
+        "RuleID": "TRT046",
+        "Priority": "High",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 30
+            },
+            "Mobile Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 15
+        },
+        "Explanation": "Your strong logical thinking is a great asset for Mobile."
+    },
+    {
+        "RuleID": "TRT047",
+        "Priority": "Medium",
+        "Conditions": {
+            "Logical Thinking": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 8
+        },
+        "Explanation": "Your logical thinking is beneficial for Mobile."
+    },
+    {
+        "RuleID": "TRT048",
+        "Priority": "Critical",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 40
+            },
+            "Frontend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 20
+        },
+        "Explanation": "Your exceptional problem solving strongly supports a career in Frontend."
+    },
+    {
+        "RuleID": "TRT049",
+        "Priority": "High",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 30
+            },
+            "Frontend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 15
+        },
+        "Explanation": "Your strong problem solving is a great asset for Frontend."
+    },
+    {
+        "RuleID": "TRT050",
+        "Priority": "Medium",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 8
+        },
+        "Explanation": "Your problem solving is beneficial for Frontend."
+    },
+    {
+        "RuleID": "TRT051",
+        "Priority": "Critical",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 40
+            },
+            "Backend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 20
+        },
+        "Explanation": "Your exceptional problem solving strongly supports a career in Backend."
+    },
+    {
+        "RuleID": "TRT052",
+        "Priority": "High",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 30
+            },
+            "Backend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 15
+        },
+        "Explanation": "Your strong problem solving is a great asset for Backend."
+    },
+    {
+        "RuleID": "TRT053",
+        "Priority": "Medium",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 8
+        },
+        "Explanation": "Your problem solving is beneficial for Backend."
+    },
+    {
+        "RuleID": "TRT054",
+        "Priority": "Critical",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 40
+            },
+            "Full Stack Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 20
+        },
+        "Explanation": "Your exceptional problem solving strongly supports a career in Full Stack."
+    },
+    {
+        "RuleID": "TRT055",
+        "Priority": "High",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 30
+            },
+            "Full Stack Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 15
+        },
+        "Explanation": "Your strong problem solving is a great asset for Full Stack."
+    },
+    {
+        "RuleID": "TRT056",
+        "Priority": "Medium",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 8
+        },
+        "Explanation": "Your problem solving is beneficial for Full Stack."
+    },
+    {
+        "RuleID": "TRT057",
+        "Priority": "Critical",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 40
+            },
+            "AI & Data Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 20
+        },
+        "Explanation": "Your exceptional problem solving strongly supports a career in AI & Data."
+    },
+    {
+        "RuleID": "TRT058",
+        "Priority": "High",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 30
+            },
+            "AI & Data Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 15
+        },
+        "Explanation": "Your strong problem solving is a great asset for AI & Data."
+    },
+    {
+        "RuleID": "TRT059",
+        "Priority": "Medium",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 8
+        },
+        "Explanation": "Your problem solving is beneficial for AI & Data."
+    },
+    {
+        "RuleID": "TRT060",
+        "Priority": "Critical",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 40
+            },
+            "Data Science Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 20
+        },
+        "Explanation": "Your exceptional problem solving strongly supports a career in Data Science."
+    },
+    {
+        "RuleID": "TRT061",
+        "Priority": "High",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 30
+            },
+            "Data Science Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 15
+        },
+        "Explanation": "Your strong problem solving is a great asset for Data Science."
+    },
+    {
+        "RuleID": "TRT062",
+        "Priority": "Medium",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 8
+        },
+        "Explanation": "Your problem solving is beneficial for Data Science."
+    },
+    {
+        "RuleID": "TRT063",
+        "Priority": "Critical",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 40
+            },
+            "Cloud Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 20
+        },
+        "Explanation": "Your exceptional problem solving strongly supports a career in Cloud."
+    },
+    {
+        "RuleID": "TRT064",
+        "Priority": "High",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 30
+            },
+            "Cloud Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 15
+        },
+        "Explanation": "Your strong problem solving is a great asset for Cloud."
+    },
+    {
+        "RuleID": "TRT065",
+        "Priority": "Medium",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 8
+        },
+        "Explanation": "Your problem solving is beneficial for Cloud."
+    },
+    {
+        "RuleID": "TRT066",
+        "Priority": "Critical",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 40
+            },
+            "Cyber Security Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 20
+        },
+        "Explanation": "Your exceptional problem solving strongly supports a career in Cyber Security."
+    },
+    {
+        "RuleID": "TRT067",
+        "Priority": "High",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 30
+            },
+            "Cyber Security Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 15
+        },
+        "Explanation": "Your strong problem solving is a great asset for Cyber Security."
+    },
+    {
+        "RuleID": "TRT068",
+        "Priority": "Medium",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 8
+        },
+        "Explanation": "Your problem solving is beneficial for Cyber Security."
+    },
+    {
+        "RuleID": "TRT069",
+        "Priority": "Critical",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 40
+            },
+            "Mobile Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 20
+        },
+        "Explanation": "Your exceptional problem solving strongly supports a career in Mobile."
+    },
+    {
+        "RuleID": "TRT070",
+        "Priority": "High",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 30
+            },
+            "Mobile Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 15
+        },
+        "Explanation": "Your strong problem solving is a great asset for Mobile."
+    },
+    {
+        "RuleID": "TRT071",
+        "Priority": "Medium",
+        "Conditions": {
+            "Problem Solving": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 8
+        },
+        "Explanation": "Your problem solving is beneficial for Mobile."
+    },
+    {
+        "RuleID": "TRT072",
+        "Priority": "Critical",
+        "Conditions": {
+            "Persistence": {
+                ">=": 40
+            },
+            "Frontend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 20
+        },
+        "Explanation": "Your exceptional persistence strongly supports a career in Frontend."
+    },
+    {
+        "RuleID": "TRT073",
+        "Priority": "High",
+        "Conditions": {
+            "Persistence": {
+                ">=": 30
+            },
+            "Frontend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 15
+        },
+        "Explanation": "Your strong persistence is a great asset for Frontend."
+    },
+    {
+        "RuleID": "TRT074",
+        "Priority": "Medium",
+        "Conditions": {
+            "Persistence": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 8
+        },
+        "Explanation": "Your persistence is beneficial for Frontend."
+    },
+    {
+        "RuleID": "TRT075",
+        "Priority": "Critical",
+        "Conditions": {
+            "Persistence": {
+                ">=": 40
+            },
+            "Backend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 20
+        },
+        "Explanation": "Your exceptional persistence strongly supports a career in Backend."
+    },
+    {
+        "RuleID": "TRT076",
+        "Priority": "High",
+        "Conditions": {
+            "Persistence": {
+                ">=": 30
+            },
+            "Backend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 15
+        },
+        "Explanation": "Your strong persistence is a great asset for Backend."
+    },
+    {
+        "RuleID": "TRT077",
+        "Priority": "Medium",
+        "Conditions": {
+            "Persistence": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 8
+        },
+        "Explanation": "Your persistence is beneficial for Backend."
+    },
+    {
+        "RuleID": "TRT078",
+        "Priority": "Critical",
+        "Conditions": {
+            "Persistence": {
+                ">=": 40
+            },
+            "Full Stack Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 20
+        },
+        "Explanation": "Your exceptional persistence strongly supports a career in Full Stack."
+    },
+    {
+        "RuleID": "TRT079",
+        "Priority": "High",
+        "Conditions": {
+            "Persistence": {
+                ">=": 30
+            },
+            "Full Stack Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 15
+        },
+        "Explanation": "Your strong persistence is a great asset for Full Stack."
+    },
+    {
+        "RuleID": "TRT080",
+        "Priority": "Medium",
+        "Conditions": {
+            "Persistence": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 8
+        },
+        "Explanation": "Your persistence is beneficial for Full Stack."
+    },
+    {
+        "RuleID": "TRT081",
+        "Priority": "Critical",
+        "Conditions": {
+            "Persistence": {
+                ">=": 40
+            },
+            "AI & Data Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 20
+        },
+        "Explanation": "Your exceptional persistence strongly supports a career in AI & Data."
+    },
+    {
+        "RuleID": "TRT082",
+        "Priority": "High",
+        "Conditions": {
+            "Persistence": {
+                ">=": 30
+            },
+            "AI & Data Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 15
+        },
+        "Explanation": "Your strong persistence is a great asset for AI & Data."
+    },
+    {
+        "RuleID": "TRT083",
+        "Priority": "Medium",
+        "Conditions": {
+            "Persistence": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 8
+        },
+        "Explanation": "Your persistence is beneficial for AI & Data."
+    },
+    {
+        "RuleID": "TRT084",
+        "Priority": "Critical",
+        "Conditions": {
+            "Persistence": {
+                ">=": 40
+            },
+            "Data Science Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 20
+        },
+        "Explanation": "Your exceptional persistence strongly supports a career in Data Science."
+    },
+    {
+        "RuleID": "TRT085",
+        "Priority": "High",
+        "Conditions": {
+            "Persistence": {
+                ">=": 30
+            },
+            "Data Science Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 15
+        },
+        "Explanation": "Your strong persistence is a great asset for Data Science."
+    },
+    {
+        "RuleID": "TRT086",
+        "Priority": "Medium",
+        "Conditions": {
+            "Persistence": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 8
+        },
+        "Explanation": "Your persistence is beneficial for Data Science."
+    },
+    {
+        "RuleID": "TRT087",
+        "Priority": "Critical",
+        "Conditions": {
+            "Persistence": {
+                ">=": 40
+            },
+            "Cloud Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 20
+        },
+        "Explanation": "Your exceptional persistence strongly supports a career in Cloud."
+    },
+    {
+        "RuleID": "TRT088",
+        "Priority": "High",
+        "Conditions": {
+            "Persistence": {
+                ">=": 30
+            },
+            "Cloud Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 15
+        },
+        "Explanation": "Your strong persistence is a great asset for Cloud."
+    },
+    {
+        "RuleID": "TRT089",
+        "Priority": "Medium",
+        "Conditions": {
+            "Persistence": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 8
+        },
+        "Explanation": "Your persistence is beneficial for Cloud."
+    },
+    {
+        "RuleID": "TRT090",
+        "Priority": "Critical",
+        "Conditions": {
+            "Persistence": {
+                ">=": 40
+            },
+            "Cyber Security Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 20
+        },
+        "Explanation": "Your exceptional persistence strongly supports a career in Cyber Security."
+    },
+    {
+        "RuleID": "TRT091",
+        "Priority": "High",
+        "Conditions": {
+            "Persistence": {
+                ">=": 30
+            },
+            "Cyber Security Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 15
+        },
+        "Explanation": "Your strong persistence is a great asset for Cyber Security."
+    },
+    {
+        "RuleID": "TRT092",
+        "Priority": "Medium",
+        "Conditions": {
+            "Persistence": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 8
+        },
+        "Explanation": "Your persistence is beneficial for Cyber Security."
+    },
+    {
+        "RuleID": "TRT093",
+        "Priority": "Critical",
+        "Conditions": {
+            "Persistence": {
+                ">=": 40
+            },
+            "Mobile Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 20
+        },
+        "Explanation": "Your exceptional persistence strongly supports a career in Mobile."
+    },
+    {
+        "RuleID": "TRT094",
+        "Priority": "High",
+        "Conditions": {
+            "Persistence": {
+                ">=": 30
+            },
+            "Mobile Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 15
+        },
+        "Explanation": "Your strong persistence is a great asset for Mobile."
+    },
+    {
+        "RuleID": "TRT095",
+        "Priority": "Medium",
+        "Conditions": {
+            "Persistence": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 8
+        },
+        "Explanation": "Your persistence is beneficial for Mobile."
+    },
+    {
+        "RuleID": "TRT096",
+        "Priority": "Critical",
+        "Conditions": {
+            "Communication": {
+                ">=": 40
+            },
+            "Frontend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 20
+        },
+        "Explanation": "Your exceptional communication strongly supports a career in Frontend."
+    },
+    {
+        "RuleID": "TRT097",
+        "Priority": "High",
+        "Conditions": {
+            "Communication": {
+                ">=": 30
+            },
+            "Frontend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 15
+        },
+        "Explanation": "Your strong communication is a great asset for Frontend."
+    },
+    {
+        "RuleID": "TRT098",
+        "Priority": "Medium",
+        "Conditions": {
+            "Communication": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 8
+        },
+        "Explanation": "Your communication is beneficial for Frontend."
+    },
+    {
+        "RuleID": "TRT099",
+        "Priority": "Critical",
+        "Conditions": {
+            "Communication": {
+                ">=": 40
+            },
+            "Backend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 20
+        },
+        "Explanation": "Your exceptional communication strongly supports a career in Backend."
+    },
+    {
+        "RuleID": "TRT100",
+        "Priority": "High",
+        "Conditions": {
+            "Communication": {
+                ">=": 30
+            },
+            "Backend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 15
+        },
+        "Explanation": "Your strong communication is a great asset for Backend."
+    },
+    {
+        "RuleID": "TRT101",
+        "Priority": "Medium",
+        "Conditions": {
+            "Communication": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 8
+        },
+        "Explanation": "Your communication is beneficial for Backend."
+    },
+    {
+        "RuleID": "TRT102",
+        "Priority": "Critical",
+        "Conditions": {
+            "Communication": {
+                ">=": 40
+            },
+            "Full Stack Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 20
+        },
+        "Explanation": "Your exceptional communication strongly supports a career in Full Stack."
+    },
+    {
+        "RuleID": "TRT103",
+        "Priority": "High",
+        "Conditions": {
+            "Communication": {
+                ">=": 30
+            },
+            "Full Stack Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 15
+        },
+        "Explanation": "Your strong communication is a great asset for Full Stack."
+    },
+    {
+        "RuleID": "TRT104",
+        "Priority": "Medium",
+        "Conditions": {
+            "Communication": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 8
+        },
+        "Explanation": "Your communication is beneficial for Full Stack."
+    },
+    {
+        "RuleID": "TRT105",
+        "Priority": "Critical",
+        "Conditions": {
+            "Communication": {
+                ">=": 40
+            },
+            "AI & Data Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 20
+        },
+        "Explanation": "Your exceptional communication strongly supports a career in AI & Data."
+    },
+    {
+        "RuleID": "TRT106",
+        "Priority": "High",
+        "Conditions": {
+            "Communication": {
+                ">=": 30
+            },
+            "AI & Data Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 15
+        },
+        "Explanation": "Your strong communication is a great asset for AI & Data."
+    },
+    {
+        "RuleID": "TRT107",
+        "Priority": "Medium",
+        "Conditions": {
+            "Communication": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 8
+        },
+        "Explanation": "Your communication is beneficial for AI & Data."
+    },
+    {
+        "RuleID": "TRT108",
+        "Priority": "Critical",
+        "Conditions": {
+            "Communication": {
+                ">=": 40
+            },
+            "Data Science Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 20
+        },
+        "Explanation": "Your exceptional communication strongly supports a career in Data Science."
+    },
+    {
+        "RuleID": "TRT109",
+        "Priority": "High",
+        "Conditions": {
+            "Communication": {
+                ">=": 30
+            },
+            "Data Science Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 15
+        },
+        "Explanation": "Your strong communication is a great asset for Data Science."
+    },
+    {
+        "RuleID": "TRT110",
+        "Priority": "Medium",
+        "Conditions": {
+            "Communication": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 8
+        },
+        "Explanation": "Your communication is beneficial for Data Science."
+    },
+    {
+        "RuleID": "TRT111",
+        "Priority": "Critical",
+        "Conditions": {
+            "Communication": {
+                ">=": 40
+            },
+            "Cloud Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 20
+        },
+        "Explanation": "Your exceptional communication strongly supports a career in Cloud."
+    },
+    {
+        "RuleID": "TRT112",
+        "Priority": "High",
+        "Conditions": {
+            "Communication": {
+                ">=": 30
+            },
+            "Cloud Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 15
+        },
+        "Explanation": "Your strong communication is a great asset for Cloud."
+    },
+    {
+        "RuleID": "TRT113",
+        "Priority": "Medium",
+        "Conditions": {
+            "Communication": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 8
+        },
+        "Explanation": "Your communication is beneficial for Cloud."
+    },
+    {
+        "RuleID": "TRT114",
+        "Priority": "Critical",
+        "Conditions": {
+            "Communication": {
+                ">=": 40
+            },
+            "Cyber Security Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 20
+        },
+        "Explanation": "Your exceptional communication strongly supports a career in Cyber Security."
+    },
+    {
+        "RuleID": "TRT115",
+        "Priority": "High",
+        "Conditions": {
+            "Communication": {
+                ">=": 30
+            },
+            "Cyber Security Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 15
+        },
+        "Explanation": "Your strong communication is a great asset for Cyber Security."
+    },
+    {
+        "RuleID": "TRT116",
+        "Priority": "Medium",
+        "Conditions": {
+            "Communication": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 8
+        },
+        "Explanation": "Your communication is beneficial for Cyber Security."
+    },
+    {
+        "RuleID": "TRT117",
+        "Priority": "Critical",
+        "Conditions": {
+            "Communication": {
+                ">=": 40
+            },
+            "Mobile Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 20
+        },
+        "Explanation": "Your exceptional communication strongly supports a career in Mobile."
+    },
+    {
+        "RuleID": "TRT118",
+        "Priority": "High",
+        "Conditions": {
+            "Communication": {
+                ">=": 30
+            },
+            "Mobile Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 15
+        },
+        "Explanation": "Your strong communication is a great asset for Mobile."
+    },
+    {
+        "RuleID": "TRT119",
+        "Priority": "Medium",
+        "Conditions": {
+            "Communication": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 8
+        },
+        "Explanation": "Your communication is beneficial for Mobile."
+    },
+    {
+        "RuleID": "TRT120",
+        "Priority": "Critical",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 40
+            },
+            "Frontend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 20
+        },
+        "Explanation": "Your exceptional curiosity strongly supports a career in Frontend."
+    },
+    {
+        "RuleID": "TRT121",
+        "Priority": "High",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 30
+            },
+            "Frontend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 15
+        },
+        "Explanation": "Your strong curiosity is a great asset for Frontend."
+    },
+    {
+        "RuleID": "TRT122",
+        "Priority": "Medium",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 8
+        },
+        "Explanation": "Your curiosity is beneficial for Frontend."
+    },
+    {
+        "RuleID": "TRT123",
+        "Priority": "Critical",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 40
+            },
+            "Backend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 20
+        },
+        "Explanation": "Your exceptional curiosity strongly supports a career in Backend."
+    },
+    {
+        "RuleID": "TRT124",
+        "Priority": "High",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 30
+            },
+            "Backend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 15
+        },
+        "Explanation": "Your strong curiosity is a great asset for Backend."
+    },
+    {
+        "RuleID": "TRT125",
+        "Priority": "Medium",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 8
+        },
+        "Explanation": "Your curiosity is beneficial for Backend."
+    },
+    {
+        "RuleID": "TRT126",
+        "Priority": "Critical",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 40
+            },
+            "Full Stack Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 20
+        },
+        "Explanation": "Your exceptional curiosity strongly supports a career in Full Stack."
+    },
+    {
+        "RuleID": "TRT127",
+        "Priority": "High",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 30
+            },
+            "Full Stack Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 15
+        },
+        "Explanation": "Your strong curiosity is a great asset for Full Stack."
+    },
+    {
+        "RuleID": "TRT128",
+        "Priority": "Medium",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 8
+        },
+        "Explanation": "Your curiosity is beneficial for Full Stack."
+    },
+    {
+        "RuleID": "TRT129",
+        "Priority": "Critical",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 40
+            },
+            "AI & Data Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 20
+        },
+        "Explanation": "Your exceptional curiosity strongly supports a career in AI & Data."
+    },
+    {
+        "RuleID": "TRT130",
+        "Priority": "High",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 30
+            },
+            "AI & Data Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 15
+        },
+        "Explanation": "Your strong curiosity is a great asset for AI & Data."
+    },
+    {
+        "RuleID": "TRT131",
+        "Priority": "Medium",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 8
+        },
+        "Explanation": "Your curiosity is beneficial for AI & Data."
+    },
+    {
+        "RuleID": "TRT132",
+        "Priority": "Critical",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 40
+            },
+            "Data Science Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 20
+        },
+        "Explanation": "Your exceptional curiosity strongly supports a career in Data Science."
+    },
+    {
+        "RuleID": "TRT133",
+        "Priority": "High",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 30
+            },
+            "Data Science Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 15
+        },
+        "Explanation": "Your strong curiosity is a great asset for Data Science."
+    },
+    {
+        "RuleID": "TRT134",
+        "Priority": "Medium",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 8
+        },
+        "Explanation": "Your curiosity is beneficial for Data Science."
+    },
+    {
+        "RuleID": "TRT135",
+        "Priority": "Critical",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 40
+            },
+            "Cloud Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 20
+        },
+        "Explanation": "Your exceptional curiosity strongly supports a career in Cloud."
+    },
+    {
+        "RuleID": "TRT136",
+        "Priority": "High",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 30
+            },
+            "Cloud Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 15
+        },
+        "Explanation": "Your strong curiosity is a great asset for Cloud."
+    },
+    {
+        "RuleID": "TRT137",
+        "Priority": "Medium",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 8
+        },
+        "Explanation": "Your curiosity is beneficial for Cloud."
+    },
+    {
+        "RuleID": "TRT138",
+        "Priority": "Critical",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 40
+            },
+            "Cyber Security Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 20
+        },
+        "Explanation": "Your exceptional curiosity strongly supports a career in Cyber Security."
+    },
+    {
+        "RuleID": "TRT139",
+        "Priority": "High",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 30
+            },
+            "Cyber Security Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 15
+        },
+        "Explanation": "Your strong curiosity is a great asset for Cyber Security."
+    },
+    {
+        "RuleID": "TRT140",
+        "Priority": "Medium",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 8
+        },
+        "Explanation": "Your curiosity is beneficial for Cyber Security."
+    },
+    {
+        "RuleID": "TRT141",
+        "Priority": "Critical",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 40
+            },
+            "Mobile Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 20
+        },
+        "Explanation": "Your exceptional curiosity strongly supports a career in Mobile."
+    },
+    {
+        "RuleID": "TRT142",
+        "Priority": "High",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 30
+            },
+            "Mobile Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 15
+        },
+        "Explanation": "Your strong curiosity is a great asset for Mobile."
+    },
+    {
+        "RuleID": "TRT143",
+        "Priority": "Medium",
+        "Conditions": {
+            "Curiosity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 8
+        },
+        "Explanation": "Your curiosity is beneficial for Mobile."
+    },
+    {
+        "RuleID": "TRT144",
+        "Priority": "Critical",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 40
+            },
+            "Frontend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 20
+        },
+        "Explanation": "Your exceptional business mindset strongly supports a career in Frontend."
+    },
+    {
+        "RuleID": "TRT145",
+        "Priority": "High",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 30
+            },
+            "Frontend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 15
+        },
+        "Explanation": "Your strong business mindset is a great asset for Frontend."
+    },
+    {
+        "RuleID": "TRT146",
+        "Priority": "Medium",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 8
+        },
+        "Explanation": "Your business mindset is beneficial for Frontend."
+    },
+    {
+        "RuleID": "TRT147",
+        "Priority": "Critical",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 40
+            },
+            "Backend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 20
+        },
+        "Explanation": "Your exceptional business mindset strongly supports a career in Backend."
+    },
+    {
+        "RuleID": "TRT148",
+        "Priority": "High",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 30
+            },
+            "Backend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 15
+        },
+        "Explanation": "Your strong business mindset is a great asset for Backend."
+    },
+    {
+        "RuleID": "TRT149",
+        "Priority": "Medium",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 8
+        },
+        "Explanation": "Your business mindset is beneficial for Backend."
+    },
+    {
+        "RuleID": "TRT150",
+        "Priority": "Critical",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 40
+            },
+            "Full Stack Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 20
+        },
+        "Explanation": "Your exceptional business mindset strongly supports a career in Full Stack."
+    },
+    {
+        "RuleID": "TRT151",
+        "Priority": "High",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 30
+            },
+            "Full Stack Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 15
+        },
+        "Explanation": "Your strong business mindset is a great asset for Full Stack."
+    },
+    {
+        "RuleID": "TRT152",
+        "Priority": "Medium",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 8
+        },
+        "Explanation": "Your business mindset is beneficial for Full Stack."
+    },
+    {
+        "RuleID": "TRT153",
+        "Priority": "Critical",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 40
+            },
+            "AI & Data Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 20
+        },
+        "Explanation": "Your exceptional business mindset strongly supports a career in AI & Data."
+    },
+    {
+        "RuleID": "TRT154",
+        "Priority": "High",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 30
+            },
+            "AI & Data Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 15
+        },
+        "Explanation": "Your strong business mindset is a great asset for AI & Data."
+    },
+    {
+        "RuleID": "TRT155",
+        "Priority": "Medium",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 8
+        },
+        "Explanation": "Your business mindset is beneficial for AI & Data."
+    },
+    {
+        "RuleID": "TRT156",
+        "Priority": "Critical",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 40
+            },
+            "Data Science Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 20
+        },
+        "Explanation": "Your exceptional business mindset strongly supports a career in Data Science."
+    },
+    {
+        "RuleID": "TRT157",
+        "Priority": "High",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 30
+            },
+            "Data Science Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 15
+        },
+        "Explanation": "Your strong business mindset is a great asset for Data Science."
+    },
+    {
+        "RuleID": "TRT158",
+        "Priority": "Medium",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 8
+        },
+        "Explanation": "Your business mindset is beneficial for Data Science."
+    },
+    {
+        "RuleID": "TRT159",
+        "Priority": "Critical",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 40
+            },
+            "Cloud Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 20
+        },
+        "Explanation": "Your exceptional business mindset strongly supports a career in Cloud."
+    },
+    {
+        "RuleID": "TRT160",
+        "Priority": "High",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 30
+            },
+            "Cloud Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 15
+        },
+        "Explanation": "Your strong business mindset is a great asset for Cloud."
+    },
+    {
+        "RuleID": "TRT161",
+        "Priority": "Medium",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 8
+        },
+        "Explanation": "Your business mindset is beneficial for Cloud."
+    },
+    {
+        "RuleID": "TRT162",
+        "Priority": "Critical",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 40
+            },
+            "Cyber Security Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 20
+        },
+        "Explanation": "Your exceptional business mindset strongly supports a career in Cyber Security."
+    },
+    {
+        "RuleID": "TRT163",
+        "Priority": "High",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 30
+            },
+            "Cyber Security Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 15
+        },
+        "Explanation": "Your strong business mindset is a great asset for Cyber Security."
+    },
+    {
+        "RuleID": "TRT164",
+        "Priority": "Medium",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 8
+        },
+        "Explanation": "Your business mindset is beneficial for Cyber Security."
+    },
+    {
+        "RuleID": "TRT165",
+        "Priority": "Critical",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 40
+            },
+            "Mobile Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 20
+        },
+        "Explanation": "Your exceptional business mindset strongly supports a career in Mobile."
+    },
+    {
+        "RuleID": "TRT166",
+        "Priority": "High",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 30
+            },
+            "Mobile Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 15
+        },
+        "Explanation": "Your strong business mindset is a great asset for Mobile."
+    },
+    {
+        "RuleID": "TRT167",
+        "Priority": "Medium",
+        "Conditions": {
+            "Business Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 8
+        },
+        "Explanation": "Your business mindset is beneficial for Mobile."
+    },
+    {
+        "RuleID": "TRT168",
+        "Priority": "Critical",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 40
+            },
+            "Frontend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 20
+        },
+        "Explanation": "Your exceptional data mindset strongly supports a career in Frontend."
+    },
+    {
+        "RuleID": "TRT169",
+        "Priority": "High",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 30
+            },
+            "Frontend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 15
+        },
+        "Explanation": "Your strong data mindset is a great asset for Frontend."
+    },
+    {
+        "RuleID": "TRT170",
+        "Priority": "Medium",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 8
+        },
+        "Explanation": "Your data mindset is beneficial for Frontend."
+    },
+    {
+        "RuleID": "TRT171",
+        "Priority": "Critical",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 40
+            },
+            "Backend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 20
+        },
+        "Explanation": "Your exceptional data mindset strongly supports a career in Backend."
+    },
+    {
+        "RuleID": "TRT172",
+        "Priority": "High",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 30
+            },
+            "Backend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 15
+        },
+        "Explanation": "Your strong data mindset is a great asset for Backend."
+    },
+    {
+        "RuleID": "TRT173",
+        "Priority": "Medium",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 8
+        },
+        "Explanation": "Your data mindset is beneficial for Backend."
+    },
+    {
+        "RuleID": "TRT174",
+        "Priority": "Critical",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 40
+            },
+            "Full Stack Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 20
+        },
+        "Explanation": "Your exceptional data mindset strongly supports a career in Full Stack."
+    },
+    {
+        "RuleID": "TRT175",
+        "Priority": "High",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 30
+            },
+            "Full Stack Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 15
+        },
+        "Explanation": "Your strong data mindset is a great asset for Full Stack."
+    },
+    {
+        "RuleID": "TRT176",
+        "Priority": "Medium",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 8
+        },
+        "Explanation": "Your data mindset is beneficial for Full Stack."
+    },
+    {
+        "RuleID": "TRT177",
+        "Priority": "Critical",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 40
+            },
+            "AI & Data Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 20
+        },
+        "Explanation": "Your exceptional data mindset strongly supports a career in AI & Data."
+    },
+    {
+        "RuleID": "TRT178",
+        "Priority": "High",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 30
+            },
+            "AI & Data Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 15
+        },
+        "Explanation": "Your strong data mindset is a great asset for AI & Data."
+    },
+    {
+        "RuleID": "TRT179",
+        "Priority": "Medium",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 8
+        },
+        "Explanation": "Your data mindset is beneficial for AI & Data."
+    },
+    {
+        "RuleID": "TRT180",
+        "Priority": "Critical",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 40
+            },
+            "Data Science Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 20
+        },
+        "Explanation": "Your exceptional data mindset strongly supports a career in Data Science."
+    },
+    {
+        "RuleID": "TRT181",
+        "Priority": "High",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 30
+            },
+            "Data Science Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 15
+        },
+        "Explanation": "Your strong data mindset is a great asset for Data Science."
+    },
+    {
+        "RuleID": "TRT182",
+        "Priority": "Medium",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 8
+        },
+        "Explanation": "Your data mindset is beneficial for Data Science."
+    },
+    {
+        "RuleID": "TRT183",
+        "Priority": "Critical",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 40
+            },
+            "Cloud Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 20
+        },
+        "Explanation": "Your exceptional data mindset strongly supports a career in Cloud."
+    },
+    {
+        "RuleID": "TRT184",
+        "Priority": "High",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 30
+            },
+            "Cloud Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 15
+        },
+        "Explanation": "Your strong data mindset is a great asset for Cloud."
+    },
+    {
+        "RuleID": "TRT185",
+        "Priority": "Medium",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 8
+        },
+        "Explanation": "Your data mindset is beneficial for Cloud."
+    },
+    {
+        "RuleID": "TRT186",
+        "Priority": "Critical",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 40
+            },
+            "Cyber Security Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 20
+        },
+        "Explanation": "Your exceptional data mindset strongly supports a career in Cyber Security."
+    },
+    {
+        "RuleID": "TRT187",
+        "Priority": "High",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 30
+            },
+            "Cyber Security Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 15
+        },
+        "Explanation": "Your strong data mindset is a great asset for Cyber Security."
+    },
+    {
+        "RuleID": "TRT188",
+        "Priority": "Medium",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 8
+        },
+        "Explanation": "Your data mindset is beneficial for Cyber Security."
+    },
+    {
+        "RuleID": "TRT189",
+        "Priority": "Critical",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 40
+            },
+            "Mobile Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 20
+        },
+        "Explanation": "Your exceptional data mindset strongly supports a career in Mobile."
+    },
+    {
+        "RuleID": "TRT190",
+        "Priority": "High",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 30
+            },
+            "Mobile Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 15
+        },
+        "Explanation": "Your strong data mindset is a great asset for Mobile."
+    },
+    {
+        "RuleID": "TRT191",
+        "Priority": "Medium",
+        "Conditions": {
+            "Data Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 8
+        },
+        "Explanation": "Your data mindset is beneficial for Mobile."
+    },
+    {
+        "RuleID": "TRT192",
+        "Priority": "Critical",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 40
+            },
+            "Frontend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 20
+        },
+        "Explanation": "Your exceptional security mindset strongly supports a career in Frontend."
+    },
+    {
+        "RuleID": "TRT193",
+        "Priority": "High",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 30
+            },
+            "Frontend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 15
+        },
+        "Explanation": "Your strong security mindset is a great asset for Frontend."
+    },
+    {
+        "RuleID": "TRT194",
+        "Priority": "Medium",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 8
+        },
+        "Explanation": "Your security mindset is beneficial for Frontend."
+    },
+    {
+        "RuleID": "TRT195",
+        "Priority": "Critical",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 40
+            },
+            "Backend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 20
+        },
+        "Explanation": "Your exceptional security mindset strongly supports a career in Backend."
+    },
+    {
+        "RuleID": "TRT196",
+        "Priority": "High",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 30
+            },
+            "Backend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 15
+        },
+        "Explanation": "Your strong security mindset is a great asset for Backend."
+    },
+    {
+        "RuleID": "TRT197",
+        "Priority": "Medium",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 8
+        },
+        "Explanation": "Your security mindset is beneficial for Backend."
+    },
+    {
+        "RuleID": "TRT198",
+        "Priority": "Critical",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 40
+            },
+            "Full Stack Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 20
+        },
+        "Explanation": "Your exceptional security mindset strongly supports a career in Full Stack."
+    },
+    {
+        "RuleID": "TRT199",
+        "Priority": "High",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 30
+            },
+            "Full Stack Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 15
+        },
+        "Explanation": "Your strong security mindset is a great asset for Full Stack."
+    },
+    {
+        "RuleID": "TRT200",
+        "Priority": "Medium",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 8
+        },
+        "Explanation": "Your security mindset is beneficial for Full Stack."
+    },
+    {
+        "RuleID": "TRT201",
+        "Priority": "Critical",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 40
+            },
+            "AI & Data Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 20
+        },
+        "Explanation": "Your exceptional security mindset strongly supports a career in AI & Data."
+    },
+    {
+        "RuleID": "TRT202",
+        "Priority": "High",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 30
+            },
+            "AI & Data Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 15
+        },
+        "Explanation": "Your strong security mindset is a great asset for AI & Data."
+    },
+    {
+        "RuleID": "TRT203",
+        "Priority": "Medium",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 8
+        },
+        "Explanation": "Your security mindset is beneficial for AI & Data."
+    },
+    {
+        "RuleID": "TRT204",
+        "Priority": "Critical",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 40
+            },
+            "Data Science Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 20
+        },
+        "Explanation": "Your exceptional security mindset strongly supports a career in Data Science."
+    },
+    {
+        "RuleID": "TRT205",
+        "Priority": "High",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 30
+            },
+            "Data Science Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 15
+        },
+        "Explanation": "Your strong security mindset is a great asset for Data Science."
+    },
+    {
+        "RuleID": "TRT206",
+        "Priority": "Medium",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 8
+        },
+        "Explanation": "Your security mindset is beneficial for Data Science."
+    },
+    {
+        "RuleID": "TRT207",
+        "Priority": "Critical",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 40
+            },
+            "Cloud Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 20
+        },
+        "Explanation": "Your exceptional security mindset strongly supports a career in Cloud."
+    },
+    {
+        "RuleID": "TRT208",
+        "Priority": "High",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 30
+            },
+            "Cloud Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 15
+        },
+        "Explanation": "Your strong security mindset is a great asset for Cloud."
+    },
+    {
+        "RuleID": "TRT209",
+        "Priority": "Medium",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 8
+        },
+        "Explanation": "Your security mindset is beneficial for Cloud."
+    },
+    {
+        "RuleID": "TRT210",
+        "Priority": "Critical",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 40
+            },
+            "Cyber Security Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 20
+        },
+        "Explanation": "Your exceptional security mindset strongly supports a career in Cyber Security."
+    },
+    {
+        "RuleID": "TRT211",
+        "Priority": "High",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 30
+            },
+            "Cyber Security Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 15
+        },
+        "Explanation": "Your strong security mindset is a great asset for Cyber Security."
+    },
+    {
+        "RuleID": "TRT212",
+        "Priority": "Medium",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 8
+        },
+        "Explanation": "Your security mindset is beneficial for Cyber Security."
+    },
+    {
+        "RuleID": "TRT213",
+        "Priority": "Critical",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 40
+            },
+            "Mobile Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 20
+        },
+        "Explanation": "Your exceptional security mindset strongly supports a career in Mobile."
+    },
+    {
+        "RuleID": "TRT214",
+        "Priority": "High",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 30
+            },
+            "Mobile Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 15
+        },
+        "Explanation": "Your strong security mindset is a great asset for Mobile."
+    },
+    {
+        "RuleID": "TRT215",
+        "Priority": "Medium",
+        "Conditions": {
+            "Security Mindset": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 8
+        },
+        "Explanation": "Your security mindset is beneficial for Mobile."
+    },
+    {
+        "RuleID": "TRT216",
+        "Priority": "Critical",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 40
+            },
+            "Frontend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 20
+        },
+        "Explanation": "Your exceptional automation preference strongly supports a career in Frontend."
+    },
+    {
+        "RuleID": "TRT217",
+        "Priority": "High",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 30
+            },
+            "Frontend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 15
+        },
+        "Explanation": "Your strong automation preference is a great asset for Frontend."
+    },
+    {
+        "RuleID": "TRT218",
+        "Priority": "Medium",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 8
+        },
+        "Explanation": "Your automation preference is beneficial for Frontend."
+    },
+    {
+        "RuleID": "TRT219",
+        "Priority": "Critical",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 40
+            },
+            "Backend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 20
+        },
+        "Explanation": "Your exceptional automation preference strongly supports a career in Backend."
+    },
+    {
+        "RuleID": "TRT220",
+        "Priority": "High",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 30
+            },
+            "Backend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 15
+        },
+        "Explanation": "Your strong automation preference is a great asset for Backend."
+    },
+    {
+        "RuleID": "TRT221",
+        "Priority": "Medium",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 8
+        },
+        "Explanation": "Your automation preference is beneficial for Backend."
+    },
+    {
+        "RuleID": "TRT222",
+        "Priority": "Critical",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 40
+            },
+            "Full Stack Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 20
+        },
+        "Explanation": "Your exceptional automation preference strongly supports a career in Full Stack."
+    },
+    {
+        "RuleID": "TRT223",
+        "Priority": "High",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 30
+            },
+            "Full Stack Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 15
+        },
+        "Explanation": "Your strong automation preference is a great asset for Full Stack."
+    },
+    {
+        "RuleID": "TRT224",
+        "Priority": "Medium",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 8
+        },
+        "Explanation": "Your automation preference is beneficial for Full Stack."
+    },
+    {
+        "RuleID": "TRT225",
+        "Priority": "Critical",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 40
+            },
+            "AI & Data Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 20
+        },
+        "Explanation": "Your exceptional automation preference strongly supports a career in AI & Data."
+    },
+    {
+        "RuleID": "TRT226",
+        "Priority": "High",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 30
+            },
+            "AI & Data Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 15
+        },
+        "Explanation": "Your strong automation preference is a great asset for AI & Data."
+    },
+    {
+        "RuleID": "TRT227",
+        "Priority": "Medium",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 8
+        },
+        "Explanation": "Your automation preference is beneficial for AI & Data."
+    },
+    {
+        "RuleID": "TRT228",
+        "Priority": "Critical",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 40
+            },
+            "Data Science Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 20
+        },
+        "Explanation": "Your exceptional automation preference strongly supports a career in Data Science."
+    },
+    {
+        "RuleID": "TRT229",
+        "Priority": "High",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 30
+            },
+            "Data Science Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 15
+        },
+        "Explanation": "Your strong automation preference is a great asset for Data Science."
+    },
+    {
+        "RuleID": "TRT230",
+        "Priority": "Medium",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 8
+        },
+        "Explanation": "Your automation preference is beneficial for Data Science."
+    },
+    {
+        "RuleID": "TRT231",
+        "Priority": "Critical",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 40
+            },
+            "Cloud Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 20
+        },
+        "Explanation": "Your exceptional automation preference strongly supports a career in Cloud."
+    },
+    {
+        "RuleID": "TRT232",
+        "Priority": "High",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 30
+            },
+            "Cloud Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 15
+        },
+        "Explanation": "Your strong automation preference is a great asset for Cloud."
+    },
+    {
+        "RuleID": "TRT233",
+        "Priority": "Medium",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 8
+        },
+        "Explanation": "Your automation preference is beneficial for Cloud."
+    },
+    {
+        "RuleID": "TRT234",
+        "Priority": "Critical",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 40
+            },
+            "Cyber Security Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 20
+        },
+        "Explanation": "Your exceptional automation preference strongly supports a career in Cyber Security."
+    },
+    {
+        "RuleID": "TRT235",
+        "Priority": "High",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 30
+            },
+            "Cyber Security Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 15
+        },
+        "Explanation": "Your strong automation preference is a great asset for Cyber Security."
+    },
+    {
+        "RuleID": "TRT236",
+        "Priority": "Medium",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 8
+        },
+        "Explanation": "Your automation preference is beneficial for Cyber Security."
+    },
+    {
+        "RuleID": "TRT237",
+        "Priority": "Critical",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 40
+            },
+            "Mobile Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 20
+        },
+        "Explanation": "Your exceptional automation preference strongly supports a career in Mobile."
+    },
+    {
+        "RuleID": "TRT238",
+        "Priority": "High",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 30
+            },
+            "Mobile Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 15
+        },
+        "Explanation": "Your strong automation preference is a great asset for Mobile."
+    },
+    {
+        "RuleID": "TRT239",
+        "Priority": "Medium",
+        "Conditions": {
+            "Automation Preference": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 8
+        },
+        "Explanation": "Your automation preference is beneficial for Mobile."
+    },
+    {
+        "RuleID": "TRT240",
+        "Priority": "Critical",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 40
+            },
+            "Frontend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 20
+        },
+        "Explanation": "Your exceptional visual creativity strongly supports a career in Frontend."
+    },
+    {
+        "RuleID": "TRT241",
+        "Priority": "High",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 30
+            },
+            "Frontend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 15
+        },
+        "Explanation": "Your strong visual creativity is a great asset for Frontend."
+    },
+    {
+        "RuleID": "TRT242",
+        "Priority": "Medium",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 8
+        },
+        "Explanation": "Your visual creativity is beneficial for Frontend."
+    },
+    {
+        "RuleID": "TRT243",
+        "Priority": "Critical",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 40
+            },
+            "Backend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 20
+        },
+        "Explanation": "Your exceptional visual creativity strongly supports a career in Backend."
+    },
+    {
+        "RuleID": "TRT244",
+        "Priority": "High",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 30
+            },
+            "Backend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 15
+        },
+        "Explanation": "Your strong visual creativity is a great asset for Backend."
+    },
+    {
+        "RuleID": "TRT245",
+        "Priority": "Medium",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 8
+        },
+        "Explanation": "Your visual creativity is beneficial for Backend."
+    },
+    {
+        "RuleID": "TRT246",
+        "Priority": "Critical",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 40
+            },
+            "Full Stack Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 20
+        },
+        "Explanation": "Your exceptional visual creativity strongly supports a career in Full Stack."
+    },
+    {
+        "RuleID": "TRT247",
+        "Priority": "High",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 30
+            },
+            "Full Stack Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 15
+        },
+        "Explanation": "Your strong visual creativity is a great asset for Full Stack."
+    },
+    {
+        "RuleID": "TRT248",
+        "Priority": "Medium",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 8
+        },
+        "Explanation": "Your visual creativity is beneficial for Full Stack."
+    },
+    {
+        "RuleID": "TRT249",
+        "Priority": "Critical",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 40
+            },
+            "AI & Data Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 20
+        },
+        "Explanation": "Your exceptional visual creativity strongly supports a career in AI & Data."
+    },
+    {
+        "RuleID": "TRT250",
+        "Priority": "High",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 30
+            },
+            "AI & Data Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 15
+        },
+        "Explanation": "Your strong visual creativity is a great asset for AI & Data."
+    },
+    {
+        "RuleID": "TRT251",
+        "Priority": "Medium",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 8
+        },
+        "Explanation": "Your visual creativity is beneficial for AI & Data."
+    },
+    {
+        "RuleID": "TRT252",
+        "Priority": "Critical",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 40
+            },
+            "Data Science Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 20
+        },
+        "Explanation": "Your exceptional visual creativity strongly supports a career in Data Science."
+    },
+    {
+        "RuleID": "TRT253",
+        "Priority": "High",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 30
+            },
+            "Data Science Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 15
+        },
+        "Explanation": "Your strong visual creativity is a great asset for Data Science."
+    },
+    {
+        "RuleID": "TRT254",
+        "Priority": "Medium",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 8
+        },
+        "Explanation": "Your visual creativity is beneficial for Data Science."
+    },
+    {
+        "RuleID": "TRT255",
+        "Priority": "Critical",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 40
+            },
+            "Cloud Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 20
+        },
+        "Explanation": "Your exceptional visual creativity strongly supports a career in Cloud."
+    },
+    {
+        "RuleID": "TRT256",
+        "Priority": "High",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 30
+            },
+            "Cloud Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 15
+        },
+        "Explanation": "Your strong visual creativity is a great asset for Cloud."
+    },
+    {
+        "RuleID": "TRT257",
+        "Priority": "Medium",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 8
+        },
+        "Explanation": "Your visual creativity is beneficial for Cloud."
+    },
+    {
+        "RuleID": "TRT258",
+        "Priority": "Critical",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 40
+            },
+            "Cyber Security Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 20
+        },
+        "Explanation": "Your exceptional visual creativity strongly supports a career in Cyber Security."
+    },
+    {
+        "RuleID": "TRT259",
+        "Priority": "High",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 30
+            },
+            "Cyber Security Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 15
+        },
+        "Explanation": "Your strong visual creativity is a great asset for Cyber Security."
+    },
+    {
+        "RuleID": "TRT260",
+        "Priority": "Medium",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 8
+        },
+        "Explanation": "Your visual creativity is beneficial for Cyber Security."
+    },
+    {
+        "RuleID": "TRT261",
+        "Priority": "Critical",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 40
+            },
+            "Mobile Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 20
+        },
+        "Explanation": "Your exceptional visual creativity strongly supports a career in Mobile."
+    },
+    {
+        "RuleID": "TRT262",
+        "Priority": "High",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 30
+            },
+            "Mobile Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 15
+        },
+        "Explanation": "Your strong visual creativity is a great asset for Mobile."
+    },
+    {
+        "RuleID": "TRT263",
+        "Priority": "Medium",
+        "Conditions": {
+            "Visual Creativity": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 8
+        },
+        "Explanation": "Your visual creativity is beneficial for Mobile."
+    },
+    {
+        "RuleID": "TRT264",
+        "Priority": "Critical",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 40
+            },
+            "Frontend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 20
+        },
+        "Explanation": "Your exceptional analytical score strongly supports a career in Frontend."
+    },
+    {
+        "RuleID": "TRT265",
+        "Priority": "High",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 30
+            },
+            "Frontend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 15
+        },
+        "Explanation": "Your strong analytical score is a great asset for Frontend."
+    },
+    {
+        "RuleID": "TRT266",
+        "Priority": "Medium",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 8
+        },
+        "Explanation": "Your analytical score is beneficial for Frontend."
+    },
+    {
+        "RuleID": "TRT267",
+        "Priority": "Critical",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 40
+            },
+            "Backend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 20
+        },
+        "Explanation": "Your exceptional analytical score strongly supports a career in Backend."
+    },
+    {
+        "RuleID": "TRT268",
+        "Priority": "High",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 30
+            },
+            "Backend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 15
+        },
+        "Explanation": "Your strong analytical score is a great asset for Backend."
+    },
+    {
+        "RuleID": "TRT269",
+        "Priority": "Medium",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 8
+        },
+        "Explanation": "Your analytical score is beneficial for Backend."
+    },
+    {
+        "RuleID": "TRT270",
+        "Priority": "Critical",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 40
+            },
+            "Full Stack Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 20
+        },
+        "Explanation": "Your exceptional analytical score strongly supports a career in Full Stack."
+    },
+    {
+        "RuleID": "TRT271",
+        "Priority": "High",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 30
+            },
+            "Full Stack Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 15
+        },
+        "Explanation": "Your strong analytical score is a great asset for Full Stack."
+    },
+    {
+        "RuleID": "TRT272",
+        "Priority": "Medium",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 8
+        },
+        "Explanation": "Your analytical score is beneficial for Full Stack."
+    },
+    {
+        "RuleID": "TRT273",
+        "Priority": "Critical",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 40
+            },
+            "AI & Data Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 20
+        },
+        "Explanation": "Your exceptional analytical score strongly supports a career in AI & Data."
+    },
+    {
+        "RuleID": "TRT274",
+        "Priority": "High",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 30
+            },
+            "AI & Data Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 15
+        },
+        "Explanation": "Your strong analytical score is a great asset for AI & Data."
+    },
+    {
+        "RuleID": "TRT275",
+        "Priority": "Medium",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 8
+        },
+        "Explanation": "Your analytical score is beneficial for AI & Data."
+    },
+    {
+        "RuleID": "TRT276",
+        "Priority": "Critical",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 40
+            },
+            "Data Science Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 20
+        },
+        "Explanation": "Your exceptional analytical score strongly supports a career in Data Science."
+    },
+    {
+        "RuleID": "TRT277",
+        "Priority": "High",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 30
+            },
+            "Data Science Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 15
+        },
+        "Explanation": "Your strong analytical score is a great asset for Data Science."
+    },
+    {
+        "RuleID": "TRT278",
+        "Priority": "Medium",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 8
+        },
+        "Explanation": "Your analytical score is beneficial for Data Science."
+    },
+    {
+        "RuleID": "TRT279",
+        "Priority": "Critical",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 40
+            },
+            "Cloud Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 20
+        },
+        "Explanation": "Your exceptional analytical score strongly supports a career in Cloud."
+    },
+    {
+        "RuleID": "TRT280",
+        "Priority": "High",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 30
+            },
+            "Cloud Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 15
+        },
+        "Explanation": "Your strong analytical score is a great asset for Cloud."
+    },
+    {
+        "RuleID": "TRT281",
+        "Priority": "Medium",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 8
+        },
+        "Explanation": "Your analytical score is beneficial for Cloud."
+    },
+    {
+        "RuleID": "TRT282",
+        "Priority": "Critical",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 40
+            },
+            "Cyber Security Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 20
+        },
+        "Explanation": "Your exceptional analytical score strongly supports a career in Cyber Security."
+    },
+    {
+        "RuleID": "TRT283",
+        "Priority": "High",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 30
+            },
+            "Cyber Security Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 15
+        },
+        "Explanation": "Your strong analytical score is a great asset for Cyber Security."
+    },
+    {
+        "RuleID": "TRT284",
+        "Priority": "Medium",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 8
+        },
+        "Explanation": "Your analytical score is beneficial for Cyber Security."
+    },
+    {
+        "RuleID": "TRT285",
+        "Priority": "Critical",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 40
+            },
+            "Mobile Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 20
+        },
+        "Explanation": "Your exceptional analytical score strongly supports a career in Mobile."
+    },
+    {
+        "RuleID": "TRT286",
+        "Priority": "High",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 30
+            },
+            "Mobile Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 15
+        },
+        "Explanation": "Your strong analytical score is a great asset for Mobile."
+    },
+    {
+        "RuleID": "TRT287",
+        "Priority": "Medium",
+        "Conditions": {
+            "Analytical Score": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 8
+        },
+        "Explanation": "Your analytical score is beneficial for Mobile."
+    },
+    {
+        "RuleID": "TRT288",
+        "Priority": "Critical",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 40
+            },
+            "Frontend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 20
+        },
+        "Explanation": "Your exceptional research interest strongly supports a career in Frontend."
+    },
+    {
+        "RuleID": "TRT289",
+        "Priority": "High",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 30
+            },
+            "Frontend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 15
+        },
+        "Explanation": "Your strong research interest is a great asset for Frontend."
+    },
+    {
+        "RuleID": "TRT290",
+        "Priority": "Medium",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 8
+        },
+        "Explanation": "Your research interest is beneficial for Frontend."
+    },
+    {
+        "RuleID": "TRT291",
+        "Priority": "Critical",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 40
+            },
+            "Backend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 20
+        },
+        "Explanation": "Your exceptional research interest strongly supports a career in Backend."
+    },
+    {
+        "RuleID": "TRT292",
+        "Priority": "High",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 30
+            },
+            "Backend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 15
+        },
+        "Explanation": "Your strong research interest is a great asset for Backend."
+    },
+    {
+        "RuleID": "TRT293",
+        "Priority": "Medium",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 8
+        },
+        "Explanation": "Your research interest is beneficial for Backend."
+    },
+    {
+        "RuleID": "TRT294",
+        "Priority": "Critical",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 40
+            },
+            "Full Stack Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 20
+        },
+        "Explanation": "Your exceptional research interest strongly supports a career in Full Stack."
+    },
+    {
+        "RuleID": "TRT295",
+        "Priority": "High",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 30
+            },
+            "Full Stack Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 15
+        },
+        "Explanation": "Your strong research interest is a great asset for Full Stack."
+    },
+    {
+        "RuleID": "TRT296",
+        "Priority": "Medium",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 8
+        },
+        "Explanation": "Your research interest is beneficial for Full Stack."
+    },
+    {
+        "RuleID": "TRT297",
+        "Priority": "Critical",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 40
+            },
+            "AI & Data Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 20
+        },
+        "Explanation": "Your exceptional research interest strongly supports a career in AI & Data."
+    },
+    {
+        "RuleID": "TRT298",
+        "Priority": "High",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 30
+            },
+            "AI & Data Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 15
+        },
+        "Explanation": "Your strong research interest is a great asset for AI & Data."
+    },
+    {
+        "RuleID": "TRT299",
+        "Priority": "Medium",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 8
+        },
+        "Explanation": "Your research interest is beneficial for AI & Data."
+    },
+    {
+        "RuleID": "TRT300",
+        "Priority": "Critical",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 40
+            },
+            "Data Science Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 20
+        },
+        "Explanation": "Your exceptional research interest strongly supports a career in Data Science."
+    },
+    {
+        "RuleID": "TRT301",
+        "Priority": "High",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 30
+            },
+            "Data Science Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 15
+        },
+        "Explanation": "Your strong research interest is a great asset for Data Science."
+    },
+    {
+        "RuleID": "TRT302",
+        "Priority": "Medium",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 8
+        },
+        "Explanation": "Your research interest is beneficial for Data Science."
+    },
+    {
+        "RuleID": "TRT303",
+        "Priority": "Critical",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 40
+            },
+            "Cloud Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 20
+        },
+        "Explanation": "Your exceptional research interest strongly supports a career in Cloud."
+    },
+    {
+        "RuleID": "TRT304",
+        "Priority": "High",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 30
+            },
+            "Cloud Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 15
+        },
+        "Explanation": "Your strong research interest is a great asset for Cloud."
+    },
+    {
+        "RuleID": "TRT305",
+        "Priority": "Medium",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 8
+        },
+        "Explanation": "Your research interest is beneficial for Cloud."
+    },
+    {
+        "RuleID": "TRT306",
+        "Priority": "Critical",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 40
+            },
+            "Cyber Security Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 20
+        },
+        "Explanation": "Your exceptional research interest strongly supports a career in Cyber Security."
+    },
+    {
+        "RuleID": "TRT307",
+        "Priority": "High",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 30
+            },
+            "Cyber Security Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 15
+        },
+        "Explanation": "Your strong research interest is a great asset for Cyber Security."
+    },
+    {
+        "RuleID": "TRT308",
+        "Priority": "Medium",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 8
+        },
+        "Explanation": "Your research interest is beneficial for Cyber Security."
+    },
+    {
+        "RuleID": "TRT309",
+        "Priority": "Critical",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 40
+            },
+            "Mobile Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 20
+        },
+        "Explanation": "Your exceptional research interest strongly supports a career in Mobile."
+    },
+    {
+        "RuleID": "TRT310",
+        "Priority": "High",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 30
+            },
+            "Mobile Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 15
+        },
+        "Explanation": "Your strong research interest is a great asset for Mobile."
+    },
+    {
+        "RuleID": "TRT311",
+        "Priority": "Medium",
+        "Conditions": {
+            "Research Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 8
+        },
+        "Explanation": "Your research interest is beneficial for Mobile."
+    },
+    {
+        "RuleID": "TRT312",
+        "Priority": "Critical",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 40
+            },
+            "Frontend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 20
+        },
+        "Explanation": "Your exceptional stress tolerance strongly supports a career in Frontend."
+    },
+    {
+        "RuleID": "TRT313",
+        "Priority": "High",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 30
+            },
+            "Frontend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 15
+        },
+        "Explanation": "Your strong stress tolerance is a great asset for Frontend."
+    },
+    {
+        "RuleID": "TRT314",
+        "Priority": "Medium",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 8
+        },
+        "Explanation": "Your stress tolerance is beneficial for Frontend."
+    },
+    {
+        "RuleID": "TRT315",
+        "Priority": "Critical",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 40
+            },
+            "Backend Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 20
+        },
+        "Explanation": "Your exceptional stress tolerance strongly supports a career in Backend."
+    },
+    {
+        "RuleID": "TRT316",
+        "Priority": "High",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 30
+            },
+            "Backend Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 15
+        },
+        "Explanation": "Your strong stress tolerance is a great asset for Backend."
+    },
+    {
+        "RuleID": "TRT317",
+        "Priority": "Medium",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Backend": 8
+        },
+        "Explanation": "Your stress tolerance is beneficial for Backend."
+    },
+    {
+        "RuleID": "TRT318",
+        "Priority": "Critical",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 40
+            },
+            "Full Stack Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 20
+        },
+        "Explanation": "Your exceptional stress tolerance strongly supports a career in Full Stack."
+    },
+    {
+        "RuleID": "TRT319",
+        "Priority": "High",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 30
+            },
+            "Full Stack Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 15
+        },
+        "Explanation": "Your strong stress tolerance is a great asset for Full Stack."
+    },
+    {
+        "RuleID": "TRT320",
+        "Priority": "Medium",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Full Stack": 8
+        },
+        "Explanation": "Your stress tolerance is beneficial for Full Stack."
+    },
+    {
+        "RuleID": "TRT321",
+        "Priority": "Critical",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 40
+            },
+            "AI & Data Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 20
+        },
+        "Explanation": "Your exceptional stress tolerance strongly supports a career in AI & Data."
+    },
+    {
+        "RuleID": "TRT322",
+        "Priority": "High",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 30
+            },
+            "AI & Data Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 15
+        },
+        "Explanation": "Your strong stress tolerance is a great asset for AI & Data."
+    },
+    {
+        "RuleID": "TRT323",
+        "Priority": "Medium",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "AI & Data": 8
+        },
+        "Explanation": "Your stress tolerance is beneficial for AI & Data."
+    },
+    {
+        "RuleID": "TRT324",
+        "Priority": "Critical",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 40
+            },
+            "Data Science Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 20
+        },
+        "Explanation": "Your exceptional stress tolerance strongly supports a career in Data Science."
+    },
+    {
+        "RuleID": "TRT325",
+        "Priority": "High",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 30
+            },
+            "Data Science Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 15
+        },
+        "Explanation": "Your strong stress tolerance is a great asset for Data Science."
+    },
+    {
+        "RuleID": "TRT326",
+        "Priority": "Medium",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Data Science": 8
+        },
+        "Explanation": "Your stress tolerance is beneficial for Data Science."
+    },
+    {
+        "RuleID": "TRT327",
+        "Priority": "Critical",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 40
+            },
+            "Cloud Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 20
+        },
+        "Explanation": "Your exceptional stress tolerance strongly supports a career in Cloud."
+    },
+    {
+        "RuleID": "TRT328",
+        "Priority": "High",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 30
+            },
+            "Cloud Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 15
+        },
+        "Explanation": "Your strong stress tolerance is a great asset for Cloud."
+    },
+    {
+        "RuleID": "TRT329",
+        "Priority": "Medium",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cloud": 8
+        },
+        "Explanation": "Your stress tolerance is beneficial for Cloud."
+    },
+    {
+        "RuleID": "TRT330",
+        "Priority": "Critical",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 40
+            },
+            "Cyber Security Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 20
+        },
+        "Explanation": "Your exceptional stress tolerance strongly supports a career in Cyber Security."
+    },
+    {
+        "RuleID": "TRT331",
+        "Priority": "High",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 30
+            },
+            "Cyber Security Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 15
+        },
+        "Explanation": "Your strong stress tolerance is a great asset for Cyber Security."
+    },
+    {
+        "RuleID": "TRT332",
+        "Priority": "Medium",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Cyber Security": 8
+        },
+        "Explanation": "Your stress tolerance is beneficial for Cyber Security."
+    },
+    {
+        "RuleID": "TRT333",
+        "Priority": "Critical",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 40
+            },
+            "Mobile Interest": {
+                ">=": 30
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 20
+        },
+        "Explanation": "Your exceptional stress tolerance strongly supports a career in Mobile."
+    },
+    {
+        "RuleID": "TRT334",
+        "Priority": "High",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 30
+            },
+            "Mobile Interest": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 15
+        },
+        "Explanation": "Your strong stress tolerance is a great asset for Mobile."
+    },
+    {
+        "RuleID": "TRT335",
+        "Priority": "Medium",
+        "Conditions": {
+            "Stress Tolerance": {
+                ">=": 20
+            }
+        },
+        "ScoreChanges": {
+            "Mobile": 8
+        },
+        "Explanation": "Your stress tolerance is beneficial for Mobile."
+    },
+    {
+        "RuleID": "TIME336",
+        "Priority": "Critical",
+        "Conditions": {
+            "Study Hours": {
+                "<=": 5
+            }
+        },
+        "ScoreChanges": {
+            "Frontend": 10,
+            "Full Stack": -20,
+            "AI & Data": -20,
+            "Cyber Security": -20,
+            "Cloud": -15
+        },
+        "Explanation": "Given your limited weekly study time, we strongly deprioritized highly complex paths like AI, Security, or Full Stack."
+    }
+]

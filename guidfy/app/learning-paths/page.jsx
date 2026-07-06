@@ -288,13 +288,15 @@ function ConfidenceBars({ topPaths, recommendedPath }) {
   return (
     <div className="space-y-3">
       {sorted.map((p, i) => {
-        const meta  = getMeta(p.path);
+        const pathName = p.name || p.path || "";
+        const meta  = getMeta(pathName);
         const Icon  = meta.icon;
-        const pct   = Math.round(p.confidence * 100);
-        const isTop = p.path.toLowerCase() === recommendedPath?.toLowerCase();
+        // Old backend used confidence float (e.g. 0.95), new uses compatibility integer (e.g. 95)
+        const pct   = p.compatibility !== undefined ? p.compatibility : Math.round((p.confidence || 0) * 100);
+        const isTop = pathName.toLowerCase() === recommendedPath?.toLowerCase();
 
         return (
-          <div key={p.path} className="flex items-center gap-3">
+          <div key={pathName} className="flex items-center gap-3">
             <div className="w-5 text-center flex-shrink-0">
               {i === 0
                 ? <Star className="w-3.5 h-3.5 text-amber-400 mx-auto" />
@@ -306,7 +308,7 @@ function ConfidenceBars({ topPaths, recommendedPath }) {
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-center mb-1">
                 <span className={`text-sm font-medium truncate ${isTop ? 'text-gray-900' : 'text-gray-600'}`}>
-                  {p.path}
+                  {pathName}
                   {isTop && (
                     <span className="ml-1.5 inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
                       <CheckCircle2 className="w-2.5 h-2.5" /> Best Fit

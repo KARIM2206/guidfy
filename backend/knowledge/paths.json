@@ -1,0 +1,50 @@
+[
+    {
+        "name": "Frontend",
+        "Learning Duration": {
+            "min_hours_week": 5
+        }
+    },
+    {
+        "name": "Backend",
+        "Learning Duration": {
+            "min_hours_week": 8
+        }
+    },
+    {
+        "name": "Full Stack",
+        "Learning Duration": {
+            "min_hours_week": 12
+        }
+    },
+    {
+        "name": "Mobile",
+        "Learning Duration": {
+            "min_hours_week": 8
+        }
+    },
+    {
+        "name": "AI & Data",
+        "Learning Duration": {
+            "min_hours_week": 15
+        }
+    },
+    {
+        "name": "Cloud",
+        "Learning Duration": {
+            "min_hours_week": 12
+        }
+    },
+    {
+        "name": "Cyber Security",
+        "Learning Duration": {
+            "min_hours_week": 15
+        }
+    },
+    {
+        "name": "Data Science",
+        "Learning Duration": {
+            "min_hours_week": 12
+        }
+    }
+]

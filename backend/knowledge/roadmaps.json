@@ -1,0 +1,47 @@
+[
+    {
+        "path": "AI/ML",
+        "modules": [
+            {
+                "name": "Python Basics",
+                "estimated_hours": 20,
+                "level": "beginner"
+            },
+            {
+                "name": "Linear Algebra & Calculus",
+                "estimated_hours": 30,
+                "level": "beginner"
+            },
+            {
+                "name": "Machine Learning Algorithms",
+                "estimated_hours": 40,
+                "level": "intermediate"
+            },
+            {
+                "name": "Deep Learning with PyTorch",
+                "estimated_hours": 50,
+                "level": "advanced"
+            }
+        ]
+    },
+    {
+        "path": "Frontend",
+        "modules": [
+            {
+                "name": "HTML & CSS",
+                "estimated_hours": 20,
+                "level": "beginner"
+            },
+            {
+                "name": "JavaScript Fundamentals",
+                "estimated_hours": 40,
+                "level": "intermediate"
+            },
+            {
+                "name": "React.js",
+                "estimated_hours": 40,
+                "level": "intermediate"
+            }
+        ]
+    }
+]

@@ -70,8 +70,8 @@ async function getCareerMatch(skills) {
     if (data && data.top_paths && data.top_paths.length > 0) {
       const topMatch = data.top_paths[0];
       return {
-        career: topMatch.path,
-        score: Math.round(topMatch.confidence * 100)
+        career: topMatch.name || topMatch.path || "Software Engineer",
+        score: topMatch.compatibility !== undefined ? topMatch.compatibility : Math.round((topMatch.confidence || 0) * 100)
       };
     }
   } catch (error) {
@@ -95,6 +95,7 @@ async function getCareerMatch(skills) {
 }
 
 function calculateMissingSkills(career, acquiredSkills) {
+  if (!career) return ["General Programming", "Algorithms", "System Design"];
   const careerKey = Object.keys(CAREER_REQUIREMENTS).find(k => career.toLowerCase().includes(k));
   if (!careerKey) return ["General Programming", "Algorithms", "System Design"];
 
