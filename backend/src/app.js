@@ -98,7 +98,7 @@ const adminRoute         = require('../routes/community/adminRoute');
 const reportRoute        = require('../routes/community/reportRoute');
 const n8nRoutes          = require('../routes/n8nRoutes');
 const aiTrainingRoute    = require('../routes/super-admin/aiTrainingRoute');
-const knowledgeRoute     = require('../routes/super-admin/knowledgeRoute');
+
 
 // ── Apply rate limiter ONLY on auth login / register
 app.use('/api/auth/login',    authLimiter);
@@ -122,7 +122,6 @@ app.use('/api/admin/quiz',               require('../routes/quizRoute')); // <--
 app.use('/api/admin',                    adminRoute);
 app.use('/api/super-admin',              superAdminRoute);
 app.use('/api/super-admin/ai-training',  aiTrainingRoute);
-app.use('/api/super-admin/knowledge',    knowledgeRoute);
 app.use('/api/reports',                  reportRoute);
 app.use('/api/n8n',                      n8nRoutes);
 app.use('/api/recommendations',          require('../routes/recommendationRoute'));
