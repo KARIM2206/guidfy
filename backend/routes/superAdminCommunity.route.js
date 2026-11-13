@@ -25,7 +25,7 @@ const {
   getCommunityAnalyticsSA,
   getCommunitiesAnalyticsSA,
   getCommunityLogsSA
-} = require("../controllers/community/superAdmin.controller");
+} = require("../controllers/community/superadmin.controller");
 
 router.use(protect);
 router.use(allowedTo("SUPER_ADMIN"));
