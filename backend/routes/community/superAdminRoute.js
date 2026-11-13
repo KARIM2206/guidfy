@@ -22,7 +22,7 @@ const {
   getCommunityAnalytics,
   getCommunitiesAnalytics,
   getCommunityLogs,
-} = require('../../controllers/community/superAdmin.controller');
+} = require('../../controllers/community/superadmin.controller');
 const {createCommunity,updateCommunity,deleteCommunity} = require('../../controllers/community.controller');
 
 const { protect } = require('../../middleware/authMiddleware');
